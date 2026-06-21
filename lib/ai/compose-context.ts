@@ -1,0 +1,188 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { activePlatformKeys, type ProfilePlatform } from "@/lib/ai/platforms";
+
+// ─────────────────────────────────────────────────────────────
+// Tipos de las fuentes que se cruzan (capas de la arquitectura).
+// ─────────────────────────────────────────────────────────────
+export type ProfileRow = {
+  display_name: string;
+  positioning: unknown;
+  pillars: unknown;
+  audience: unknown;
+  voice: unknown;
+  tacit: unknown;
+  goals: unknown;
+  platforms: ProfilePlatform[] | null;
+  performance_patterns: unknown;
+  referents: unknown;
+};
+
+export type KnowledgeRow = { platform: string; content: string };
+export type SignalRow = {
+  content: string;
+  type: string | null;
+  source: string | null;
+};
+export type MessageRow = { role: string; content: string };
+
+export type ComposeInput = {
+  motor: string; // capa 1: el motor (INSTRUCCIONES.md)
+  profile: ProfileRow | null; // capa 3: instancia del usuario
+  knowledge: KnowledgeRow[]; // capa 4: conocimiento del ecosistema
+  signals: SignalRow[]; // señales frescas (últimas 20)
+  messages: MessageRow[]; // memoria de conversación (últimas 20)
+};
+
+const SIGNALS_LIMIT = 20;
+const MESSAGES_LIMIT = 20;
+
+function section(title: string, body: string): string {
+  return `\n\n# ${title}\n${body}`;
+}
+
+function renderProfile(profile: ProfileRow): string {
+  // El perfil se entrega como datos legibles para el modelo. El motor es
+  // genérico; aquí va la instancia concreta del usuario (su fuente de verdad).
+  const field = (label: string, value: unknown) =>
+    `## ${label}\n${JSON.stringify(value, null, 2)}`;
+
+  return [
+    `Nombre: ${profile.display_name}`,
+    field("Posicionamiento", profile.positioning),
+    field("Pilares", profile.pillars),
+    field("Audiencia", profile.audience),
+    field("Voz y tono", profile.voice),
+    field("Datos tácitos", profile.tacit),
+    field("Objetivos", profile.goals),
+    field("Plataformas", profile.platforms),
+    field("Patrones de rendimiento", profile.performance_patterns),
+    field("Referentes", profile.referents),
+  ].join("\n\n");
+}
+
+// ─────────────────────────────────────────────────────────────
+// Ensamblado puro: motor + perfil + conocimiento + señales + memoria.
+// Sin acceso a red ni a disco → fácil de testear.
+// ─────────────────────────────────────────────────────────────
+export function composeSystemPrompt(input: ComposeInput): string {
+  const parts: string[] = [input.motor.trim()];
+
+  if (input.profile) {
+    parts.push(
+      section(
+        "PERFIL DEL USUARIO (instancia, tu fuente de verdad sobre la persona)",
+        renderProfile(input.profile)
+      )
+    );
+  } else {
+    parts.push(
+      section(
+        "PERFIL DEL USUARIO",
+        "Todavía no hay perfil. Si el usuario quiere propuestas, propón hacer el onboarding (Modo 1)."
+      )
+    );
+  }
+
+  if (input.knowledge.length > 0) {
+    const body = input.knowledge
+      .map((k) => `## ${k.platform}\n${k.content.trim()}`)
+      .join("\n\n");
+    parts.push(
+      section(
+        "CONOCIMIENTO DEL ECOSISTEMA (plataformas activas del usuario)",
+        body
+      )
+    );
+  }
+
+  if (input.signals.length > 0) {
+    const body = input.signals
+      .map((s) => {
+        const meta = [s.source, s.type].filter(Boolean).join("/");
+        return `- ${meta ? `(${meta}) ` : ""}${s.content}`;
+      })
+      .join("\n");
+    parts.push(section("SEÑALES RECIENTES", body));
+  }
+
+  if (input.messages.length > 0) {
+    const body = input.messages
+      .map((m) => `${m.role}: ${m.content}`)
+      .join("\n");
+    parts.push(
+      section(
+        "MEMORIA DE LA CONVERSACIÓN (últimos mensajes, para mantener contexto)",
+        body
+      )
+    );
+  }
+
+  return parts.join("");
+}
+
+// Lee el motor (capa 1) desde el repo. El seed lo deja en seed/motor.md.
+export async function loadMotor(): Promise<string> {
+  const motorPath = path.join(process.cwd(), "seed", "motor.md");
+  return fs.readFile(motorPath, "utf8");
+}
+
+// ─────────────────────────────────────────────────────────────
+// Recogida de datos desde Supabase (respeta RLS con el cliente de sesión).
+// Cruza el perfil del usuario con su conocimiento de plataformas activas,
+// sus últimas 20 señales y sus últimos 20 mensajes.
+// ─────────────────────────────────────────────────────────────
+export async function gatherContext(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<ComposeInput> {
+  const motor = await loadMotor();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select(
+      "display_name, positioning, pillars, audience, voice, tacit, goals, platforms, performance_patterns, referents"
+    )
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const platformKeys = activePlatformKeys(
+    (profile?.platforms as ProfilePlatform[] | null) ?? null
+  );
+
+  let knowledge: KnowledgeRow[] = [];
+  if (platformKeys.length > 0) {
+    const { data } = await supabase
+      .from("ecosystem_knowledge")
+      .select("platform, content")
+      .eq("is_current", true)
+      .in("platform", platformKeys);
+    knowledge = data ?? [];
+  }
+
+  const { data: signalsDesc } = await supabase
+    .from("signals")
+    .select("content, type, source")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(SIGNALS_LIMIT);
+
+  const { data: messagesDesc } = await supabase
+    .from("messages")
+    .select("role, content")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(MESSAGES_LIMIT);
+
+  return {
+    motor,
+    profile: (profile as ProfileRow | null) ?? null,
+    knowledge,
+    // Se piden en desc (los más recientes) y se invierten a orden cronológico.
+    signals: (signalsDesc ?? []).reverse(),
+    messages: (messagesDesc ?? []).reverse(),
+  };
+}
