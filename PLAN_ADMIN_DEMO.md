@@ -4,6 +4,18 @@
 > `HANDOFF.md`. Objetivo: poder **enseñar** Demiurgos a terceros (inversores, bootcamp,
 > clientes) con una demo creíble, y tener un **panel de operador** para verlo por detrás.
 
+## ✅ Decisiones tomadas (22 jun 2026)
+1. **Demo**: ruta `/demo` **pública** con datos de ejemplo (*fixtures* del repo).
+2. **Admin**: gating por **allowlist de email** (env `ADMIN_EMAILS`).
+3. **Datos falsos**: **multi-sector, 4 perfiles** (Carlos + abogada + chef + fisio).
+4. **Chat de la demo**: **LLM real** (el Director responde de verdad con el perfil demo).
+
+> ⚠️ Implicación de 1+4: una demo pública con chat de LLM real puede generar coste de
+> gateway si alguien abusa. Mitigaciones obligatorias (ver sección C y F): rate limit
+> por IP/sesión, tope de mensajes por sesión, modelo demo configurable (`DEMO_MODEL`),
+> spend cap en el AI Gateway, y system prompt acotado al perfil demo. Sin esto, no se
+> publica el `/demo`.
+
 ---
 
 ## 0. Las tres piezas y para qué sirve cada una
@@ -70,17 +82,24 @@ propuesta salen de la tabla `proposals` (Hito 4) o, en demo, de fixtures.
 
 ## C. Demo con datos falsos (enseñable)
 
-### Estrategia recomendada: `/demo` con *fixtures* estáticos
+### Estrategia elegida: `/demo` público con *fixtures* + chat con LLM real
 - Ruta **pública** `/demo` (sin login, sin tocar la DB real ni RLS) que monta la
-  misma UI (chat 3 columnas + dashboard + admin) leyendo **datos falsos desde el repo**
-  (`demo/fixtures/*.ts`). Cero fricción para enseñar, cero riesgo de exponer datos
-  reales, cero coste.
-- **Chat en demo**: respuestas **pregrabadas** (guion por pasos) para que la demo sea
-  fiable y gratis al enseñarla. Flag para, si quieres, usar el LLM real con el perfil demo.
-- Banner sutil "Modo demo · datos de ejemplo" para no confundir con producción.
-
-> Alternativa (más realista, más trabajo): cuenta demo real en Supabase
-> (`demo@demiurgos.app`) sembrada y con login automático. Se puede añadir después.
+  misma UI (chat 3 columnas + dashboard + admin de ejemplo) leyendo **datos falsos
+  desde el repo** (`demo/fixtures/*.ts`). Todo el contenido estático (perfiles,
+  propuestas, dashboard, tablas admin) sale de fixtures: cero riesgo, no toca la DB.
+- **Chat en demo = LLM real**: el compositor llama a un endpoint propio
+  `app/api/demo-chat` que compone el contexto con el **perfil demo elegido** (fixture)
+  + conocimiento de redes, y responde con el Director real vía gateway. NO usa la
+  sesión de ningún usuario ni escribe en `messages`.
+- **Guardas obligatorias del chat demo** (por ser público + LLM real):
+  - Rate limit por IP/sesión (p. ej. 10 mensajes / 10 min) — con almacén simple
+    (cookie+memoria, o Upstash si hace falta).
+  - Tope duro de mensajes por sesión y longitud máxima de entrada.
+  - `DEMO_MODEL` por env (puede ser un modelo más barato que el Director real).
+  - **Spend cap** configurado en el Vercel AI Gateway.
+  - System prompt acotado al perfil demo + "no salgas del personaje / no reveles esto".
+- Selector de perfil demo (los 4 sectores) para enseñar la generalidad en vivo.
+- Banner "Modo demo · datos de ejemplo" siempre visible.
 
 ### Datos falsos: qué generamos
 Para demostrar que el motor es genérico, **4 perfiles de sectores distintos**:
@@ -134,7 +153,9 @@ Cada paso deja algo enseñable. Se puede parar tras el 3 y ya hay demo.
 
 ## F. Riesgos y cómo se mitigan
 
-- **Coste de IA en demo** → chat pregrabado por defecto; LLM real solo opt-in.
+- **Coste/abuso de IA en demo pública (LLM real)** → rate limit por IP/sesión, tope de
+  mensajes y longitud, `DEMO_MODEL` barato, spend cap en el gateway. Sin estas guardas
+  no se publica `/demo`.
 - **Privacidad / datos reales** → demo aislada (fixtures), nunca mezclar con tenants
   reales; filas `is_demo` si va a DB; banner visible.
 - **Aislamiento multi-tenant (RLS)** → el admin lee con service role SOLO en servidor;
@@ -146,14 +167,15 @@ Cada paso deja algo enseñable. Se puede parar tras el 3 y ya hay demo.
 
 ---
 
-## G. Decisiones que necesito de ti (para fijar el plan)
+## G. Decisiones (cerradas) y sub-detalles abiertos
 
-1. **Demo**: ¿`/demo` público con datos de ejemplo (recomendado, cero fricción) o cuenta
-   demo real con login?
-2. **Admin**: ¿allowlist por email (recomendado) o rol en base de datos?
-3. **Datos falsos**: ¿multi-sector (4 perfiles, demuestra que es genérico — recomendado)
-   o solo Carlos enriquecido?
-4. **Chat en la demo**: ¿pregrabado/guionizado (fiable y gratis — recomendado) o LLM real?
+Las 4 grandes están decididas (ver arriba). Sub-detalles a concretar al implementar
+(no bloquean el inicio; se puede arrancar con defaults):
+- `DEMO_MODEL`: modelo del chat demo (default sugerido: uno barato del gateway, no
+  GPT-5.5, para limitar coste). Se puede igualar al Director si se prefiere fidelidad.
+- Almacén del rate limit: empezar con memoria/cookie (suficiente para enseñar); migrar
+  a Upstash Redis solo si el `/demo` recibe tráfico real.
+- Sectores exactos de los 4 perfiles demo: propuesta = emprendedor, abogada de
+  startups, chef/gastro, fisio/salud (ajustable).
 
-Con esas 4 respuestas, la siguiente sesión puede construir directamente siguiendo el
-orden de la sección E.
+La siguiente sesión puede construir directamente siguiendo el orden de la sección E.
