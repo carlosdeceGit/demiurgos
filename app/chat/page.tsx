@@ -4,6 +4,7 @@ import { createClient } from "@/lib/db/server";
 import { ChatClient } from "@/components/chat/chat-client";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { activePlatformKeys, type ProfilePlatform } from "@/lib/ai/platforms";
+import { isAdminEmail } from "@/lib/auth/admin";
 
 // Pantalla de chat. La ruta está protegida por middleware; aquí volvemos a
 // comprobar la sesión y cargamos el contexto que se muestra en el panel derecho.
@@ -45,6 +46,7 @@ export default async function ChatPage() {
       positioning={positioning}
       platforms={platforms}
       signals={signals ?? []}
+      isAdmin={isAdminEmail(user.email)}
     >
       <ChatClient />
     </ChatShell>

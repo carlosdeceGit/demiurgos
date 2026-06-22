@@ -1,0 +1,100 @@
+import { redirect } from "next/navigation";
+
+import { createClient } from "@/lib/db/server";
+import { AppRail } from "@/components/app/app-rail";
+import {
+  DashboardView,
+  type DashboardProposal,
+} from "@/components/dashboard/dashboard-view";
+import { activePlatformKeys, type ProfilePlatform } from "@/lib/ai/platforms";
+import { isAdminEmail } from "@/lib/auth/admin";
+
+// Calcula un % de completitud del perfil según los campos rellenos.
+function completenessOf(profile: Record<string, unknown> | null): number {
+  if (!profile) return 0;
+  const checks = [
+    profile.positioning,
+    profile.pillars,
+    profile.audience,
+    profile.voice,
+    profile.tacit,
+    profile.goals,
+    profile.platforms,
+    profile.referents,
+  ];
+  const filled = checks.filter((v) => {
+    if (v == null) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === "object") return Object.keys(v).length > 0;
+    return true;
+  }).length;
+  const base = Math.round((filled / checks.length) * 90);
+  return Math.min(100, base + (profile.onboarding_completed ? 10 : 0));
+}
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select(
+      "display_name, positioning, pillars, audience, voice, tacit, goals, platforms, referents, onboarding_completed"
+    )
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const { data: proposalsRaw } = await supabase
+    .from("proposals")
+    .select("id, platform, idea, why_now, script, suggested_slot, status")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  const { data: signals } = await supabase
+    .from("signals")
+    .select("content, source")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const proposals: DashboardProposal[] = (proposalsRaw ?? []).map((p) => ({
+    id: p.id as string,
+    platform: p.platform as string | null,
+    idea: p.idea as string | null,
+    whyNow: p.why_now as string | null,
+    script: p.script as string | null,
+    slot: p.suggested_slot as string | null,
+    status: p.status as string | null,
+  }));
+
+  const platforms = activePlatformKeys(
+    (profile?.platforms as ProfilePlatform[] | null) ?? null
+  );
+
+  return (
+    <div className="flex h-dvh">
+      <AppRail
+        active="dashboard"
+        displayName={profile?.display_name ?? user.email ?? "Tú"}
+        email={user.email ?? ""}
+        isAdmin={isAdminEmail(user.email)}
+      />
+      <main className="flex-1 overflow-y-auto">
+        <DashboardView
+          data={{
+            displayName: profile?.display_name ?? user.email ?? "Tú",
+            sector: null,
+            completeness: completenessOf(profile),
+            platforms,
+            proposals,
+            signals: signals ?? [],
+          }}
+        />
+      </main>
+    </div>
+  );
+}

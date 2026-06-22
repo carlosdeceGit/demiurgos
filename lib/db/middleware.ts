@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isAdminEmail } from "@/lib/auth/admin";
+
 // Refresca la sesión de Supabase en cada request y protege las rutas
 // privadas. Patrón recomendado por @supabase/ssr para Next App Router.
 export async function updateSession(request: NextRequest) {
@@ -32,10 +34,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const path = request.nextUrl.pathname;
+  const needsAuth =
+    path.startsWith("/chat") ||
+    path.startsWith("/dashboard") ||
+    path.startsWith("/admin");
+
   // Rutas privadas: sin sesión, a /login.
-  if (!user && request.nextUrl.pathname.startsWith("/chat")) {
+  if (!user && needsAuth) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // /admin: además de sesión, email en la allowlist.
+  if (path.startsWith("/admin") && !isAdminEmail(user?.email)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/chat";
     return NextResponse.redirect(url);
   }
 

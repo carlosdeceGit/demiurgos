@@ -1,16 +1,6 @@
-import Link from "next/link";
-import {
-  FolderOpen,
-  Lightbulb,
-  LayoutGrid,
-  LogOut,
-  MessageSquare,
-  Plus,
-  Sparkles,
-  User,
-} from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AppRail } from "@/components/app/app-rail";
 import { Button } from "@/components/ui/button";
 import type { PlatformKey } from "@/lib/ai/platforms";
 
@@ -24,95 +14,6 @@ const PLATFORM_LABELS: Record<PlatformKey, string> = {
 };
 
 type SignalItem = { content: string; source: string | null };
-
-// Navegación. Solo "Chat" está activo en este hito; el resto se marca como
-// próximo (hitos posteriores), pero ya ocupa su sitio en la UI.
-const NAV = [
-  { label: "Chat", icon: MessageSquare, active: true },
-  { label: "Biblioteca", icon: FolderOpen, active: false },
-  { label: "Banco de ideas", icon: Lightbulb, active: false },
-  { label: "Propuestas", icon: LayoutGrid, active: false },
-  { label: "Perfil", icon: User, active: false },
-];
-
-function RailLeft({
-  displayName,
-  email,
-}: {
-  displayName: string;
-  email: string;
-}) {
-  return (
-    <aside className="bg-muted/30 hidden w-60 shrink-0 flex-col border-r md:flex">
-      <div className="flex items-center gap-2 px-5 py-4">
-        <span className="bg-foreground text-background grid size-7 place-items-center rounded-lg font-serif text-lg italic">
-          D
-        </span>
-        <span className="font-semibold tracking-tight">Demiurgos</span>
-      </div>
-
-      <div className="px-3">
-        <Button asChild className="w-full justify-start gap-2 rounded-full">
-          <Link href="/chat">
-            <Plus className="size-4" />
-            Nueva conversación
-          </Link>
-        </Button>
-      </div>
-
-      <nav className="mt-4 flex flex-col gap-0.5 px-3">
-        {NAV.map(({ label, icon: Icon, active }) =>
-          active ? (
-            <span
-              key={label}
-              aria-current="page"
-              className="bg-accent text-accent-foreground flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium"
-            >
-              <Icon className="size-4" />
-              {label}
-            </span>
-          ) : (
-            <span
-              key={label}
-              title="Próximamente"
-              className="text-muted-foreground/70 flex cursor-default items-center gap-3 rounded-md px-3 py-2 text-sm"
-            >
-              <Icon className="size-4" />
-              {label}
-              <span className="bg-muted text-muted-foreground ml-auto rounded-full px-1.5 py-0.5 text-[10px]">
-                pronto
-              </span>
-            </span>
-          )
-        )}
-      </nav>
-
-      <div className="mt-auto border-t p-3">
-        <div className="flex items-center gap-2">
-          <span className="bg-secondary grid size-8 place-items-center rounded-full text-sm font-medium">
-            {displayName.charAt(0).toUpperCase()}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{displayName}</p>
-            <p className="text-muted-foreground truncate text-xs">{email}</p>
-          </div>
-          <ThemeToggle />
-        </div>
-        <form action="/auth/signout" method="post" className="mt-2">
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground w-full justify-start gap-2"
-          >
-            <LogOut className="size-4" />
-            Salir
-          </Button>
-        </form>
-      </div>
-    </aside>
-  );
-}
 
 function RailRight({
   displayName,
@@ -213,6 +114,7 @@ export function ChatShell({
   positioning,
   platforms,
   signals,
+  isAdmin = false,
   children,
 }: {
   email: string;
@@ -220,11 +122,17 @@ export function ChatShell({
   positioning: string | null;
   platforms: PlatformKey[];
   signals: SignalItem[];
+  isAdmin?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex h-dvh">
-      <RailLeft displayName={displayName} email={email} />
+      <AppRail
+        active="chat"
+        displayName={displayName}
+        email={email}
+        isAdmin={isAdmin}
+      />
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       <RailRight
         displayName={displayName}
