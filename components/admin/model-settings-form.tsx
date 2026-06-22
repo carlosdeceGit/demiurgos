@@ -9,15 +9,14 @@ import type { ModelSettings } from "@/lib/db/settings";
 // Sugerencias de modelos del gateway. Es un campo libre con autocompletado:
 // si tu AI Gateway expone otro id, puedes escribirlo directamente.
 const MODEL_SUGGESTIONS = [
+  "anthropic/claude-opus-4.7",
+  "anthropic/claude-sonnet-4.6",
+  "anthropic/claude-3.7-sonnet",
+  "anthropic/claude-3.5-sonnet",
   "openai/gpt-5.5",
   "openai/gpt-5",
   "openai/gpt-4.1",
   "openai/gpt-4o",
-  "anthropic/claude-opus-4.8",
-  "anthropic/claude-sonnet-4.6",
-  "anthropic/claude-3.7-sonnet",
-  "anthropic/claude-3.5-sonnet",
-  "google/gemini-3.1-pro",
   "google/gemini-2.5-pro",
   "google/gemini-2.0-flash",
   "xai/grok-4",

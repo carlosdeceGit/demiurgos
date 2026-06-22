@@ -9,12 +9,12 @@ const gateway = createGateway({
 // Modelos del consejo, configurables por entorno. En el Hito 1 solo se usa el
 // Director. Crítico y Analista quedan documentados para hitos posteriores.
 export const MODELS = {
-  director: process.env.DIRECTOR_MODEL ?? "openai/gpt-5.5",
-  critic: process.env.CRITIC_MODEL ?? "anthropic/claude-opus-4.8",
-  analyst: process.env.ANALYST_MODEL ?? "google/gemini-3.1-pro",
-  // Modelo del chat de la demo pública. Por defecto, uno más barato que el
-  // Director para acotar coste (configurable por entorno).
-  demo: process.env.DEMO_MODEL ?? "google/gemini-3.1-pro",
+  // Defaults de fallback (si fallara la lectura de settings en BD). Se eligen
+  // ids que la documentación de Vercel AI Gateway usa como válidos.
+  director: process.env.DIRECTOR_MODEL ?? "anthropic/claude-opus-4.7",
+  critic: process.env.CRITIC_MODEL ?? "anthropic/claude-opus-4.7",
+  analyst: process.env.ANALYST_MODEL ?? "google/gemini-2.5-pro",
+  demo: process.env.DEMO_MODEL ?? "anthropic/claude-opus-4.7",
 } as const;
 
 export function directorModel() {

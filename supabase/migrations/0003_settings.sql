@@ -4,10 +4,10 @@
 
 create table if not exists public.settings (
   id boolean primary key default true,
-  director_model text not null default 'openai/gpt-5.5',
-  critic_model text not null default 'anthropic/claude-opus-4.8',
-  analyst_model text not null default 'google/gemini-3.1-pro',
-  demo_model text not null default 'google/gemini-3.1-pro',
+  director_model text not null default 'anthropic/claude-opus-4.7',
+  critic_model text not null default 'anthropic/claude-opus-4.7',
+  analyst_model text not null default 'google/gemini-2.5-pro',
+  demo_model text not null default 'anthropic/claude-opus-4.7',
   updated_at timestamptz not null default now(),
   constraint settings_singleton check (id)
 );
