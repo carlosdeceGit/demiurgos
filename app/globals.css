@@ -23,6 +23,11 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Marca Demiurgos */
+  --brand-accent: oklch(0.62 0.13 162);
+  --brand-accent-foreground: oklch(0.985 0 0);
+  --brand-violet: oklch(0.55 0.2 280);
+  --brand-amber: oklch(0.7 0.13 72);
 }
 
 .dark {
@@ -44,6 +49,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  /* Marca Demiurgos */
+  --brand-accent: oklch(0.68 0.14 162);
+  --brand-accent-foreground: oklch(0.145 0 0);
+  --brand-violet: oklch(0.68 0.17 280);
+  --brand-amber: oklch(0.76 0.12 72);
 }
 
 @theme inline {
@@ -69,8 +79,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-amber: var(--brand-amber);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-instrument-serif);
 }
 
 @layer base {
