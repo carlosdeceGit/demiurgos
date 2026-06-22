@@ -24,3 +24,8 @@ export function directorModel() {
 export function demoModel() {
   return gateway(MODELS.demo);
 }
+
+// Resuelve un modelo por su id del gateway (p. ej. "openai/gpt-4.1").
+export function gatewayModel(id: string) {
+  return gateway(id);
+}

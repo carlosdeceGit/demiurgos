@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/db/server";
 import { AppRail } from "@/components/app/app-rail";
 import { getAdminOverview } from "@/lib/db/admin-queries";
+import { getModelSettings } from "@/lib/db/settings";
+import { ModelSettingsForm } from "@/components/admin/model-settings-form";
 import { isAdminEmail } from "@/lib/auth/admin";
 
 export const metadata = { title: "Demiurgos · Admin" };
@@ -25,7 +27,10 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!isAdminEmail(user.email)) redirect("/chat");
 
-  const o = await getAdminOverview();
+  const [o, settings] = await Promise.all([
+    getAdminOverview(),
+    getModelSettings(),
+  ]);
   const maxCost = Math.max(...o.costByModel.map((m) => m.cost), 0.0001);
 
   return (
@@ -50,6 +55,16 @@ export default async function AdminPage() {
             <Kpi label="Propuestas" value={String(o.proposals)} />
             <Kpi label="Mensajes" value={String(o.messages)} />
             <Kpi label="Coste IA" value={`$${o.aiCost}`} />
+          </section>
+
+          <section>
+            <h2 className="mb-1 text-sm font-semibold">Preferencias de IA</h2>
+            <p className="text-muted-foreground mb-3 text-xs">
+              Elige el modelo de cada rol del consejo. El chat usa el del
+              Director. Campo libre con sugerencias: escribe cualquier id válido
+              de tu AI Gateway.
+            </p>
+            <ModelSettingsForm current={settings} />
           </section>
 
           <section>

@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { streamText, type ModelMessage } from "ai";
 
-import { directorModel } from "@/lib/ai/gateway";
+import { directorModel, gatewayModel } from "@/lib/ai/gateway";
 
 async function loadDirectorPrompt(): Promise<string> {
   const promptPath = path.join(process.cwd(), "prompts", "director.md");
@@ -15,17 +15,19 @@ async function loadDirectorPrompt(): Promise<string> {
 export async function runDirector({
   systemContext,
   messages,
+  modelId,
   onFinish,
 }: {
   systemContext: string;
   messages: ModelMessage[];
+  modelId?: string;
   onFinish?: (text: string) => void | Promise<void>;
 }) {
   const role = await loadDirectorPrompt();
   const system = `${systemContext}\n\n# ROL ACTIVO\n${role.trim()}`;
 
   return streamText({
-    model: directorModel(),
+    model: modelId ? gatewayModel(modelId) : directorModel(),
     system,
     messages,
     onFinish: onFinish

@@ -6,6 +6,7 @@ import {
   gatherContext,
 } from "@/lib/ai/compose-context";
 import { runDirector } from "@/lib/ai/roles/director";
+import { getModelSettings } from "@/lib/db/settings";
 
 export const maxDuration = 60;
 
@@ -42,9 +43,11 @@ export async function POST(req: Request) {
       .insert({ user_id: user.id, role: "user", content: userText });
   }
 
-  // 3. Llamar al Director y persistir su respuesta al terminar.
+  // 3. Llamar al Director (modelo elegido en el admin) y persistir al terminar.
+  const { directorModel } = await getModelSettings();
   const result = await runDirector({
     systemContext,
+    modelId: directorModel,
     messages: await convertToModelMessages(messages),
     onFinish: async (text) => {
       if (text) {
