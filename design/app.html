@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demiurgos — Director creativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════
+   TOKENS — fuente de verdad del sistema de diseño
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:#faf9f7; --surface:#ffffff; --surface-2:#f5f4f1;
+  --ink:#1c1917; --ink-soft:#44403c; --muted:#78716c; --faint:#a8a29e;
+  --border:#e7e5e4; --border-strong:#d6d3d1;
+  --brand:#1c1917;
+  --accent:#0f9d6b; --accent-strong:#0b7d55;
+  --accent-soft:#e6f5ee;
+  --violet:#6d5ef0; --violet-soft:#eceaff;
+  --amber:#d9930b;
+  --radius:14px; --radius-sm:9px; --radius-pill:999px;
+  --shadow-sm:0 1px 2px rgba(28,25,23,.06);
+  --shadow:0 8px 30px rgba(28,25,23,.08);
+  --ring:0 0 0 3px rgba(15,157,107,.25);
+
+  /* Layout */
+  --rail-left:248px;
+  --rail-right:320px;
+}
+
+.dark {
+  --bg:#0f0e0d; --surface:#1a1917; --surface-2:#232120;
+  --ink:#f5f4f1; --ink-soft:#d6d3d1; --muted:#a8a29e; --faint:#78716c;
+  --border:#2c2a28; --border-strong:#3a3735;
+  --brand:#f5f4f1; --accent:#16b87f; --accent-strong:#0f9d6b; --accent-soft:#10241c;
+  --violet:#8b7dff; --violet-soft:#1b1830; --amber:#e0a83b;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow:0 10px 40px rgba(0,0,0,.5);
+}
+
+/* ═══════════════════════════════════════════════
+   RESET Y BASE
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: "Geist", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea { font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT PRINCIPAL — 3 columnas
+   ═══════════════════════════════════════════════ */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--rail-left) 1fr var(--rail-right);
+  grid-template-rows: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* VISTA — el contenido principal cambia según la tab activa */
+.view { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.view.active { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   RIEL IZQUIERDO — navegación
+   ═══════════════════════════════════════════════ */
+.rail-left {
+  background: var(--surface-2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Marca */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 18px;
+  font-style: italic;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+
+/* Botón nueva conversación */
+.btn-new-chat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  box-shadow: var(--shadow);
+  transition: opacity .15s, transform .15s;
+  margin-bottom: 20px;
+}
+.btn-new-chat:hover { opacity: .9; transform: translateY(-1px); }
+.btn-new-chat:focus-visible { outline: none; box-shadow: var(--ring); }
+.btn-new-chat:active { transform: translateY(0); }
+
+/* Navegación */
+.nav-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 0 8px;
+  margin-bottom: 6px;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.nav-item:hover { background: var(--border); color: var(--ink); }
+.nav-item.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.nav-item.active .nav-icon { color: var(--accent); }
+.nav-item:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: color .12s;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  line-height: 1.4;
+}
+
+/* Espacio flexible */
+.rail-spacer { flex: 1; }
+
+/* Usuario + toggle */
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px 4px;
+  border-top: 1px solid var(--border);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 11px; color: var(--muted); }
+
+/* Toggle tema */
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: background .12s, color .12s;
+}
+.theme-toggle:hover { background: var(--border); color: var(--ink); }
+.theme-toggle:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.icon-sun, .icon-moon { width: 16px; height: 16px; }
+.dark .icon-sun { display: none; }
+.light .icon-moon, html:not(.dark) .icon-moon { display: none; }
+.dark .icon-moon { display: block; }
+
+/* ═══════════════════════════════════════════════
+   ZONA CENTRAL — CHAT
+   ═══════════════════════════════════════════════ */
+.chat-view {
+  background: var(--bg);
+}
+
+/* Cabecera del chat */
+.chat-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.chat-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.chat-header-title h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  flex-shrink: 0;
+}
+
+.model-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--violet-soft);
+  color: var(--violet);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  cursor: pointer;
+  transition: background .12s;
+  border: 1px solid transparent;
+}
+.model-chip:hover { border-color: var(--violet); }
+
+.model-chip-icon { width: 12px; height: 12px; }
+
+/* Stream de mensajes */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  scroll-behavior: smooth;
+}
+
+.chat-messages::-webkit-scrollbar { width: 5px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+
+/* Separador de fecha */
+.date-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+.date-separator::before,
+.date-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Burbujas */
+.msg {
+  display: flex;
+  gap: 10px;
+  max-width: 680px;
+}
+
+.msg.user {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.msg-avatar.director {
+  background: linear-gradient(135deg, var(--violet), #9d8fff);
+  color: #fff;
+}
+
+.msg-avatar.user {
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  color: #fff;
+}
+
+.msg-body { display: flex; flex-direction: column; gap: 4px; }
+
+.msg.user .msg-body { align-items: flex-end; }
+
+.msg-bubble {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 14.5px;
+  line-height: 1.6;
+  position: relative;
+}
+
+/* Burbuja del usuario */
+.msg.user .msg-bubble {
+  background: var(--brand);
+  color: var(--bg);
+  border-radius: var(--radius) var(--radius-sm) var(--radius) var(--radius);
+}
+
+/* Burbuja del Director */
+.msg.director .msg-bubble {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm) var(--radius) var(--radius) var(--radius);
+}
+
+.msg-time {
+  font-size: 11px;
+  color: var(--faint);
+  padding: 0 4px;
+}
+
+/* Bloque "Por qué ahora" */
+.why-block {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(217,147,11,.08), rgba(217,147,11,.04));
+  border-left: 3px solid var(--amber);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.dark .why-block {
+  background: linear-gradient(135deg, rgba(224,168,59,.1), rgba(224,168,59,.04));
+}
+
+.why-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.why-body {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+/* Lista de recomendaciones */
+.rec-list {
+  list-style: none;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rec-item {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  align-items: flex-start;
+}
+
+.rec-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* Chips de formato */
+.format-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.format-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+}
+
+.format-chip.highlight {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-color: transparent;
+}
+
+/* Indicador de escritura */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: .15s; }
+.typing-dot:nth-child(3) { animation-delay: .3s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .5; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ─── Chips de sugerencias ─── */
+.suggestions-row {
+  padding: 12px 24px 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.suggestion-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  transition: background .12s, border-color .12s, color .12s, transform .12s;
+  cursor: pointer;
+}
+.suggestion-chip:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  transform: translateY(-1px);
+}
+.suggestion-chip:focus-visible { outline: none; box-shadow: var(--ring); }
+.suggestion-chip svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ─── Compositor ─── */
+.composer-wrap {
+  padding: 16px 24px 20px;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.drop-zone {
+  position: relative;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .15s, background .15s;
+  overflow: hidden;
+}
+
+.drop-zone:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.composer-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.composer-textarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  background: transparent;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  outline: none;
+  max-height: 140px;
+  min-height: 44px;
+  overflow-y: auto;
+}
+
+.composer-textarea::placeholder { color: var(--faint); }
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.composer-btn-attach {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  transition: background .12s, color .12s;
+}
+.composer-btn-attach:hover { background: var(--surface-2); color: var(--ink); }
+
+.composer-btn-send {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--ink), #3a3633);
+  color: var(--bg);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity .15s, transform .15s;
+  flex-shrink: 0;
+}
+.dark .composer-btn-send {
+  background: linear-gradient(135deg, var(--surface-2), var(--border-strong));
+  color: var(--ink);
+}
+.composer-btn-send:hover { opacity: .88; transform: translateY(-1px); }
+.composer-btn-send:focus-visible { outline: none; box-shadow: var(--ring); }
+.composer-btn-send svg { width: 14px; height: 14px; }
+
+.drop-hint {
+  text-align: center;
+  padding: 6px 14px 10px;
+  font-size: 11.5px;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* ═══════════════════════════════════════════════
+   RIEL DERECHO — panel Contexto
+   ═══════════════════════════════════════════════ */
+.rail-right {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.rail-right::-webkit-scrollbar { width: 4px; }
+.rail-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+.context-section {
+  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+}
+
+.context-section:last-child { border-bottom: none; }
+
+.context-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.context-section-title svg { width: 12px; height: 12px; }
+
+/* Perfil activo */
+.profile-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-info { flex: 1; }
+
+.profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.profile-tagline {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.pillar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pillar-chip {
+  padding: 3px 9px;
+  background: var(--violet-soft);
+  color: var(--violet);
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* Plataformas */
+.platform-chips {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.platform-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+}
+
+.platform-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.platform-dot.linkedin { background: #0077b5; }
+.platform-dot.youtube  { background: #ff0000; }
+.platform-dot.substack { background: #ff6719; }
+
+/* Señales recientes */
+.signal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.signal-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  transition: border-color .12s;
+  cursor: default;
+}
+
+.signal-item:hover { border-color: var(--border-strong); }
+
+.signal-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.signal-icon.article { background: var(--accent-soft); color: var(--accent-strong); }
+.signal-icon.idea    { background: var(--violet-soft); color: var(--violet); }
+.signal-icon.upload  { background: var(--amber-soft, #fff8ec); color: var(--amber); }
+
+.signal-meta { flex: 1; min-width: 0; }
+
+.signal-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signal-detail {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.signal-source-chip {
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  background: var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Acciones rápidas */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px 20px;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .12s, transform .12s;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  width: 100%;
+}
+.quick-btn:hover { background: var(--border); transform: translateY(-1px); }
+.quick-btn.primary-action {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+.quick-btn.primary-action:hover { opacity: .9; }
+.quick-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════
+   VISTA BIBLIOTECA
+   ═══════════════════════════════════════════════ */
+.library-view {
+  background: var(--bg);
+}
+
+/* Cabecera de biblioteca */
+.library-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.library-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+  margin-right: auto;
+}
+
+/* Buscador */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  min-width: 200px;
+  transition: border-color .12s;
+}
+
+.search-box:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+
+.search-box svg { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+
+.search-input {
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+}
+.search-input::placeholder { color: var(--faint); }
+
+/* Filtros */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+}
+
+.filter-tab {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  background: transparent;
+  border: none;
+}
+.filter-tab.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.filter-tab:hover:not(.active) { color: var(--ink-soft); }
+
+/* Zona de drop */
+.drop-upload-zone {
+  margin: 20px 24px 0;
+  padding: 28px;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  flex-shrink: 0;
+}
+.drop-upload-zone:hover, .drop-upload-zone:focus-within {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.drop-upload-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.drop-upload-icon svg { width: 20px; height: 20px; }
+
+.drop-upload-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drop-upload-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Rejilla de contenido */
+.library-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+}
+
+.library-content::-webkit-scrollbar { width: 5px; }
+.library-content::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+/* Tarjetas de contenido */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s, transform .15s, border-color .15s;
+  cursor: default;
+}
+.card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+.card-thumb {
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-thumb.purple  { background: linear-gradient(135deg, var(--violet-soft), rgba(109,94,240,.12)); }
+.card-thumb.green   { background: linear-gradient(135deg, var(--accent-soft), rgba(15,157,107,.12)); }
+.card-thumb.amber   { background: linear-gradient(135deg, rgba(217,147,11,.1), rgba(217,147,11,.04)); }
+.card-thumb.neutral { background: linear-gradient(135deg, var(--surface-2), var(--border)); }
+
+.card-type-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.card-type-badge.image    { background: var(--violet-soft); color: var(--violet); }
+.card-type-badge.pdf      { background: rgba(217,147,11,.15); color: var(--amber); }
+.card-type-badge.text     { background: var(--accent-soft); color: var(--accent-strong); }
+.card-type-badge.folder   { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+.card-type-badge.idea     { background: var(--violet-soft); color: var(--violet); }
+
+.card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-date {
+  font-size: 11px;
+  color: var(--faint);
+  font-family: "Geist Mono", ui-monospace, monospace;
+}
+
+.card-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.card-tag {
+  padding: 2px 7px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.card-footer {
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.card-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  transition: opacity .12s;
+  width: 100%;
+}
+.card-action:hover { opacity: .75; }
+.card-action svg { width: 13px; height: 13px; }
+
+/* Tarjeta carpeta */
+.card.folder-card .card-thumb {
+  font-size: 32px;
+  background: linear-gradient(135deg, var(--surface-2), var(--border));
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE — móvil
+   ═══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 60px 1fr;
+    grid-template-rows: 100vh;
+  }
+
+  .rail-right { display: none; }
+
+  .rail-left {
+    padding: 16px 10px;
+    align-items: center;
+  }
+
+  .brand-name { display: none; }
+  .brand { padding-bottom: 16px; margin-bottom: 12px; }
+  .btn-new-chat { width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+  .btn-new-chat span { display: none; }
+  .nav-item span { display: none; }
+  .nav-item { justify-content: center; padding: 9px; }
+  .nav-badge { display: none; }
+  .user-info { display: none; }
+  .user-row { flex-direction: column; gap: 6px; padding: 10px 0 4px; }
+  .nav-label { display: none; }
+  .chat-header { padding: 12px 16px; }
+  .chat-messages { padding: 16px; }
+  .suggestions-row { padding: 8px 16px 0; }
+  .composer-wrap { padding: 10px 16px 16px; }
+  .library-header { padding: 12px 16px; }
+  .library-content { padding: 16px; }
+  .drop-upload-zone { margin: 12px 16px 0; }
+}
+
+@media (max-width: 580px) {
+  .suggestions-row { display: none; }
+  .filter-tabs { display: none; }
+  .library-grid { grid-template-columns: 1fr 1fr; }
+  .search-box { min-width: 140px; }
+}
+
+/* ═══════════════════════════════════════════════
+   UTILIDADES
+   ═══════════════════════════════════════════════ */
+.serif-accent {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* Foco accesible global */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+</style>
+</head>
+
+<body>
+
+<!-- ════════════════════════════════════════════════════
+     APP SHELL — estructura de 3 columnas
+     ════════════════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- ─────────────────────────────────────────────────
+       RIEL IZQUIERDO — marca + navegación principal
+       ───────────────────────────────────────────────── -->
+  <aside class="rail-left" aria-label="Navegación principal">
+
+    <!-- Marca -->
+    <div class="brand">
+      <!-- Logo SVG: D geométrica estilizada como herramienta de escultor -->
+      <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="var(--ink)"/>
+        <path d="M9 8h7c4.418 0 8 3.582 8 8s-3.582 8-8 8H9V8Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 16h10" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span class="brand-name">Demiurgos</span>
+    </div>
+
+    <!-- Botón nueva conversación -->
+    <button class="btn-new-chat" onclick="activateView('chat')" aria-label="Nueva conversación">
+      <!-- Icono + (Lucide Plus) -->
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      <span>Nueva conversación</span>
+    </button>
+
+    <!-- Navegación principal -->
+    <p class="nav-label">Principal</p>
+    <ul class="nav-list" role="list">
+
+      <!-- Chat (activo por defecto) -->
+      <li>
+        <button class="nav-item active" id="nav-chat" onclick="activateView('chat')" role="tab" aria-selected="true" aria-controls="view-chat">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>Chat</span>
+          <span class="nav-badge" aria-label="3 mensajes nuevos">3</span>
+        </button>
+      </li>
+
+      <!-- Biblioteca -->
+      <li>
+        <button class="nav-item" id="nav-library" onclick="activateView('library')" role="tab" aria-selected="false" aria-controls="view-library">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 3h6v18H3zM15 3h6v18h-6zM9 7h6M9 12h6M9 17h6"/>
+          </svg>
+          <span>Biblioteca</span>
+        </button>
+      </li>
+
+      <!-- Banco de ideas -->
+      <li>
+        <button class="nav-item" id="nav-ideas" onclick="activateView('chat')" role="tab" aria-selected="false">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+            <path d="M10 21h4"/>
+          </svg>
+          <span>Banco de ideas</span>
+        </button>
+      </li>
+
+      <!-- Propuestas -->
+      <li>
+        <button class="nav-item" id="nav-proposals" onclick="activateView('chat')" role="tab" aria-selected="false">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <path d="M9 9l3 3 3-3M12 12v6"/>
+          </svg>
+          <span>Propuestas</span>
+        </button>
+      </li>
+
+    </ul>
+
+    <p class="nav-label">Cuenta</p>
+    <ul class="nav-list" role="list">
+
+      <!-- Perfil -->
+      <li>
+        <button class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M20 21a8 8 0 1 0-16 0"/>
+          </svg>
+          <span>Perfil</span>
+        </button>
+      </li>
+
+    </ul>
+
+    <!-- Espacio flexible -->
+    <div class="rail-spacer" aria-hidden="true"></div>
+
+    <!-- Usuario + toggle de tema -->
+    <div class="user-row">
+      <div class="user-avatar" aria-hidden="true">CD</div>
+      <div class="user-info">
+        <div class="user-name">Carlos Delgado</div>
+        <div class="user-role">Plan Pro</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema">
+        <!-- Sol (modo claro) -->
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <!-- Luna (modo oscuro) -->
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+
+  </aside>
+  <!-- /RIEL IZQUIERDO -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       ZONA CENTRAL — las dos vistas (chat / biblioteca)
+       ───────────────────────────────────────────────── -->
+
+  <!-- ╔═══════════════╗
+       ║  VISTA: CHAT  ║
+       ╚═══════════════╝ -->
+  <main class="view chat-view active" id="view-chat" role="main" aria-label="Chat con el Director">
+
+    <!-- Cabecera del chat -->
+    <header class="chat-header">
+      <div class="chat-header-title">
+        <span class="status-dot" title="En línea" aria-label="En línea"></span>
+        <h2>Director creativo</h2>
+      </div>
+
+      <!-- Selector de modelo -->
+      <button class="model-chip" aria-label="Modelo activo: GPT-5.5 — cambiar" title="Cambiar modelo">
+        <!-- Icono IA (Lucide Sparkles) -->
+        <svg class="model-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+        </svg>
+        GPT-5.5
+      </button>
+    </header>
+
+    <!-- Stream de mensajes -->
+    <section class="chat-messages" aria-live="polite" aria-label="Conversación">
+
+      <!-- Separador de fecha -->
+      <div class="date-separator" aria-label="Hoy">Hoy</div>
+
+      <!-- ── Mensaje 1: USUARIO ── -->
+      <div class="msg user">
+        <div class="msg-avatar user" aria-hidden="true">CD</div>
+        <div class="msg-body">
+          <div class="msg-bubble" role="article" aria-label="Tú, mensaje">
+            ¿Qué formato me conviene publicar en LinkedIn esta semana?
+          </div>
+          <time class="msg-time" datetime="2026-06-22T10:14">10:14</time>
+        </div>
+      </div>
+
+      <!-- ── Mensaje 2: DIRECTOR (respuesta con criterio) ── -->
+      <div class="msg director">
+        <div class="msg-avatar director" aria-label="Director creativo" aria-hidden="true">
+          <!-- Icono pequeño del Director -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="msg-bubble" role="article" aria-label="Director creativo, mensaje">
+
+            Esta semana te conviene <strong>documento o carrusel</strong>. Aquí va el criterio, sin rodeos:
+
+            <ul class="rec-list" aria-label="Recomendaciones de formato">
+              <li class="rec-item">
+                <span class="rec-bullet" aria-hidden="true"></span>
+                <span><strong>Carrusel (5–8 slides):</strong> es el formato que más saves genera en LinkedIn ahora mismo. El algoritmo lo trata como contenido "guardado para después" y lo redistribuye días más tarde. Funciona especialmente bien con lecciones de fundador, que es uno de tus pilares fuertes.</span>
+              </li>
+              <li class="rec-item">
+                <span class="rec-bullet" aria-hidden="true"></span>
+                <span><strong>Documento PDF:</strong> si tienes material más denso (un análisis, un framework propio), el visor nativo de LinkedIn tiene alcance orgánico extra. Tu audiencia espera criterio, no consumo fácil.</span>
+              </li>
+              <li class="rec-item">
+                <span class="rec-bullet" aria-hidden="true"></span>
+                <span><strong>Texto plano largo:</strong> reserva esto para las piezas de voz pura (opinión fuerte, lección con anécdota). Sí funciona, pero necesita un gancho brutal en la primera línea y <em>sin enlace en el cuerpo</em>.</span>
+              </li>
+            </ul>
+
+            <!-- Chips de formato rápido -->
+            <div class="format-chips" role="list" aria-label="Formatos disponibles">
+              <span class="format-chip highlight" role="listitem">
+                <!-- Icono layout -->
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                Carrusel ✓
+              </span>
+              <span class="format-chip highlight" role="listitem">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Documento ✓
+              </span>
+              <span class="format-chip" role="listitem">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h12"/></svg>
+                Texto largo
+              </span>
+              <span class="format-chip" role="listitem">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                Vídeo — reserva
+              </span>
+            </div>
+
+            <!-- Bloque "Por qué ahora" -->
+            <div class="why-block" role="complementary" aria-label="Por qué ahora">
+              <div class="why-label">
+                <!-- Icono flecha-tendencia -->
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 20V10M12 20V4M6 20v-6"/>
+                </svg>
+                Por qué ahora
+              </div>
+              <div class="why-body">
+                LinkedIn está priorizando documentos y carruseles en el feed esta temporada, coincidiendo con el fin de trimestre cuando tu audiencia (directivos y fundadores) tiene más tiempo de leer en profundidad. El martes y el jueves siguen siendo los días de mayor alcance para tu nicho. Publica entre las 8:00 y las 9:30h. Y recuerda: <strong>el enlace va en el primer comentario</strong>, nunca en el cuerpo.
+              </div>
+            </div>
+
+          </div>
+          <time class="msg-time" datetime="2026-06-22T10:14">10:14</time>
+        </div>
+      </div>
+
+      <!-- ── Mensaje 3: USUARIO ── -->
+      <div class="msg user">
+        <div class="msg-avatar user" aria-hidden="true">CD</div>
+        <div class="msg-body">
+          <div class="msg-bubble" role="article" aria-label="Tú, mensaje">
+            Perfecto. Tengo una anécdota de esta semana sobre un error que cometí al lanzar nuestro último producto. ¿Lo convierto en carrusel o texto largo?
+          </div>
+          <time class="msg-time" datetime="2026-06-22T10:16">10:16</time>
+        </div>
+      </div>
+
+      <!-- ── Mensaje 4: DIRECTOR (segundo turno) ── -->
+      <div class="msg director">
+        <div class="msg-avatar director" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="msg-bubble" role="article" aria-label="Director creativo, mensaje">
+
+            Una <em>lección de fundador con anécdota concreta</em> es texto largo. Aquí el criterio:
+
+            <ul class="rec-list">
+              <li class="rec-item">
+                <span class="rec-bullet" aria-hidden="true"></span>
+                <span><strong>Si el error tiene un arco claro</strong> (contexto → qué salió mal → aprendizaje), <strong>texto largo</strong> es tu formato. La voz y el ritmo se pierden en slides. Tu audiencia es lectora.</span>
+              </li>
+              <li class="rec-item">
+                <span class="rec-bullet" aria-hidden="true"></span>
+                <span><strong>Reserva el carrusel</strong> para cuando el aprendizaje es un framework replicable (pasos, marcos mentales, listas que alguien quiere guardar). Un error único no es framework, es historia.</span>
+              </li>
+            </ul>
+
+            <br/>
+            <strong>Propuesta de estructura:</strong><br/>
+            <span style="color:var(--muted); font-size:13.5px;">
+              Línea 1 gancho (el error en bruto, sin contexto) →<br>
+              3–4 párrafos cortos con la historia →<br>
+              Un solo aprendizaje concreto →<br>
+              Cierre con una pregunta que abra conversación.<br>
+            </span>
+            <br/>
+            Mándame la anécdota y lo construimos juntos.
+
+          </div>
+          <time class="msg-time" datetime="2026-06-22T10:17">10:17</time>
+        </div>
+      </div>
+
+      <!-- Indicador "escribiendo…" (ilustrativo) -->
+      <div class="msg director" aria-label="El Director está escribiendo">
+        <div class="msg-avatar director" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="msg-bubble" style="padding: 14px 18px;">
+            <div class="typing-indicator" aria-label="Escribiendo">
+              <div class="typing-dots" aria-hidden="true">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+              <span style="font-size:12px; color:var(--muted);">El Director está pensando…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+    <!-- /chat-messages -->
+
+    <!-- Chips de sugerencias rápidas -->
+    <div class="suggestions-row" role="group" aria-label="Acciones rápidas">
+      <button class="suggestion-chip" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Propuestas de la semana
+      </button>
+      <button class="suggestion-chip" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Analiza este post
+      </button>
+      <button class="suggestion-chip" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        Afinar mi perfil
+      </button>
+      <button class="suggestion-chip" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        ¿Cuándo publico?
+      </button>
+    </div>
+
+    <!-- Compositor de mensaje -->
+    <div class="composer-wrap">
+      <div class="drop-zone" id="drop-zone" role="region" aria-label="Zona de escritura y archivos">
+        <div class="composer-inner">
+          <textarea
+            class="composer-textarea"
+            id="composer-input"
+            placeholder="Escríbele algo al Director… o arrastra aquí un post, un artículo, una captura."
+            rows="1"
+            aria-label="Mensaje al Director"
+            aria-multiline="true"
+          ></textarea>
+          <div class="composer-actions">
+            <!-- Botón adjuntar -->
+            <button class="composer-btn-attach" type="button" aria-label="Adjuntar archivo" title="Adjuntar archivo">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <!-- Botón enviar -->
+            <button class="composer-btn-send" type="button" aria-label="Enviar mensaje">
+              Enviar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2 11 13M22 2 15 22 11 13 2 9l20-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- Hint de arrastrar archivos -->
+        <div class="drop-hint" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Arrastra artículos, imágenes o notas de voz aquí
+        </div>
+      </div>
+    </div>
+    <!-- /compositor -->
+
+  </main>
+  <!-- /VISTA CHAT -->
+
+
+  <!-- ╔══════════════════════╗
+       ║  VISTA: BIBLIOTECA   ║
+       ╚══════════════════════╝ -->
+  <section class="view library-view" id="view-library" aria-label="Biblioteca de contenido">
+
+    <!-- Cabecera biblioteca -->
+    <header class="library-header">
+      <h2>Biblioteca</h2>
+
+      <!-- Buscador -->
+      <div class="search-box" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input class="search-input" type="search" placeholder="Buscar en tu biblioteca…" aria-label="Buscar contenido">
+      </div>
+
+      <!-- Filtros -->
+      <div class="filter-tabs" role="group" aria-label="Filtrar por tipo">
+        <button class="filter-tab active" type="button">Todo</button>
+        <button class="filter-tab" type="button">Imágenes</button>
+        <button class="filter-tab" type="button">Documentos</button>
+        <button class="filter-tab" type="button">Ideas</button>
+      </div>
+    </header>
+
+    <!-- Zona de subida -->
+    <div class="drop-upload-zone" role="button" tabindex="0" aria-label="Subir archivos: haz clic o arrastra aquí">
+      <div class="drop-upload-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+      </div>
+      <p class="drop-upload-title">Arrastra archivos aquí</p>
+      <p class="drop-upload-sub">Posts, PDFs, capturas, transcripciones, notas… lo que inspira</p>
+    </div>
+
+    <!-- Rejilla de contenido -->
+    <div class="library-content">
+      <div class="library-grid" role="list" aria-label="Contenido en la biblioteca">
+
+        <!-- ── Tarjeta 1: Captura de post ── -->
+        <article class="card" role="listitem" aria-label="Captura: Post viral de Erik Qualman">
+          <div class="card-thumb purple">
+            <span aria-hidden="true">🖼️</span>
+            <span class="card-type-badge image">Imagen</span>
+          </div>
+          <div class="card-body">
+            <p class="card-title">Post viral Erik Qualman — "Founders don't explain, they show"</p>
+            <time class="card-date" datetime="2026-06-19">19 jun. 2026</time>
+            <div class="card-tags">
+              <span class="card-tag">referente</span>
+              <span class="card-tag">LinkedIn</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="card-action" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Enviar al chat
+            </button>
+          </div>
+        </article>
+
+        <!-- ── Tarjeta 2: PDF marca ── -->
+        <article class="card" role="listitem" aria-label="PDF: Guía de tono de voz">
+          <div class="card-thumb amber">
+            <span aria-hidden="true">📄</span>
+            <span class="card-type-badge pdf">PDF</span>
+          </div>
+          <div class="card-body">
+            <p class="card-title">Guía de tono de voz y mensajes clave — v2.1</p>
+            <time class="card-date" datetime="2026-06-10">10 jun. 2026</time>
+            <div class="card-tags">
+              <span class="card-tag">marca</span>
+              <span class="card-tag">voz</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="card-action" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Enviar al chat
+            </button>
+          </div>
+        </article>
+
+        <!-- ── Tarjeta 3: Transcripción ── -->
+        <article class="card" role="listitem" aria-label="Transcripción: Podcast Indiemakers 82">
+          <div class="card-thumb green">
+            <span aria-hidden="true">🎙️</span>
+            <span class="card-type-badge text">Texto</span>
+          </div>
+          <div class="card-body">
+            <p class="card-title">Transcripción — Podcast Indiemakers ep. 82</p>
+            <time class="card-date" datetime="2026-06-17">17 jun. 2026</time>
+            <div class="card-tags">
+              <span class="card-tag">audio</span>
+              <span class="card-tag">ideas</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="card-action" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Enviar al chat
+            </button>
+          </div>
+        </article>
+
+        <!-- ── Tarjeta 4: Idea suelta ── -->
+        <article class="card" role="listitem" aria-label="Idea: La diferencia entre productividad táctica y estratégica">
+          <div class="card-thumb purple">
+            <span aria-hidden="true">💡</span>
+            <span class="card-type-badge idea">Idea</span>
+          </div>
+          <div class="card-body">
+            <p class="card-title">La diferencia entre productividad táctica y estratégica — nadie lo explica bien</p>
+            <time class="card-date" datetime="2026-06-21">21 jun. 2026</time>
+            <div class="card-tags">
+              <span class="card-tag">pilar fundador</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="card-action" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Enviar al chat
+            </button>
+          </div>
+        </article>
+
+        <!-- ── Tarjeta 5: Captura de post Instagram referencia ── -->
+        <article class="card" role="listitem" aria-label="Captura: Formato de post testimonial">
+          <div class="card-thumb purple">
+            <span aria-hidden="true">📸</span>
+            <span class="card-type-badge image">Imagen</span>
+          </div>
+          <div class="card-body">
+            <p class="card-title">Formato testimonial estilo minimalista — referencia visual</p>
+            <time class="card-date" datetime="2026-06-20">20 jun. 2026</time>
+            <div class="card-tags">
+              <span class="card-tag">diseño</span>
+              <span class="card-tag">Instagram</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="card-action" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Enviar al chat
+            </button>
+          </div>
+        </article>
+
+        <!-- ── Tarjeta 6: Carpeta ── -->
+        <article class="card folder-card" role="listitem" aria-label="Carpeta: Referencias">
+          <div class="card-thumb neutral">
+            <span aria-hidden="true">📁</span>
+            <span class="card-type-badge folder">Carpeta</span>
+          </div>
+          <div class="card-body">
+            <p class="card-title">Referencias — Posts que me gustaron</p>
+            <time class="card-date" datetime="2026-06-01">desde jun. 2026</time>
+            <div class="card-tags">
+              <span class="card-tag">12 items</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="card-action" type="button" style="color: var(--ink-soft);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+              Abrir carpeta
+            </button>
+          </div>
+        </article>
+
+      </div><!-- /library-grid -->
+    </div><!-- /library-content -->
+
+  </section>
+  <!-- /VISTA BIBLIOTECA -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       RIEL DERECHO — panel Contexto del Director
+       ───────────────────────────────────────────────── -->
+  <aside class="rail-right" aria-label="Contexto del Director">
+
+    <!-- ── Sección: Perfil activo ── -->
+    <div class="context-section">
+      <p class="context-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        Perfil activo
+      </p>
+      <div class="profile-card">
+        <div class="profile-avatar" aria-hidden="true">CD</div>
+        <div class="profile-info">
+          <p class="profile-name">Carlos Delgado</p>
+          <p class="profile-tagline">Emprendedor en el ecosistema tech español. Comparte criterio, no recetas.</p>
+          <div class="pillar-chips" role="list" aria-label="Pilares temáticos">
+            <span class="pillar-chip" role="listitem">Criterio del ecosistema</span>
+            <span class="pillar-chip" role="listitem">Lecciones de fundador</span>
+            <span class="pillar-chip" role="listitem">IA aplicada</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección: Plataformas activas ── -->
+    <div class="context-section">
+      <p class="context-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Plataformas activas
+      </p>
+      <div class="platform-chips" role="list" aria-label="Plataformas">
+        <span class="platform-chip" role="listitem">
+          <span class="platform-dot linkedin" aria-hidden="true"></span>
+          LinkedIn
+        </span>
+        <span class="platform-chip" role="listitem">
+          <span class="platform-dot youtube" aria-hidden="true"></span>
+          YouTube
+        </span>
+        <span class="platform-chip" role="listitem">
+          <span class="platform-dot substack" aria-hidden="true"></span>
+          Substack
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Sección: Señales recientes ── -->
+    <div class="context-section">
+      <p class="context-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Señales recientes
+      </p>
+      <div class="signal-list" role="list" aria-label="Señales inyectadas al Director">
+
+        <!-- Señal 1: artículo -->
+        <div class="signal-item" role="listitem">
+          <div class="signal-icon article" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h12"/></svg>
+          </div>
+          <div class="signal-meta">
+            <p class="signal-title">Artículo: "El error de los fundadores en LinkedIn"</p>
+            <p class="signal-detail">hace 1 hora · <span class="signal-source-chip">chat</span></p>
+          </div>
+        </div>
+
+        <!-- Señal 2: idea suelta -->
+        <div class="signal-item" role="listitem">
+          <div class="signal-icon idea" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M10 21h4"/></svg>
+          </div>
+          <div class="signal-meta">
+            <p class="signal-title">Idea: productividad táctica vs estratégica</p>
+            <p class="signal-detail">hace 3 horas · <span class="signal-source-chip">chat</span></p>
+          </div>
+        </div>
+
+        <!-- Señal 3: upload -->
+        <div class="signal-item" role="listitem">
+          <div class="signal-icon upload" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          </div>
+          <div class="signal-meta">
+            <p class="signal-title">PDF: Guía de tono de voz v2.1</p>
+            <p class="signal-detail">ayer · <span class="signal-source-chip">subida</span></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Acciones rápidas ── -->
+    <div class="quick-actions">
+      <button class="quick-btn primary-action" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+        </svg>
+        Generar propuestas
+      </button>
+      <button class="quick-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+        Subir contenido
+      </button>
+    </div>
+
+  </aside>
+  <!-- /RIEL DERECHO -->
+
+</div>
+<!-- /APP SHELL -->
+
+
+<!-- ════════════════════════════════════════════════════
+     JS MÍNIMO — toggle de tema + navegación entre vistas
+     ════════════════════════════════════════════════════ -->
+<script>
+// ── Toggle tema light / dark ──────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  if (html.classList.contains('dark')) {
+    html.classList.replace('dark', 'light');
+    localStorage.setItem('demiurgos-theme', 'light');
+  } else {
+    html.classList.replace('light', 'dark');
+    localStorage.setItem('demiurgos-theme', 'dark');
+  }
+}
+
+// Recuperar preferencia guardada (o del SO)
+(function initTheme() {
+  const saved = localStorage.getItem('demiurgos-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  document.documentElement.className = theme;
+})();
+
+// ── Navegación entre vistas ──────────────────────────
+function activateView(name) {
+  // Ocultar todas las vistas
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  // Quitar estado activo de todos los nav items
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.remove('active');
+    n.setAttribute('aria-selected', 'false');
+  });
+
+  // Mostrar la vista seleccionada
+  const view = document.getElementById('view-' + name);
+  if (view) view.classList.add('active');
+
+  // Marcar el nav item correspondiente
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) {
+    navEl.classList.add('active');
+    navEl.setAttribute('aria-selected', 'true');
+  }
+}
+
+// ── Auto-resize del textarea ─────────────────────────
+const textarea = document.getElementById('composer-input');
+if (textarea) {
+  textarea.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+}
+
+// ── Drag-and-drop visual en el compositor ────────────
+const dropZone = document.getElementById('drop-zone');
+if (dropZone) {
+  ['dragenter', 'dragover'].forEach(ev => {
+    dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach(ev => {
+    dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+    });
+  });
+}
+
+// ── Filtros de biblioteca (visual) ───────────────────
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', function () {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
