@@ -96,3 +96,238 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   Landing (marketing) — paleta editorial "papel + tinta" aislada en
+   .dmg-landing para no afectar a /chat ni /login. Tokens del BRIEF.
+   ─────────────────────────────────────────────────────────────────── */
+.dmg-landing {
+  --paper: #faf9f7;
+  --paper-2: #f5f4f1;
+  --surface: #ffffff;
+  --ink: #1c1917;
+  --ink-soft: #44403c;
+  --muted: #78716c;
+  --faint: #a8a29e;
+  --line: #e7e5e4;
+  --line-strong: #d6d3d1;
+  --green: #0f9d6b;
+  --green-strong: #0b7d55;
+  --green-soft: #e6f5ee;
+  --violet: #6d5ef0;
+  --violet-soft: #eceaff;
+  --amber: #d9930b;
+
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.011em;
+}
+
+.dark .dmg-landing {
+  --paper: #0f0e0d;
+  --paper-2: #171513;
+  --surface: #1a1917;
+  --ink: #f5f4f1;
+  --ink-soft: #d6d3d1;
+  --muted: #a8a29e;
+  --faint: #78716c;
+  --line: #2c2a28;
+  --line-strong: #3a3735;
+  --green: #16b87f;
+  --green-strong: #0f9d6b;
+  --green-soft: #10241c;
+  --violet: #8b7dff;
+  --violet-soft: #1b1830;
+  --amber: #e0a83b;
+}
+
+.dmg-landing ::selection {
+  background: var(--green);
+  color: #fff;
+}
+
+.dmg-serif {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* CTA principal verde */
+.dmg-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: linear-gradient(180deg, var(--green) 0%, var(--green-strong) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 10px 30px -10px color-mix(in oklab, var(--green) 70%, transparent);
+  transition:
+    transform 0.18s cubic-bezier(0.21, 0.5, 0.25, 1),
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+.dmg-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 18px 40px -12px color-mix(in oklab, var(--green) 75%, transparent);
+}
+.dmg-cta:active {
+  transform: translateY(0);
+}
+
+/* Botón secundario */
+.dmg-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.3rem;
+  font-weight: 550;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+.dmg-ghost:hover {
+  transform: translateY(-2px);
+  border-color: var(--green);
+  background: var(--paper-2);
+}
+
+/* Píldoras / etiquetas */
+.dmg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+/* Tarjetas */
+.dmg-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  transition:
+    transform 0.25s cubic-bezier(0.21, 0.5, 0.25, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.dmg-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: var(--line-strong);
+  box-shadow: 0 24px 50px -28px rgba(28, 25, 23, 0.35);
+}
+
+/* Retícula de fondo sutil con desvanecido radial */
+.dmg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+}
+
+/* Resplandor "aurora" del hero */
+.dmg-aurora::before,
+.dmg-aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+.dmg-aurora::before {
+  width: 38rem;
+  height: 38rem;
+  top: -16rem;
+  left: 50%;
+  transform: translateX(-55%);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--green) 60%, transparent), transparent);
+  animation: dmg-drift 16s ease-in-out infinite;
+}
+.dmg-aurora::after {
+  width: 30rem;
+  height: 30rem;
+  top: -10rem;
+  left: 50%;
+  transform: translateX(10%);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--violet) 55%, transparent), transparent);
+  animation: dmg-drift 20s ease-in-out infinite reverse;
+}
+
+/* Línea de gradiente de marca */
+.dmg-hr {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+/* Texto con acento verde→violeta */
+.dmg-gradient-text {
+  background: linear-gradient(100deg, var(--green) 0%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Marquesina de plataformas */
+.dmg-marquee {
+  display: flex;
+  width: max-content;
+  animation: dmg-marquee 28s linear infinite;
+}
+.dmg-marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+@keyframes dmg-drift {
+  0%, 100% { transform: translateX(-55%) translateY(0) scale(1); }
+  50% { transform: translateX(-45%) translateY(2rem) scale(1.08); }
+}
+@keyframes dmg-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes dmg-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes dmg-pulse-dot {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.dmg-float { animation: dmg-float 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dmg-landing *,
+  .dmg-landing *::before,
+  .dmg-landing *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
