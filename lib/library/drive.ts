@@ -1,5 +1,12 @@
 import { contentHash, convertText } from "./convert";
+import { decryptSecret, tokenCryptoConfigured } from "./crypto";
 import { extensionOf } from "./types";
+
+// Scope mínimo: solo lectura de Drive + email de la cuenta (para mostrarlo).
+export const DRIVE_SCOPES = [
+  "https://www.googleapis.com/auth/drive.readonly",
+  "https://www.googleapis.com/auth/userinfo.email",
+];
 
 // ─────────────────────────────────────────────────────────────
 // Google Drive — sincronización de una carpeta a la biblioteca.
@@ -39,23 +46,123 @@ export function driveOAuthConfigured(): boolean {
   );
 }
 
-// PUNTO DE INTEGRACIÓN OAuth.
-// Debe devolver un access token válido para el usuario/origen dados. La pieza
-// que falta es persistir de forma segura (cifrada / Supabase Vault) el refresh
-// token tras el consent, y canjearlo aquí. Mientras no exista, lanzamos un error
-// explícito para que la UI lo comunique con claridad.
-export async function getDriveAccessToken(_sourceId: string): Promise<string> {
-  void _sourceId;
-  if (!driveOAuthConfigured()) {
-    throw new DriveNotConfiguredError(
-      "Google Drive aún no está configurado. Añade GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET y GOOGLE_REDIRECT_URI, y completa el flujo OAuth (ver docs/CONTENT_LIBRARY.md)."
+// URL de consentimiento de Google (cada usuario autoriza su propia cuenta).
+// access_type=offline + prompt=consent → garantiza refresh token.
+export function buildConsentUrl(state: string): string {
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID!,
+    redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+    response_type: "code",
+    scope: DRIVE_SCOPES.join(" "),
+    access_type: "offline",
+    prompt: "consent",
+    include_granted_scopes: "true",
+    state,
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+type TokenResponse = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+};
+
+// Canjea el authorization code por tokens (incluye refresh token la 1ª vez).
+export async function exchangeCodeForTokens(code: string): Promise<TokenResponse> {
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+      grant_type: "authorization_code",
+    }),
+  });
+  const json = (await res.json()) as TokenResponse;
+  if (!res.ok || json.error) {
+    throw new Error(
+      `OAuth token exchange falló: ${json.error_description ?? json.error ?? res.status}`
     );
   }
-  // Con OAuth configurado, aquí se canjearía el refresh token cifrado del origen
-  // por un access token. Punto de integración pendiente de credenciales reales.
-  throw new DriveNotConfiguredError(
-    "Falta el intercambio de refresh token de Google Drive (consent flow). Ver docs/CONTENT_LIBRARY.md."
+  return json;
+}
+
+// Email de la cuenta conectada (para mostrarlo; no se guarda nada sensible).
+export async function fetchAccountEmail(accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { email?: string };
+    return json.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Canjea el refresh token cifrado del origen por un access token fresco.
+export async function getDriveAccessToken(
+  tokenRef: string | null | undefined
+): Promise<string> {
+  if (!driveOAuthConfigured()) {
+    throw new DriveNotConfiguredError(
+      "Google Drive aún no está configurado. Añade GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI y LIBRARY_TOKEN_SECRET, y reconecta tu cuenta (ver docs/CONTENT_LIBRARY.md)."
+    );
+  }
+  if (!tokenCryptoConfigured()) {
+    throw new DriveNotConfiguredError(
+      "Falta LIBRARY_TOKEN_SECRET para descifrar la credencial de Drive."
+    );
+  }
+  if (!tokenRef) {
+    throw new DriveNotConfiguredError(
+      "Esta cuenta de Drive no está conectada. Pulsa «Conectar Google Drive» para autorizar el acceso."
+    );
+  }
+
+  const refreshToken = decryptSecret(tokenRef);
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  const json = (await res.json()) as TokenResponse;
+  if (!res.ok || !json.access_token) {
+    throw new Error(
+      `No se pudo refrescar el acceso a Drive: ${json.error_description ?? json.error ?? res.status}. Vuelve a conectar la cuenta.`
+    );
+  }
+  return json.access_token;
+}
+
+// Lista las carpetas del usuario (para elegir cuál sincronizar).
+export async function listUserFolders(
+  accessToken: string
+): Promise<{ id: string; name: string }[]> {
+  const params = new URLSearchParams({
+    q: "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+    fields: "files(id, name)",
+    pageSize: "100",
+    orderBy: "name",
+  });
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
+  if (!res.ok) throw new Error(`Drive API ${res.status}: ${await res.text()}`);
+  const json = (await res.json()) as { files?: { id: string; name: string }[] };
+  return json.files ?? [];
 }
 
 // Lista los archivos de una carpeta de Drive (no recursivo, sin papelera).

@@ -88,34 +88,52 @@ Punto de integración: para cambiar a un OCR clásico (Google Vision, Tesseract,
 Textract) basta sustituir el cuerpo de `ocrImageToMarkdown`; el contrato de
 salida (`ConversionOutcome`) no cambia.
 
-## 5. Google Drive (`lib/library/drive.ts`)
+## 5. Google Drive — OAuth por usuario (`lib/library/drive.ts`)
 
-La **lógica** de sincronización está completa: listar carpeta, detectar
-nuevos/modificados (`provider_file_id` + `modifiedTime`), descargar, convertir,
-upsert con dedupe, y registrar en `content_sync_logs`. Los Google Docs se
-exportan a texto; el resto se descarga tal cual y pasa por el conversor.
+**Cada usuario conecta su propia cuenta de Drive** y elige una carpeta; la
+conexión vive en su fila de `content_sources` (con `user_id` y RLS). El flujo
+está **implementado de extremo a extremo**; solo faltan las credenciales de
+Google para activarlo en producción.
 
-El **único** punto pendiente de credenciales es la obtención del access token
-OAuth (`getDriveAccessToken`), porque requiere registrar una app en Google Cloud
-y completar el consent flow. Sin configurar, lanza `DriveNotConfiguredError` y la
-UI lo comunica con claridad (HTTP 501 + log de sync `failed`). La app **no** se
-rompe.
+Flujo completo:
+1. **Conectar** → `GET /api/library/oauth/start`: genera un `state` (CSRF en
+   cookie httpOnly) y redirige al consent de Google
+   (`access_type=offline` + `prompt=consent` → garantiza refresh token; scope
+   mínimo `drive.readonly` + `userinfo.email`).
+2. **Callback** → `GET /api/library/oauth/callback`: valida el `state`, canjea el
+   código por tokens, obtiene el email de la cuenta, **cifra el refresh token**
+   (AES-256-GCM, `lib/library/crypto.ts`, clave de `LIBRARY_TOKEN_SECRET`) y crea
+   la fila de `content_sources` (`sync_status=connected`, carpeta pendiente).
+   Nunca se guarda el token en claro.
+3. **Elegir carpeta** → `GET /api/library/sources/[id]/folders` lista las carpetas
+   de Drive del usuario; `PATCH /api/library/sources/[id]` fija la elegida.
+4. **Sincronizar** → `POST /api/library/sync`: `getDriveAccessToken` descifra el
+   refresh token y lo canjea por un access token fresco; luego lista, detecta
+   nuevos/modificados (`provider_file_id` + `modifiedTime`), descarga, convierte,
+   hace upsert con dedupe y registra en `content_sync_logs`. Los Google Docs se
+   exportan a texto; el resto se descarga tal cual.
+5. **Desconectar** → `DELETE /api/library/sources?id=`: borra la conexión (y su
+   token cifrado); el contenido ya importado se conserva.
 
-### Cómo activarlo (cuando haya credenciales)
+Sin credenciales, `getDriveAccessToken` lanza `DriveNotConfiguredError` y la UI
+lo comunica con claridad; la app **no** se rompe.
 
-1. En **Google Cloud Console**: crea un proyecto, habilita **Google Drive API**,
-   crea credenciales **OAuth 2.0** (tipo Web). Scope mínimo:
-   `https://www.googleapis.com/auth/drive.readonly`.
+### Cómo activarlo (solo añadir credenciales)
+
+1. En **Google Cloud Console**: proyecto → habilita **Google Drive API** →
+   credenciales **OAuth 2.0** (tipo *Web application*). Scopes:
+   `drive.readonly` y `userinfo.email`. En *Authorized redirect URIs* añade
+   `https://demiurgos.vercel.app/api/library/oauth/callback`.
 2. Variables de entorno en Vercel:
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
-   - `GOOGLE_REDIRECT_URI` (p. ej. `https://demiurgos.vercel.app/api/library/oauth/callback`)
-3. Implementar el consent flow (rutas `…/oauth/start` y `…/oauth/callback`) que
-   guarde el **refresh token cifrado** (Supabase Vault) y rellene
-   `getDriveAccessToken` para canjearlo por un access token. El selector de
-   carpeta puede usar el Google Picker o pedir el ID de carpeta (ya soportado).
-4. El usuario puede **desconectar** en cualquier momento (borra el origen; el
-   contenido importado se conserva).
+   - `GOOGLE_REDIRECT_URI` = `https://demiurgos.vercel.app/api/library/oauth/callback`
+   - `LIBRARY_TOKEN_SECRET` = cadena aleatoria ≥16 chars (cifra los refresh tokens)
+   - `NEXT_PUBLIC_SITE_URL` = `https://demiurgos.vercel.app` (para los redirects)
+3. (Si la app está en modo *Testing* en Google) añade los emails de prueba en la
+   pantalla de consentimiento, o publícala.
+4. Listo: cada usuario verá «Conectar Google Drive», autorizará su cuenta y
+   elegirá su carpeta. No hace falta tocar código.
 
 ## 6. Rutas y UI
 
@@ -151,9 +169,11 @@ UI (`app/library/page.tsx` + `components/library/`):
 |---|---|---|
 | `AI_GATEWAY_API_KEY` | OCR de imágenes | ya existe en el proyecto |
 | `LIBRARY_OCR_MODEL` | OCR (opcional) | default `anthropic/claude-sonnet-4.6` |
-| `GOOGLE_CLIENT_ID` | Google Drive | pendiente de configurar |
+| `GOOGLE_CLIENT_ID` | Google Drive (OAuth por usuario) | pendiente de configurar |
 | `GOOGLE_CLIENT_SECRET` | Google Drive | pendiente |
-| `GOOGLE_REDIRECT_URI` | Google Drive | pendiente |
+| `GOOGLE_REDIRECT_URI` | Google Drive | `…/api/library/oauth/callback` |
+| `LIBRARY_TOKEN_SECRET` | Cifrado del refresh token de Drive | ≥16 chars aleatorios |
+| `NEXT_PUBLIC_SITE_URL` | Redirects del OAuth | ya existe en el proyecto |
 
 ## 9. Configuración de Supabase
 

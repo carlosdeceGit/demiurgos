@@ -33,11 +33,17 @@ export async function POST(request: Request) {
 
   const { data: source, error: srcErr } = await supabase
     .from("content_sources")
-    .select("id, provider_folder_id")
+    .select("id, provider_folder_id, token_ref")
     .eq("id", sourceId)
     .maybeSingle();
   if (srcErr) return new NextResponse(srcErr.message, { status: 500 });
   if (!source) return new NextResponse("Origen no encontrado", { status: 404 });
+  if (!source.provider_folder_id) {
+    return NextResponse.json(
+      { ok: false, error: "Elige una carpeta de Drive antes de sincronizar." },
+      { status: 400 }
+    );
+  }
 
   // Abre traza de sincronización.
   const { data: log } = await supabase
@@ -61,7 +67,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    const token = await getDriveAccessToken(sourceId);
+    const token = await getDriveAccessToken(source.token_ref as string | null);
     const files = await listFolderFiles(token, source.provider_folder_id as string);
     counters.filesFound = files.length;
 

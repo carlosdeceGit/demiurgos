@@ -525,10 +525,13 @@ ya apunta a `/library` (antes "pronto"); el middleware protege la ruta.
   normaliza, `.html` → MD (conversor propio ligero), imágenes → **OCR vía modelo de
   visión** del AI Gateway existente (`lib/library/ocr.ts`, `LIBRARY_OCR_MODEL`).
   `.pdf/.docx/.rtf/.odt` quedan `needs_review` con punto de integración claro.
-- **Google Drive** (`lib/library/drive.ts`): lógica de sync completa (listar carpeta,
-  dedupe por id+modifiedTime, convertir, upsert, log). Único pendiente = OAuth
-  (`getDriveAccessToken` lanza error claro hasta poner `GOOGLE_CLIENT_ID/SECRET/
-  REDIRECT_URI` + consent flow; pasos en el doc). La UI no se rompe sin ello.
+- **Google Drive — OAuth POR USUARIO** (`lib/library/drive.ts` + `crypto.ts`):
+  flujo completo implementado. Cada usuario conecta su cuenta (`/api/library/oauth/
+  start`→`callback`, refresh token **cifrado AES-256-GCM** con `LIBRARY_TOKEN_SECRET`,
+  CSRF por state-cookie), elige su carpeta (`sources/[id]/folders` + PATCH) y
+  sincroniza (dedupe id+modifiedTime, logs). Solo faltan credenciales:
+  `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI` + `LIBRARY_TOKEN_SECRET`. Sin ellas la UI
+  avisa con claridad y no rompe nada. Pasos exactos en el doc §5.
 - **Rutas** `app/api/library/`: `upload`, `[id]` (GET/PATCH/DELETE), `[id]/reprocess`,
   `sources` (POST/DELETE), `sync` (POST). **UI** `components/library/`: `library-view`
   (drag&drop, buscador, filtros, estados vacíos), `content-detail` (drawer + edición),
