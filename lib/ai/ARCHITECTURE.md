@@ -50,15 +50,25 @@ el razonamiento construirse, no espera 40s a ciegas. Al terminar persiste, best-
 Consumir desde el cliente: leer el stream y reaccionar a `data: {…}` por línea
 (eventos `phase`, `trends`, `ideas`, `selection`, `post`, `warning`, `done`, `error`).
 
-## Modelos (configurables en `/admin`, tabla `settings`, sin redeploy)
+## Modelos por GRUPO DE TAREA, elegibles por cada usuario
 
-| Rol | Default | Por qué |
-|-----|---------|---------|
-| Orquestador | `anthropic/claude-opus-4.8` | Top de la familia Opus al mismo precio que 4.6/4.7 ($5/$25). El doc pedía 4.6 por un ranking de Arena; 4.8 es el sucesor directo. |
-| Trend Analyst | `google/gemini-3.1-pro` | Barato y bueno para contexto. Puedes bajarlo a `gemini-2.5-flash` en /admin. |
-| Idea Generator | `anthropic/claude-haiku-4.5` | Volumen rápido de ideas. |
-| Script Writer | `anthropic/claude-sonnet-4.6` | Guiones y copy. |
-| Image Director | `anthropic/claude-sonnet-4.6` | Mismo modelo, system prompt y esquema distintos (no se fusionan: importa la separación). |
+Decisión de producto: Opus 4.8 es el **orquestador** (analiza, trocea y reparte);
+los subagentes no tienen que ser top. Cada usuario elige su IA por grupo de tarea
+en **`/settings`** (calidad vs precio). Catálogo en `lib/ai/model-catalog.ts`;
+resolución en `lib/ai/resolve-models.ts`; preferencia por usuario en
+`profiles.model_preferences` (jsonb). Resolución = elección del usuario → default
+del catálogo (degradación graceful si un modelo no enruta).
+
+| Grupo de tarea | Rol(es) del pipeline | Default | Alternativas |
+|---|---|---|---|
+| Orquestador (razonamiento) | coordinación/filtrado/síntesis | `anthropic/claude-opus-4.8` | sonnet 4.6 · gemini 3.1 pro · deepseek r1 |
+| Texto (ideas y guiones) | Idea Generator + Script Writer | `anthropic/claude-haiku-4.5` | gemini 2.5 flash · deepseek v3 · sonnet 4.6 |
+| Web / búsqueda | Trend Analyst | `google/gemini-3.1-pro` | gemini 2.5 flash · gpt-4.1 · sonnet 4.6 |
+| Imágenes (dirección) | Image Director | `google/gemini-3.1-pro` | sonnet 4.6 · gemini 2.5 flash |
+| Código (reservado) | — (futuro) | `anthropic/claude-sonnet-4.6` | deepseek v3 · gpt-4.1 |
+
+> Los modelos del **chat/demo** siguen siendo globales en `/admin` (tabla
+> `settings`). Los del **orquestador** los manda cada usuario desde `/settings`.
 
 > **Generación de imagen real**: el doc añade un Image Generator (gpt-image-2). Aquí
 > el pipeline produce el **brief visual** (prompt de imagen/vídeo, ratio, estilo),

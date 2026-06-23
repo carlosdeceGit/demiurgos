@@ -4,7 +4,9 @@ import {
   gatherContext,
 } from "@/lib/ai/compose-context";
 import { activePlatformKeys } from "@/lib/ai/platforms";
-import { getModelSettings, getTrendSettings } from "@/lib/db/settings";
+import { getTrendSettings } from "@/lib/db/settings";
+import { getUserModelPreferences } from "@/lib/db/user-settings";
+import { resolvePipelineModels } from "@/lib/ai/resolve-models";
 import { resolveTrendConfig } from "@/lib/ai/trends";
 import {
   runCalendarPipeline,
@@ -51,10 +53,12 @@ export async function POST() {
   }
   const systemContext = composeSystemPrompt(context);
   const platforms = activePlatformKeys(context.profile.platforms ?? null);
-  const [settings, trendSettings] = await Promise.all([
-    getModelSettings(),
+  const [prefs, trendSettings] = await Promise.all([
+    getUserModelPreferences(supabase, user.id),
     getTrendSettings(),
   ]);
+  // Modelos resueltos por usuario (su elección → default del catálogo).
+  const models = resolvePipelineModels(prefs);
   const trendSources = resolveTrendConfig({
     enabled: trendSettings.enabled,
     provider: trendSettings.provider,
@@ -76,18 +80,12 @@ export async function POST() {
         for await (const ev of runCalendarPipeline({
           systemContext,
           platforms,
-          models: {
-            orchestrator: settings.orchestratorModel,
-            trend: settings.trendModel,
-            idea: settings.ideaModel,
-            script: settings.scriptModel,
-            imageDirector: settings.imageDirectorModel,
-          },
+          models,
           trendSources,
         })) {
           send(ev);
           if (ev.type === "done") {
-            await persist(supabase, user.id, ev.calendar, ev.runs, settings.orchestratorModel);
+            await persist(supabase, user.id, ev.calendar, ev.runs, models.orchestrator);
           }
         }
       } catch (err) {
