@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Plus,
   Shield,
+  SlidersHorizontal,
   User,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ export type RailSection =
   | "ideas"
   | "propuestas"
   | "perfil"
+  | "ajustes"
   | "admin";
 
 type NavItem = {
@@ -41,6 +43,7 @@ const NAV: NavItem[] = [
   { id: "ideas", label: "Banco de ideas", icon: Lightbulb },
   { id: "propuestas", label: "Propuestas", icon: LayoutGrid },
   { id: "perfil", label: "Perfil", icon: User },
+  { id: "ajustes", label: "Ajustes de IA", icon: SlidersHorizontal, href: "/settings" },
 ];
 
 export function AppRail({

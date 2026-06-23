@@ -48,6 +48,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/calendar") ||
     path.startsWith("/library") ||
     path.startsWith("/dashboard") ||
+    path.startsWith("/settings") ||
     path.startsWith("/admin");
 
   // Rutas privadas: sin sesión, a /login.

@@ -21,7 +21,7 @@ El usuario puede:
 Todo respeta la identidad "dark esmeralda" (tokens semánticos, serif para
 titulares, acento verde) y RLS por usuario.
 
-## 2. Modelo de datos (migración `0006_content_library.sql`)
+## 2. Modelo de datos (migración `0007_content_library.sql`)
 
 Tres tablas nuevas, todas con RLS `auth.uid() = user_id` (mismo patrón que el
 resto del esquema). No se toca ni elimina ninguna tabla existente; `uploads`
@@ -177,7 +177,7 @@ UI (`app/library/page.tsx` + `components/library/`):
 
 ## 9. Configuración de Supabase
 
-1. Aplicar la migración `supabase/migrations/0006_content_library.sql` (vía MCP
+1. Aplicar la migración `supabase/migrations/0007_content_library.sql` (vía MCP
    `apply_migration` o `supabase db push`).
 2. (Opcional, solo si se activa la conservación de originales) crear un bucket
    **privado** `library-originals` con políticas RLS por usuario

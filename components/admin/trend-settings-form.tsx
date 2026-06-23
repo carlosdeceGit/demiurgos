@@ -6,15 +6,16 @@ import { saveTrendSettings } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import type { TrendSettings } from "@/lib/db/settings";
 
+// `type` exactos de trendsmcp (sensibles a mayúsculas).
 const SOURCE_SUGGESTIONS = [
-  "tiktok",
-  "youtube",
-  "google search",
-  "reddit",
-  "x",
-  "instagram",
-  "linkedin",
-  "news",
+  "TikTok Trending Hashtags",
+  "YouTube Trending",
+  "Google Trends",
+  "Reddit Hot Posts",
+  "X (Twitter) Trending",
+  "Google News Top News",
+  "Spotify Top Podcasts",
+  "GitHub Trending Repos",
 ];
 
 export function TrendSettingsForm({
@@ -76,7 +77,8 @@ export function TrendSettingsForm({
             ))}
           </datalist>
           <span className="text-muted-foreground text-xs">
-            Separadas por comas. P. ej.: tiktok, youtube, google search.
+            Separadas por comas, texto exacto (sensible a mayúsculas). P. ej.:
+            TikTok Trending Hashtags, YouTube Trending.
           </span>
         </label>
       </div>
