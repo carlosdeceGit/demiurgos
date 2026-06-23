@@ -505,3 +505,46 @@ Claude Code):
 **Cómo trabajar a partir de ahora con UI:** invoca el skill `demiurgos-design-system`
 antes de tocar nada visual, reutiliza tokens/componentes existentes y pasa su checklist
 (incl. `grep` de colores crudos = 0 y build/lint/typecheck en verde) antes de terminar.
+
+---
+
+## 13. Elevación de pantallas al nivel de marca (pasada UI/UX + copy)
+
+> Sesión 23 jun 2026. Tras aplicar la marca a nivel global (§10), pasada de craft y copy
+> por las pantallas, con el skill `demiurgos-design-system`. Todo en producción
+> (`claude/upbeat-knuth-6uil82`), build/lint/typecheck en verde.
+
+### 13.1 Qué se elevó
+- **`/login`** (`app/login/page.tsx`) — rediseño a nivel marca: fondo con resplandor
+  esmeralda (`var(--primary)`), **logo real** `<Logo/>`, titular serif con acento
+  ("Entra a tu *panel*"), input con icono (Mail), estado "enviado" con check, microcopy
+  de reaseguro y a11y (`label` sr-only, `aria-live`). Solo tokens + `Button`.
+- **Riel de app** (`components/app/app-rail.tsx`, compartido en `/chat`, `/dashboard`,
+  `/admin`, `/calendar`) — se sustituyó la "D" placeholder por `<Logo/>` enlazado a
+  `/dashboard`. Identidad consistente en toda la zona logueada.
+- **`/chat`** (`components/chat/chat-client.tsx`) — estado vacío con logo, titular serif
+  con acento ("Soy tu *director creativo*"), copy más afilado y sugerencias orientadas a
+  criterio ("¿Qué publico esta semana, y por qué?").
+- **`/demo`** (`components/demo/demo-experience.tsx`) — logo real en cabecera; el perfil
+  activo del selector usa el acento esmeralda (`bg-primary`) en vez de blanco.
+
+### 13.2 Ya estaban on-brand (revisadas, sin tocar)
+`/dashboard` (`dashboard-view.tsx`), `/calendar` (`calendar-client.tsx`) y `/admin` ya
+usaban tokens semánticos + `font-serif` + acentos de marca correctamente (el trabajo en
+paralelo del orquestador/calendario siguió el lenguaje). Copy honesto y en voz Demiurgos.
+
+### 13.3 Estado de la marca en el producto
+Toda pantalla comparte ahora: misma paleta dark esmeralda, **mismo logo en todas las
+cabeceras (cero placeholders "D")**, tipografía Instrument Serif/Geist/Geist Mono, y copy
+anti-humo orientado a criterio. La gobernanza (§12: skill + hook + CLAUDE.md) mantiene esto
+en cambios futuros.
+
+### 13.4 Pendientes / mejoras propuestas
+- **Canva**: se generaron 4 candidatos de imagen social/OG dark esmeralda pero ninguno
+  convenció; pendiente reintentar con otra dirección visual (el CDN de preview de Canva
+  está bloqueado por el proxy del entorno, así que el usuario los revisa por enlace).
+- **Repaso de copy más profundo** pantalla por pantalla (microcopy de `/dashboard`,
+  `/calendar`, estados de error/vacío, textos de botones).
+- **Elevar el panel `/admin`** y detalles del `/chat` en conversación (burbujas, estados
+  de carga, markdown en respuestas del Director).
+- **Onboarding** real (cuando exista) debe nacer ya con el sistema de diseño.
