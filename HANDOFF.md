@@ -505,3 +505,36 @@ Claude Code):
 **Cómo trabajar a partir de ahora con UI:** invoca el skill `demiurgos-design-system`
 antes de tocar nada visual, reutiliza tokens/componentes existentes y pasa su checklist
 (incl. `grep` de colores crudos = 0 y build/lint/typecheck en verde) antes de terminar.
+
+---
+
+## 13. Biblioteca de contenidos (`/library`)
+
+> Sesión jun 2026. Rama `claude/beautiful-galileo-voqn1l`. Doc completo:
+> **`docs/CONTENT_LIBRARY.md`** (decisiones, flujos, configuración, pruebas).
+
+Nueva sección donde el usuario sube/sincroniza contenido y Demiurgos lo convierte
+a **Markdown limpio** (fuente principal para la IA). El item "Biblioteca" del riel
+ya apunta a `/library` (antes "pronto"); el middleware protege la ruta.
+
+- **BD (migr. `0006_content_library.sql`, YA aplicada vía MCP)**: 3 tablas con RLS
+  por usuario — `content_library` (markdown_content + metadata + estado + dedupe por
+  hash/`provider_file_id`), `content_sources` (carpetas Drive, sin tokens en claro)
+  y `content_sync_logs` (trazas de sync). No se tocó `uploads` (Hito 2) ni nada más.
+- **Conversión** (`lib/library/convert.ts`, pura y testeada): `.md` valida, `.txt`
+  normaliza, `.html` → MD (conversor propio ligero), imágenes → **OCR vía modelo de
+  visión** del AI Gateway existente (`lib/library/ocr.ts`, `LIBRARY_OCR_MODEL`).
+  `.pdf/.docx/.rtf/.odt` quedan `needs_review` con punto de integración claro.
+- **Google Drive** (`lib/library/drive.ts`): lógica de sync completa (listar carpeta,
+  dedupe por id+modifiedTime, convertir, upsert, log). Único pendiente = OAuth
+  (`getDriveAccessToken` lanza error claro hasta poner `GOOGLE_CLIENT_ID/SECRET/
+  REDIRECT_URI` + consent flow; pasos en el doc). La UI no se rompe sin ello.
+- **Rutas** `app/api/library/`: `upload`, `[id]` (GET/PATCH/DELETE), `[id]/reprocess`,
+  `sources` (POST/DELETE), `sync` (POST). **UI** `components/library/`: `library-view`
+  (drag&drop, buscador, filtros, estados vacíos), `content-detail` (drawer + edición),
+  `drive-panel`, `status-badge`. Marca dark esmeralda + tokens semánticos.
+- **Estados**: pending/processing/completed/failed/needs_review/synced. Validación de
+  formato y tamaño (10 MB), errores legibles que no rompen la app.
+- **Verde**: build + lint + typecheck + tests (40, incl. `tests/library-convert.test.ts`).
+- **Pendiente del usuario**: (opcional) bucket privado `library-originals` si se activa
+  conservar originales; credenciales OAuth de Google para activar la sync real.
