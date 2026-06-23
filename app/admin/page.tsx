@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/db/server";
 import { AppRail } from "@/components/app/app-rail";
 import { getAdminOverview } from "@/lib/db/admin-queries";
-import { getModelSettings } from "@/lib/db/settings";
+import { getModelSettings, getTrendSettings } from "@/lib/db/settings";
 import { ModelSettingsForm } from "@/components/admin/model-settings-form";
+import { TrendSettingsForm } from "@/components/admin/trend-settings-form";
 import { isAdminEmail } from "@/lib/auth/admin";
 
 export const metadata = { title: "Demiurgos · Admin" };
@@ -27,10 +28,12 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!isAdminEmail(user.email)) redirect("/chat");
 
-  const [o, settings] = await Promise.all([
+  const [o, settings, trendSettings] = await Promise.all([
     getAdminOverview(),
     getModelSettings(),
+    getTrendSettings(),
   ]);
+  const hasTrendsKey = Boolean(process.env.TRENDS_API_KEY);
   const maxCost = Math.max(...o.costByModel.map((m) => m.cost), 0.0001);
 
   return (
@@ -65,6 +68,19 @@ export default async function AdminPage() {
               de tu AI Gateway.
             </p>
             <ModelSettingsForm current={settings} />
+          </section>
+
+          <section>
+            <h2 className="mb-1 text-sm font-semibold">
+              Tendencias en tiempo real
+            </h2>
+            <p className="text-muted-foreground mb-3 text-xs">
+              Alimenta al Analista de tendencias con datos reales de redes
+              (TikTok, YouTube, Google, Reddit…) vía un proveedor de tendencias.
+              Opcional: si está apagado o sin key, el analista trabaja solo con su
+              conocimiento. La key va en el entorno (TRENDS_API_KEY), no aquí.
+            </p>
+            <TrendSettingsForm current={trendSettings} hasKey={hasTrendsKey} />
           </section>
 
           <section>

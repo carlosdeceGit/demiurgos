@@ -9,18 +9,17 @@ import type { ModelSettings } from "@/lib/db/settings";
 // Sugerencias de modelos del gateway. Es un campo libre con autocompletado:
 // si tu AI Gateway expone otro id, puedes escribirlo directamente.
 const MODEL_SUGGESTIONS = [
+  "anthropic/claude-opus-4.8",
   "anthropic/claude-opus-4.7",
   "anthropic/claude-sonnet-4.6",
-  "anthropic/claude-3.7-sonnet",
-  "anthropic/claude-3.5-sonnet",
+  "anthropic/claude-haiku-4.5",
   "openai/gpt-5.5",
   "openai/gpt-5",
   "openai/gpt-4.1",
-  "openai/gpt-4o",
+  "google/gemini-3.1-pro",
   "google/gemini-2.5-pro",
-  "google/gemini-2.0-flash",
+  "google/gemini-2.5-flash",
   "xai/grok-4",
-  "xai/grok-3",
 ];
 
 const FIELDS: { name: keyof ModelSettings; label: string; hint: string }[] = [
@@ -28,6 +27,11 @@ const FIELDS: { name: keyof ModelSettings; label: string; hint: string }[] = [
   { name: "criticModel", label: "Crítico", hint: "Verifica y filtra (Hito 4)." },
   { name: "analystModel", label: "Analista", hint: "Analiza uploads (Hito 2)." },
   { name: "demoModel", label: "Chat de la demo", hint: "Modelo del /demo público." },
+  { name: "orchestratorModel", label: "Orquestador", hint: "Coordina, filtra y sintetiza el calendario semanal." },
+  { name: "trendModel", label: "Analista de tendencias", hint: "Lee la semana del nicho (fase 1)." },
+  { name: "ideaModel", label: "Generador de ideas", hint: "Volumen de ideas rápidas (fase 2)." },
+  { name: "scriptModel", label: "Redactor", hint: "Guiones y copy por pieza (fase 3)." },
+  { name: "imageDirectorModel", label: "Director visual", hint: "Prompts de imagen/vídeo por pieza (fase 3)." },
 ];
 
 export function ModelSettingsForm({ current }: { current: ModelSettings }) {
