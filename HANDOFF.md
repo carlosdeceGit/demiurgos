@@ -478,3 +478,30 @@ sueltos), botón primario = verde esmeralda, foco con `--ring` verde, superficie
   lo prueba el usuario.
 - Producción despliega desde `claude/upbeat-knuth-6uil82`. La rama de diseño
   `claude/sweet-faraday-uqfo4s` quedó como preview con los bocetos.
+
+---
+
+## 12. Tooling de agentes: Superpowers + skill de diseño (gobernanza UI/UX)
+
+Para mantener **una sola identidad UI/UX en todo el sitio** y un proceso de trabajo
+consistente, el repo está configurado así (no afecta al build de Next; son archivos de
+Claude Code):
+
+- **`.claude/skills/demiurgos-design-system/SKILL.md`**: skill de proyecto que obliga a
+  usar el sistema de diseño (tokens, tipografía, logo, imágenes, componentes, motion,
+  accesibilidad) en cualquier trabajo visual. Es el resumen accionable de §10; ante
+  conflicto gana §10. Se auto-descubre en toda sesión de Claude Code (web incluida).
+- **`CLAUDE.md`** (raíz): memoria de proyecto que apunta al skill, a §10 y a las reglas
+  del repo. Claude Code lo lee automáticamente.
+- **Superpowers** (obra/superpowers) habilitado en **`.claude/settings.json`**
+  (`extraKnownMarketplaces` = `obra/superpowers-marketplace`, `enabledPlugins` =
+  `superpowers@superpowers-marketplace`). Da el método (brainstorming → plan → TDD →
+  verification). Instalación manual si hiciera falta en un Claude Code nuevo:
+  `/plugin marketplace add obra/superpowers-marketplace` + `/plugin install superpowers@superpowers-marketplace`.
+- **Hook `SessionStart`** (`.claude/hooks/session-start.sh`): al abrir cualquier sesión
+  recuerda usar el skill de diseño y Superpowers.
+- `.claude/settings.local.json` (no compartido) guarda permisos locales de la sesión.
+
+**Cómo trabajar a partir de ahora con UI:** invoca el skill `demiurgos-design-system`
+antes de tocar nada visual, reutiliza tokens/componentes existentes y pasa su checklist
+(incl. `grep` de colores crudos = 0 y build/lint/typecheck en verde) antes de terminar.
