@@ -13,6 +13,7 @@ import {
   User,
 } from "lucide-react";
 
+import { Logo } from "@/components/landing/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -58,12 +59,10 @@ export function AppRail({
 }) {
   return (
     <aside className="bg-muted/30 hidden w-60 shrink-0 flex-col border-r md:flex">
-      <div className="flex items-center gap-2 px-5 py-4">
-        <span className="bg-foreground text-background grid size-7 place-items-center rounded-lg font-serif text-lg italic">
-          D
-        </span>
+      <Link href="/dashboard" className="flex items-center gap-2.5 px-5 py-4">
+        <Logo size={28} />
         <span className="font-semibold tracking-tight">Demiurgos</span>
-      </div>
+      </Link>
 
       <div className="px-3">
         <Button asChild className="w-full justify-start gap-2 rounded-full">

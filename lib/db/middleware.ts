@@ -35,6 +35,14 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // Con sesión, la home (landing) lleva directo al panel.
+  if (user && path === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
   const needsAuth =
     path.startsWith("/chat") ||
     path.startsWith("/calendar") ||

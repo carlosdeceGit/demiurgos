@@ -236,3 +236,315 @@ npm run test       # vitest (compose-context y seed)
 npm run seed       # sembrar DB (solo en local; el entorno remoto no llega a Supabase por red)
 grep -rn "Carlos" lib app   # debe dar 0 (regla de separación motor/datos)
 ```
+
+---
+
+## 9. Landing pública en la home + flujo de entrada
+
+> Añadido el 23 jun 2026 (integrado en producción desde la rama de diseño
+> `claude/sweet-faraday-uqfo4s`).
+
+- **La home `/` es ahora la landing de marketing** (antes era un placeholder).
+  Diseño "dark esmeralda" (ver sección 10). Server component en `app/page.tsx`,
+  secciones: hero (con tabs de plataforma que cambian la propuesta en vivo, parallax),
+  problema, solución (3 fuentes), beneficios, cómo funciona, diferenciación, visión, CTA.
+- **Flujo de entrada**: landing → CTA "Empezar gratis" / "Entrar" → `/login` (enlace
+  mágico, sirve para login y registro) → `/auth/callback` → **`/dashboard`** (el panel).
+  El callback redirige por defecto a `/dashboard` (antes `/chat`). El middleware
+  (`lib/db/middleware.ts`) protege `/dashboard`, `/chat` y `/admin`.
+- **Componentes**: `components/landing/` → `hero.tsx`, `landing-header.tsx`, `reveal.tsx`,
+  `logo.tsx`. La landing está aislada en `.dmg-landing` (dark-only) y NO afecta a la
+  paleta de /chat, /dashboard, /admin (siguen con el tema claro/oscuro global).
+- **Marca/SEO añadidos**: `app/icon.svg` (favicon, se quitó `favicon.ico`),
+  `app/opengraph-image.tsx` (OG dark), `app/sitemap.ts`, `app/robots.ts`, metadata
+  ampliada en `app/layout.tsx`. Dependencia nueva: `motion` (Framer Motion).
+- **Bocetos de referencia** en `/design`: `landing-v2.html` (editorial claro, conversión
+  SaaS 4C) y `landing-v3.html` (dark esmeralda, base del diseño actual).
+
+## 10. Sistema de diseño / Identidad de marca Demiurgos (CANÓNICO — todas las webs)
+
+> ⚠️ **OBLIGATORIO. Este es EL diseño con el que se construye TODO en Demiurgos** (landing,
+> app, /chat, /dashboard, /admin, /demo, /login y cualquier pantalla futura). No se crean
+> pantallas con otra paleta ni otro estilo; si haces algo nuevo, sale de aquí.
+> Versión: **"dark esmeralda"**, jun 2026.
+>
+> **Está implementado de forma global:** los tokens semánticos (shadcn) viven en
+> `:root, .dark` de `app/globals.css` con la paleta esmeralda, así que TODA la app es
+> **dark-only** y hereda la marca automáticamente (`bg-background`, `text-foreground`,
+> `bg-primary`, `border`, `text-muted-foreground`, `bg-brand-accent`, etc.). La landing
+> añade además utilidades en `.dmg-landing` (CTA con glow, tarjetas, aurora…). Marca/logo:
+> `components/landing/logo.tsx` y `app/icon.svg`. El toggle claro/oscuro quedó **cosmético**
+> (ambos temas son la misma paleta dark); se puede retirar.
+
+### 10.1 Esencia de marca
+- **Qué es**: director creativo personal para marca personal en redes.
+- **Personalidad**: culto, con criterio, anti-humo, directo. Elegante y tecnológico, sin
+  postureo.
+- **Tagline**: "el artesano que da forma al mundo a partir del caos" (del griego
+  *dēmiourgós*).
+- **Metáfora visual rectora**: **caos → forma**. Señales sueltas que se ordenan en una
+  decisión. Negro (el caos/el lienzo) + una chispa verde (el criterio que da forma).
+
+### 10.2 Logo
+- **Concepto**: la **"D"** de Demiurgos formada por **columna + arco**, con una **chispa
+  esmeralda** (✦ de 4 puntas) en la boca y un **resplandor interior** que la hace "emitir
+  luz". El toque especial = esa chispa luminosa (acto de creación).
+- **Implementación**: `components/landing/logo.tsx` → `<Logo size={n} />`. SVG `viewBox
+  0 0 40 40`: tile redondeado `rx 12` fondo `#0A0D0E` con borde esmeralda al 35%; glow
+  radial interior; D en degradado `#7CF3C6 → #3FE0A2 → #0FA56F` (stroke 3, linecap round);
+  chispa `#C9FCE8`.
+- **Favicon**: `app/icon.svg` (mismo dibujo, stroke 3.4 para legibilidad pequeña). Next lo
+  sirve como icono. NO usar el `favicon.ico` por defecto (se eliminó).
+- **Lockups**: marca sola (header/footer), marca + wordmark "Demiurgos" (Geist 600). En el
+  boceto `design/landing-v3.html` hay 3 fondos de prueba (tinta / verde / blanco).
+- **Uso**: espacio libre mínimo = altura de la chispa alrededor; tamaño mínimo cómodo
+  ~24 px; sobre fondos oscuros preferente. No deformar, no recolorear fuera de la paleta,
+  no quitar la chispa (es la firma).
+
+### 10.3 Color — "dark esmeralda" (verde como ÚNICO acento)
+Tokens (hex) — definidos en `.dmg-landing`:
+```
+--paper:        #070809   /* fondo base, casi negro */
+--paper-2:      #0A0C0D   /* secciones alternas */
+--surface:      #101315   /* tarjetas/paneles */
+--surface-2:    #161A1D   /* hover de tarjeta */
+--ink:          #F3F6F4   /* texto principal (hueso) */
+--ink-soft:     #B6BCB9   /* texto secundario */
+--muted:        #838A87   /* texto terciario */
+--faint:        #525956   /* sutil / metadatos */
+--line:         #1C2123   /* bordes */
+--line-strong:  #2A2F31   /* bordes destacados */
+--green:        #3FE0A2   /* ACENTO único: CTA, énfasis, glow, foco */
+--green-strong: #16C988   /* gradiente del CTA */
+--green-deep:   #0B7F58   /* gradiente / sombras verdes */
+--green-ink:    #04130D   /* texto sobre verde */
+--green-soft:   rgba(63,224,162,.10)  /* fondos de icon/badge */
+--green-glow:   rgba(63,224,162,.45)  /* resplandor del CTA */
+--violet:       #5BE0C2   /* "toque" frío verde-azulado (NO púrpura) */
+--violet-soft:  rgba(91,224,194,.10)
+--amber:        #E6B45A   /* oro suave, solo para "por qué/avisos" */
+--amber-soft:   rgba(230,180,90,.12)
+```
+**Reglas de color (importantes):**
+- Verde **con disciplina**: acento, CTA, foco, palabra-clave y glows. Nunca como fondo de
+  bloques grandes ni a puñados.
+- Identidad **monocroma negra + verde**. El teal y el oro son apoyos mínimos (diferenciar
+  "guion" vs "por qué"), no protagonistas. Prohibido el púrpura/violeta de versiones viejas.
+- Contraste AA siempre. Texto principal `--ink` sobre `--paper`.
+- **La marca es dark-first.** Si en algún producto hace falta modo claro, créalo como
+  variante equivalente, pero la identidad pública (landing) es oscura.
+
+### 10.4 Tipografía
+- **Display / titulares**: *Instrument Serif* (Google Fonts), incluida **itálica** para la
+  palabra-acento (ej. "Publica con *criterio*"). Tracking ligeramente negativo.
+- **UI / cuerpo**: *Geist* (400/500/600/700). Body 15–16 px, line-height ~1.55.
+- **Datos / chips técnicos**: *Geist Mono*.
+- **Patrón de titular**: sans bold + 1 palabra clave en serif itálica verde. No mezclar más
+  de una serif por titular.
+- Variables ya cargadas en `app/layout.tsx`: `--font-instrument-serif`, `--font-geist-sans`,
+  `--font-geist-mono`. Clase helper `.dmg-serif`.
+
+### 10.5 Forma, sombra y luz
+- **Radios**: tarjetas 18 px, inputs/botones pequeños ~12 px, píldoras 999 px.
+- **Bordes**: 1 px en `--line`; hover sube a `--line-strong` + halo verde al 10%.
+- **Sombras**: oscuras y suaves (`0 28px 60px -32px rgba(0,0,0,.8)`), nunca grises lechosas.
+- **Glow**: el verde "ilumina" CTAs, logo y aciertos. Es la fuente de luz de la marca.
+- **Texturas de fondo**: retícula sutil con desvanecido radial (`.dmg-grid`), "aurora"
+  verde difusa (`.dmg-aurora`), ruido fino opcional (en el boceto).
+
+### 10.6 Componentes base (referencia en `globals.css`)
+- **CTA primario (`.dmg-cta`)**: pastilla verde con gradiente `#67F0BB → --green-strong`,
+  texto `--green-ink`, **glow** + **barrido de brillo (shine)** al hover, lift -2 px.
+  Grande (Ley de Fitts), 1 CTA principal por sección, persistente en header y barra fija
+  en móvil.
+- **Botón secundario (`.dmg-ghost`)**: vidrio (`rgba(255,255,255,.035)` + blur), borde
+  `--line-strong`, hover a borde verde.
+- **Tarjeta (`.dmg-card` + `.dmg-card-hover`)**: superficie `--surface`, hover lift + halo
+  verde.
+- **Píldora/badge (`.dmg-pill`)**: glass con borde `--line`, LED verde con "ping" para
+  estados vivos.
+- **Icon badge**: cuadro `--green-soft` con icono verde (line, stroke 1.7).
+- **Tabs interactivas**: activa = fondo verde + texto `--green-ink`; inactiva = glass.
+
+### 10.7 Iconografía
+- Estilo **línea** (tipo Lucide), stroke 1.5–2, `currentColor`. En React: `lucide-react`;
+  en HTML autónomo: SVG inline. Nada de iconos 3D ni de relleno recargado.
+
+### 10.8 Motion / microinteracciones
+- **Principios**: sutil, rápido, con propósito. Fluidez > espectáculo. Easing
+  `cubic-bezier(.2,.6,.3,1)` / `[0.21,0.5,0.25,1]`.
+- **Repertorio**: reveals al scroll (una vez), parallax/tilt 3D de la tarjeta de producto,
+  spotlight verde que sigue el cursor (hero), CTAs magnéticos + shine, aurora animada,
+  marquee de redes, LED "ping".
+- **Obligatorio**: respetar `prefers-reduced-motion` (desactivar animaciones).
+- Stack: **Framer Motion** (`motion`) en Next; JS mínimo vanilla en bocetos.
+
+### 10.9 Accesibilidad (no negociable)
+- Foco visible (anillo verde), navegación por teclado, contraste AA.
+- Semántica HTML: un `h1` por página, jerarquía `h2/h3` coherente, `header/main/section/
+  footer`, `aria-label` en navegación e iconos decorativos `aria-hidden`.
+- Objetivos táctiles grandes; CTA alcanzable con el pulgar en móvil.
+
+### 10.10 Voz y copy
+- Español de España. Claro, directo, **anti-humo**. Titulares memorables orientados a
+  resultado (ej. "Publica con criterio. No por inercia.").
+- Prohibido: relleno tipo "revolucionamos el futuro", tecnicismos vacíos, entusiasmo
+  publirreportaje. Negritas con intención.
+- **Honestidad**: nada de métricas, clientes ni funciones inventadas. Lo que no existe se
+  deja como bloque **reservado** o se omite. Producto "en construcción" se dice sin maquillar.
+- Eje de diferenciación: la **regla de oro** ("si lo podría haber escrito ChatGPT sin
+  conocerte, ha fallado").
+
+### 10.11 Conversión (heredado del documento SaaS del usuario)
+- Marco **4C**: Claridad (hero que se entiende en 3 s) · Credibilidad (prueba social real,
+  reservada hasta tenerla) · Conversión (CTA prominente + microcopy de reaseguro) ·
+  Conveniencia (nav mínima, rápido, móvil).
+- Leyes aplicadas: **Hick** (nav y opciones mínimas), **Fitts** (CTA grande/persistente),
+  **Zeigarnik/Progreso dotado** (perfil "en marcha"), **Pico-Fin** (cierre positivo).
+- Microcopy estándar de reaseguro: "Gratis para empezar · No necesitas tarjeta".
+
+### 10.12 Regla motor/datos (recordatorio que también aplica al diseño)
+- En código (`/lib`, `/app`) **0 referencias a "Carlos"**. Los ejemplos de propuestas de la
+  landing son **genéricos**. El contenido ilustrativo con datos reales solo vive en
+  `/design` (mockups) o como seed de DB.
+
+### 10.13 Mapa de tokens globales (shadcn → esmeralda) — fuente: `app/globals.css`
+Aplicados en `:root, .dark` (mismos valores = dark-only). Cualquier pantalla los hereda vía
+Tailwind (`bg-background`, `text-foreground`, `bg-primary`, `border`, `bg-card`, etc.):
+```
+--background #070809   --foreground #F3F6F4   --card/#101315  --popover #101315
+--primary #3FE0A2 (texto --primary-foreground #04130D)
+--secondary #161A1D    --muted #161A1D  --muted-foreground #98A09C
+--accent #1B2024       --destructive #F0616B
+--border #1C2123       --input #2A2F31  --ring #3FE0A2
+--brand-accent #3FE0A2 --brand-violet #5BE0C2 --brand-amber #E6B45A
+```
+Reglas al construir pantallas nuevas: usa SIEMPRE estas clases semánticas (no colores
+sueltos), botón primario = verde esmeralda, foco con `--ring` verde, superficies en `--card`.
+
+---
+
+## 11. Trabajo de esta sesión (landing + rebranding "dark esmeralda")
+
+> Sesión 23 jun 2026. Punto de partida: la sesión de diseño en la rama
+> `claude/sweet-faraday-uqfo4s`; resultado final integrado en producción
+> (`claude/upbeat-knuth-6uil82`, dominio `demiurgos.vercel.app`).
+
+### 11.1 Qué se hizo (entregado y desplegado)
+1. **Landing de marketing** profesional (Next + Tailwind + Framer Motion), primero en
+   `/landing` y finalmente como **home `/`**. Secciones: hero, plataformas, problema,
+   solución (3 fuentes), beneficios, cómo funciona, diferenciación (regla de oro), visión, CTA.
+2. **Investigación de conversión** (documento SaaS del usuario) aplicada: marco 4C, leyes
+   Hick/Fitts/Zeigarnik/Pico-Fin, microcopy de reaseguro, prueba social reservada (sin
+   inventar), acceso honesto sin tarifas falsas, FAQ.
+3. **Bocetos HTML** en `/design`: `landing-v2.html` (editorial claro) y `landing-v3.html`
+   (**dark esmeralda**, base del diseño final), servido en `public/landing-v3.html`.
+4. **Rebranding "dark esmeralda"** (ver §10): paleta, **logo nuevo** (D + chispa), favicon
+   `app/icon.svg`, OG dark, tipografía, CTAs con glow/shine, tabs interactivas en el hero.
+5. **Aplicado a TODA la app**: tokens globales esmeralda en `:root/.dark` → chat, dashboard,
+   admin, demo y login heredan la marca (dark-only).
+6. **Flujo de entrada**: home (landing) → `/login` (enlace mágico) → `/auth/callback` →
+   **`/dashboard`** (panel). Callback cambiado de `/chat` a `/dashboard`.
+7. **SEO/infra**: `sitemap.ts`, `robots.ts`, metadata + OG/Twitter, dep `motion`.
+8. **HANDOFF**: secciones 9 (landing+flujo), 10 (sistema de diseño canónico) y 11 (esto).
+
+### 11.2 Archivos clave tocados/creados
+- `app/page.tsx` (landing), `app/layout.tsx` (metadata), `app/globals.css` (tokens globales
+  esmeralda + utilidades `.dmg-landing`), `app/auth/callback/route.ts` (→ /dashboard),
+  `app/icon.svg`, `app/opengraph-image.tsx`, `app/sitemap.ts`, `app/robots.ts`.
+- `components/landing/`: `logo.tsx`, `hero.tsx`, `landing-header.tsx`, `reveal.tsx`.
+- `design/landing-v2.html`, `design/landing-v3.html`, `public/landing-v3.html`.
+- Eliminado `app/favicon.ico`. Añadida dep `motion`.
+
+### 11.3 Mejoras propuestas / pendientes (priorizadas)
+- **Redirigir a usuarios ya logueados** desde la home (`/`) directamente a `/dashboard`
+  (hoy ven la landing y "Entrar" los manda a `/login`). Fácil: check de sesión en
+  `app/page.tsx` o en el middleware.
+- **Retirar el theme toggle** (ya cosmético, la app es dark-only) de `chat-shell`/`app-rail`
+  y limpiar `theme-toggle.tsx` + el script anti-parpadeo, o reconvertirlo en algo útil.
+- **Portar la riqueza del boceto v3 al resto de la app**: que /dashboard, /chat y /admin
+  usen las tarjetas con glow, CTAs con shine y la tipografía display donde aporte.
+- **Email del enlace mágico**: configurar **SMTP propio (Resend)** en Supabase Auth para
+  fiabilidad (el integrado tiene rate limit) — clave porque ahora el login es la puerta al panel.
+- **Prueba social real**: sustituir los bloques "reservados" por reseñas reales cuando existan.
+- **Generar `apple-icon`** (PNG 180×180) para iOS; hoy solo hay `icon.svg`.
+- **Página de precios** real cuando haya planes (hoy "acceso temprano · gratis", honesto).
+- **A/B testing** de titular/CTA del hero (la doc de conversión lo recomienda).
+- **Consolidar marca**: mover `Logo` y tokens a un módulo compartido si crecen más webs.
+
+### 11.4 Notas de proceso (entorno)
+- La red del entorno bloquea Supabase/Vercel API; deploy = `git push` (auto-deploy). Verificar
+  con MCP de Vercel (`list_deployments`, `web_fetch_vercel_url`). El login real (email) solo
+  lo prueba el usuario.
+- Producción despliega desde `claude/upbeat-knuth-6uil82`. La rama de diseño
+  `claude/sweet-faraday-uqfo4s` quedó como preview con los bocetos.
+
+---
+
+## 12. Tooling de agentes: Superpowers + skill de diseño (gobernanza UI/UX)
+
+Para mantener **una sola identidad UI/UX en todo el sitio** y un proceso de trabajo
+consistente, el repo está configurado así (no afecta al build de Next; son archivos de
+Claude Code):
+
+- **`.claude/skills/demiurgos-design-system/SKILL.md`**: skill de proyecto que obliga a
+  usar el sistema de diseño (tokens, tipografía, logo, imágenes, componentes, motion,
+  accesibilidad) en cualquier trabajo visual. Es el resumen accionable de §10; ante
+  conflicto gana §10. Se auto-descubre en toda sesión de Claude Code (web incluida).
+- **`CLAUDE.md`** (raíz): memoria de proyecto que apunta al skill, a §10 y a las reglas
+  del repo. Claude Code lo lee automáticamente.
+- **Superpowers** (obra/superpowers) habilitado en **`.claude/settings.json`**
+  (`extraKnownMarketplaces` = `obra/superpowers-marketplace`, `enabledPlugins` =
+  `superpowers@superpowers-marketplace`). Da el método (brainstorming → plan → TDD →
+  verification). Instalación manual si hiciera falta en un Claude Code nuevo:
+  `/plugin marketplace add obra/superpowers-marketplace` + `/plugin install superpowers@superpowers-marketplace`.
+- **Hook `SessionStart`** (`.claude/hooks/session-start.sh`): al abrir cualquier sesión
+  recuerda usar el skill de diseño y Superpowers.
+- `.claude/settings.local.json` (no compartido) guarda permisos locales de la sesión.
+
+**Cómo trabajar a partir de ahora con UI:** invoca el skill `demiurgos-design-system`
+antes de tocar nada visual, reutiliza tokens/componentes existentes y pasa su checklist
+(incl. `grep` de colores crudos = 0 y build/lint/typecheck en verde) antes de terminar.
+
+---
+
+## 13. Elevación de pantallas al nivel de marca (pasada UI/UX + copy)
+
+> Sesión 23 jun 2026. Tras aplicar la marca a nivel global (§10), pasada de craft y copy
+> por las pantallas, con el skill `demiurgos-design-system`. Todo en producción
+> (`claude/upbeat-knuth-6uil82`), build/lint/typecheck en verde.
+
+### 13.1 Qué se elevó
+- **`/login`** (`app/login/page.tsx`) — rediseño a nivel marca: fondo con resplandor
+  esmeralda (`var(--primary)`), **logo real** `<Logo/>`, titular serif con acento
+  ("Entra a tu *panel*"), input con icono (Mail), estado "enviado" con check, microcopy
+  de reaseguro y a11y (`label` sr-only, `aria-live`). Solo tokens + `Button`.
+- **Riel de app** (`components/app/app-rail.tsx`, compartido en `/chat`, `/dashboard`,
+  `/admin`, `/calendar`) — se sustituyó la "D" placeholder por `<Logo/>` enlazado a
+  `/dashboard`. Identidad consistente en toda la zona logueada.
+- **`/chat`** (`components/chat/chat-client.tsx`) — estado vacío con logo, titular serif
+  con acento ("Soy tu *director creativo*"), copy más afilado y sugerencias orientadas a
+  criterio ("¿Qué publico esta semana, y por qué?").
+- **`/demo`** (`components/demo/demo-experience.tsx`) — logo real en cabecera; el perfil
+  activo del selector usa el acento esmeralda (`bg-primary`) en vez de blanco.
+
+### 13.2 Ya estaban on-brand (revisadas, sin tocar)
+`/dashboard` (`dashboard-view.tsx`), `/calendar` (`calendar-client.tsx`) y `/admin` ya
+usaban tokens semánticos + `font-serif` + acentos de marca correctamente (el trabajo en
+paralelo del orquestador/calendario siguió el lenguaje). Copy honesto y en voz Demiurgos.
+
+### 13.3 Estado de la marca en el producto
+Toda pantalla comparte ahora: misma paleta dark esmeralda, **mismo logo en todas las
+cabeceras (cero placeholders "D")**, tipografía Instrument Serif/Geist/Geist Mono, y copy
+anti-humo orientado a criterio. La gobernanza (§12: skill + hook + CLAUDE.md) mantiene esto
+en cambios futuros.
+
+### 13.4 Pendientes / mejoras propuestas
+- **Canva**: se generaron 4 candidatos de imagen social/OG dark esmeralda pero ninguno
+  convenció; pendiente reintentar con otra dirección visual (el CDN de preview de Canva
+  está bloqueado por el proxy del entorno, así que el usuario los revisa por enlace).
+- **Repaso de copy más profundo** pantalla por pantalla (microcopy de `/dashboard`,
+  `/calendar`, estados de error/vacío, textos de botones).
+- **Elevar el panel `/admin`** y detalles del `/chat` en conversación (burbujas, estados
+  de carga, markdown en respuestas del Director).
+- **Onboarding** real (cuando exista) debe nacer ya con el sistema de diseño.
