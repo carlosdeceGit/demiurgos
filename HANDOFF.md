@@ -263,10 +263,18 @@ grep -rn "Carlos" lib app   # debe dar 0 (regla de separación motor/datos)
 
 ## 10. Sistema de diseño / Identidad de marca Demiurgos (CANÓNICO — todas las webs)
 
-> Fuente de verdad de marca para **cualquier web de Demiurgos** (landing, app, dashboards,
-> futuros sitios). Si haces una pantalla nueva, sale de aquí. Versión: **"dark esmeralda"**,
-> jun 2026. Implementación de referencia: `app/globals.css` (`.dmg-landing`),
-> `components/landing/logo.tsx`.
+> ⚠️ **OBLIGATORIO. Este es EL diseño con el que se construye TODO en Demiurgos** (landing,
+> app, /chat, /dashboard, /admin, /demo, /login y cualquier pantalla futura). No se crean
+> pantallas con otra paleta ni otro estilo; si haces algo nuevo, sale de aquí.
+> Versión: **"dark esmeralda"**, jun 2026.
+>
+> **Está implementado de forma global:** los tokens semánticos (shadcn) viven en
+> `:root, .dark` de `app/globals.css` con la paleta esmeralda, así que TODA la app es
+> **dark-only** y hereda la marca automáticamente (`bg-background`, `text-foreground`,
+> `bg-primary`, `border`, `text-muted-foreground`, `bg-brand-accent`, etc.). La landing
+> añade además utilidades en `.dmg-landing` (CTA con glow, tarjetas, aurora…). Marca/logo:
+> `components/landing/logo.tsx` y `app/icon.svg`. El toggle claro/oscuro quedó **cosmético**
+> (ambos temas son la misma paleta dark); se puede retirar.
 
 ### 10.1 Esencia de marca
 - **Qué es**: director creativo personal para marca personal en redes.
@@ -399,3 +407,74 @@ Tokens (hex) — definidos en `.dmg-landing`:
 - En código (`/lib`, `/app`) **0 referencias a "Carlos"**. Los ejemplos de propuestas de la
   landing son **genéricos**. El contenido ilustrativo con datos reales solo vive en
   `/design` (mockups) o como seed de DB.
+
+### 10.13 Mapa de tokens globales (shadcn → esmeralda) — fuente: `app/globals.css`
+Aplicados en `:root, .dark` (mismos valores = dark-only). Cualquier pantalla los hereda vía
+Tailwind (`bg-background`, `text-foreground`, `bg-primary`, `border`, `bg-card`, etc.):
+```
+--background #070809   --foreground #F3F6F4   --card/#101315  --popover #101315
+--primary #3FE0A2 (texto --primary-foreground #04130D)
+--secondary #161A1D    --muted #161A1D  --muted-foreground #98A09C
+--accent #1B2024       --destructive #F0616B
+--border #1C2123       --input #2A2F31  --ring #3FE0A2
+--brand-accent #3FE0A2 --brand-violet #5BE0C2 --brand-amber #E6B45A
+```
+Reglas al construir pantallas nuevas: usa SIEMPRE estas clases semánticas (no colores
+sueltos), botón primario = verde esmeralda, foco con `--ring` verde, superficies en `--card`.
+
+---
+
+## 11. Trabajo de esta sesión (landing + rebranding "dark esmeralda")
+
+> Sesión 23 jun 2026. Punto de partida: la sesión de diseño en la rama
+> `claude/sweet-faraday-uqfo4s`; resultado final integrado en producción
+> (`claude/upbeat-knuth-6uil82`, dominio `demiurgos.vercel.app`).
+
+### 11.1 Qué se hizo (entregado y desplegado)
+1. **Landing de marketing** profesional (Next + Tailwind + Framer Motion), primero en
+   `/landing` y finalmente como **home `/`**. Secciones: hero, plataformas, problema,
+   solución (3 fuentes), beneficios, cómo funciona, diferenciación (regla de oro), visión, CTA.
+2. **Investigación de conversión** (documento SaaS del usuario) aplicada: marco 4C, leyes
+   Hick/Fitts/Zeigarnik/Pico-Fin, microcopy de reaseguro, prueba social reservada (sin
+   inventar), acceso honesto sin tarifas falsas, FAQ.
+3. **Bocetos HTML** en `/design`: `landing-v2.html` (editorial claro) y `landing-v3.html`
+   (**dark esmeralda**, base del diseño final), servido en `public/landing-v3.html`.
+4. **Rebranding "dark esmeralda"** (ver §10): paleta, **logo nuevo** (D + chispa), favicon
+   `app/icon.svg`, OG dark, tipografía, CTAs con glow/shine, tabs interactivas en el hero.
+5. **Aplicado a TODA la app**: tokens globales esmeralda en `:root/.dark` → chat, dashboard,
+   admin, demo y login heredan la marca (dark-only).
+6. **Flujo de entrada**: home (landing) → `/login` (enlace mágico) → `/auth/callback` →
+   **`/dashboard`** (panel). Callback cambiado de `/chat` a `/dashboard`.
+7. **SEO/infra**: `sitemap.ts`, `robots.ts`, metadata + OG/Twitter, dep `motion`.
+8. **HANDOFF**: secciones 9 (landing+flujo), 10 (sistema de diseño canónico) y 11 (esto).
+
+### 11.2 Archivos clave tocados/creados
+- `app/page.tsx` (landing), `app/layout.tsx` (metadata), `app/globals.css` (tokens globales
+  esmeralda + utilidades `.dmg-landing`), `app/auth/callback/route.ts` (→ /dashboard),
+  `app/icon.svg`, `app/opengraph-image.tsx`, `app/sitemap.ts`, `app/robots.ts`.
+- `components/landing/`: `logo.tsx`, `hero.tsx`, `landing-header.tsx`, `reveal.tsx`.
+- `design/landing-v2.html`, `design/landing-v3.html`, `public/landing-v3.html`.
+- Eliminado `app/favicon.ico`. Añadida dep `motion`.
+
+### 11.3 Mejoras propuestas / pendientes (priorizadas)
+- **Redirigir a usuarios ya logueados** desde la home (`/`) directamente a `/dashboard`
+  (hoy ven la landing y "Entrar" los manda a `/login`). Fácil: check de sesión en
+  `app/page.tsx` o en el middleware.
+- **Retirar el theme toggle** (ya cosmético, la app es dark-only) de `chat-shell`/`app-rail`
+  y limpiar `theme-toggle.tsx` + el script anti-parpadeo, o reconvertirlo en algo útil.
+- **Portar la riqueza del boceto v3 al resto de la app**: que /dashboard, /chat y /admin
+  usen las tarjetas con glow, CTAs con shine y la tipografía display donde aporte.
+- **Email del enlace mágico**: configurar **SMTP propio (Resend)** en Supabase Auth para
+  fiabilidad (el integrado tiene rate limit) — clave porque ahora el login es la puerta al panel.
+- **Prueba social real**: sustituir los bloques "reservados" por reseñas reales cuando existan.
+- **Generar `apple-icon`** (PNG 180×180) para iOS; hoy solo hay `icon.svg`.
+- **Página de precios** real cuando haya planes (hoy "acceso temprano · gratis", honesto).
+- **A/B testing** de titular/CTA del hero (la doc de conversión lo recomienda).
+- **Consolidar marca**: mover `Logo` y tokens a un módulo compartido si crecen más webs.
+
+### 11.4 Notas de proceso (entorno)
+- La red del entorno bloquea Supabase/Vercel API; deploy = `git push` (auto-deploy). Verificar
+  con MCP de Vercel (`list_deployments`, `web_fetch_vercel_url`). El login real (email) solo
+  lo prueba el usuario.
+- Producción despliega desde `claude/upbeat-knuth-6uil82`. La rama de diseño
+  `claude/sweet-faraday-uqfo4s` quedó como preview con los bocetos.

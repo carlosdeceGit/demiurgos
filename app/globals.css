@@ -3,57 +3,35 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  /* Marca Demiurgos */
-  --brand-accent: oklch(0.62 0.13 162);
-  --brand-accent-foreground: oklch(0.985 0 0);
-  --brand-violet: oklch(0.55 0.2 280);
-  --brand-amber: oklch(0.7 0.13 72);
-}
-
+/* Demiurgos es dark-only "esmeralda": :root y .dark comparten la misma
+   paleta para que toda la app (chat, dashboard, admin, demo, login) use la
+   identidad de marca. Ver HANDOFF §10. */
+:root,
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --radius: 0.625rem;
+  --background: #070809;
+  --foreground: #f3f6f4;
+  --card: #101315;
+  --card-foreground: #f3f6f4;
+  --popover: #101315;
+  --popover-foreground: #f3f6f4;
+  --primary: #3fe0a2;
+  --primary-foreground: #04130d;
+  --secondary: #161a1d;
+  --secondary-foreground: #f3f6f4;
+  --muted: #161a1d;
+  --muted-foreground: #98a09c;
+  --accent: #1b2024;
+  --accent-foreground: #f3f6f4;
+  --destructive: #f0616b;
+  --border: #1c2123;
+  --input: #2a2f31;
+  --ring: #3fe0a2;
   /* Marca Demiurgos */
-  --brand-accent: oklch(0.68 0.14 162);
-  --brand-accent-foreground: oklch(0.145 0 0);
-  --brand-violet: oklch(0.68 0.17 280);
-  --brand-amber: oklch(0.76 0.12 72);
+  --brand-accent: #3fe0a2;
+  --brand-accent-foreground: #04130d;
+  --brand-violet: #5be0c2;
+  --brand-amber: #e6b45a;
 }
 
 @theme inline {
