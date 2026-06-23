@@ -4,12 +4,16 @@ import { parseSources, buildGrounding } from "@/lib/ai/trends/types";
 import { buildTrendPrompt } from "@/lib/ai/agents/trend-analyst";
 
 describe("parseSources", () => {
-  it("normaliza, dedupe y recorta a 4", () => {
-    expect(parseSources("TikTok, youtube , tiktok, reddit, x, news")).toEqual([
-      "tiktok",
-      "youtube",
-      "reddit",
-      "x",
+  it("preserva mayúsculas, dedupe (case-insensitive) y recorta a 4", () => {
+    expect(
+      parseSources(
+        "TikTok Trending Hashtags, YouTube Trending , tiktok trending hashtags, Google Trends, Reddit Hot Posts"
+      )
+    ).toEqual([
+      "TikTok Trending Hashtags",
+      "YouTube Trending",
+      "Google Trends",
+      "Reddit Hot Posts",
     ]);
   });
 

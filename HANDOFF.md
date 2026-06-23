@@ -121,10 +121,17 @@ y `grep "Carlos"` a 0 en `/lib` y `/app`.
   - **Tablas (8)**: `profiles, ecosystem_knowledge, signals, uploads, proposals,
     messages, ai_runs` (migr. 0001/0002) + `settings` (migr. 0003, singleton de modelos,
     RLS sin policies = solo service role). pgvector habilitado (`signals.embedding` nullable).
+  - **Migraciones nuevas (aplicadas vía MCP)**: `0004_orchestrator_models` y
+    `0005_trend_sources` (columnas en `settings`); `0006_user_model_preferences`
+    (`profiles.model_preferences` jsonb — IA por usuario, ver §14).
   - Sembrado: 6 redes (texto íntegro, md5-verificado), perfil de Carlos, usuario semilla
     `delgadocollantes@gmail.com` (id `e0d265c5-e9fb-493e-b5d4-0348e108f2f7`) + identidad email.
-  - `settings`: `director_model` y `demo_model` = `anthropic/claude-opus-4.7`;
+  - `settings` (modelos del CHAT/DEMO, globales): `director_model` y `demo_model` =
+    `anthropic/claude-sonnet-4.6` (cambiado desde opus-4.7 al depurar el chat);
     `critic_model` = `anthropic/claude-opus-4.8`; `analyst_model` = `google/gemini-3.1-pro`.
+    Los modelos del ORQUESTADOR ya NO se leen de `settings`: son por usuario (§14).
+  - `settings` (tendencias): `trends_enabled=true`, `trends_provider='trendsmcp'`,
+    `trends_sources='TikTok Trending Hashtags,YouTube Trending,Google Trends,Reddit Hot Posts'`.
   - Acceso por **MCP de Supabase** (conector apunta a este proyecto): `apply_migration`,
     `execute_sql`, `get_logs`, `get_advisors`. Es la única vía a la BD desde el entorno.
 - **Vercel**: proyecto `prj_jU4eCxCCwbCD1K9kog9kFENhWfkf` ("demiurgos"),
@@ -135,7 +142,9 @@ y `grep "Carlos"` a 0 en `/lib` y `/app`.
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
 `AI_GATEWAY_API_KEY`, `DIRECTOR_MODEL`/`CRITIC_MODEL`/`ANALYST_MODEL`/`DEMO_MODEL`
 (solo fallback; la tabla `settings` manda), `NEXT_PUBLIC_SITE_URL`, `SEED_USER_EMAIL`,
-`ADMIN_EMAILS`.
+`ADMIN_EMAILS`. **Nuevas (tendencias en tiempo real, ver §14)**: `TRENDS_API_KEY`
+(secreto del proveedor de tendencias) y opcional `TRENDS_API_URL`
+(default `https://api.trendsmcp.ai/api`).
 
 ### ⚠️ Acciones pendientes del usuario (en Vercel)
 1. **`ADMIN_EMAILS`**: añadir en Vercel `ADMIN_EMAILS=delgadocollantes@gmail.com` y
@@ -192,17 +201,22 @@ lib/
   auth/admin.ts
 prompts/director.md
 seed/ seed.ts · parse-conocimiento.ts · map-perfil.ts · parse-markdown.ts · motor.md
-supabase/migrations/ 0001_schema.sql · 0002_rls.sql · 0003_settings.sql
+supabase/migrations/ 0001_schema · 0002_rls · 0003_settings · 0004_orchestrator_models
+  · 0005_trend_sources · 0006_user_model_preferences
 demo/fixtures/ types.ts · profiles.ts · content.ts · metrics.ts · index.ts
 design/ index.html · app.html · onboarding.html · BRIEF.md · REPORT.md
 v1-proyecto-claude/ (4 .md fuente)
-tests/ compose-context.test.ts · seed.test.ts
-proxy.ts   # middleware de sesión + gating (/chat,/dashboard,/admin)
-PLAN_ADMIN_DEMO.md · HANDOFF.md · README.md
+tests/ compose-context · seed · orchestrator · trends · resolve-models
+proxy.ts   # middleware de sesión + gating (/chat,/calendar,/dashboard,/settings,/admin)
+PLAN_ADMIN_DEMO.md · HANDOFF.md · README.md · lib/ai/ARCHITECTURE.md
 ```
 
-Rutas en producción: `/`, `/login`, `/auth/*`, `/chat`, `/dashboard`, `/admin`, `/demo`,
-`/api/chat`, `/api/demo-chat`.
+> Nuevo desde §14: `app/calendar/` · `app/settings/` · `app/api/generate-calendar/` ·
+> `lib/ai/{orchestrator.ts,model-catalog.ts,resolve-models.ts}` · `lib/ai/agents/` ·
+> `lib/ai/trends/` · `lib/db/user-settings.ts` · `components/{calendar,settings}/`.
+
+Rutas en producción: `/`, `/login`, `/auth/*`, `/chat`, `/calendar`, `/dashboard`,
+`/settings`, `/admin`, `/demo`, `/api/chat`, `/api/demo-chat`, `/api/generate-calendar`.
 
 ---
 
@@ -548,3 +562,77 @@ en cambios futuros.
 - **Elevar el panel `/admin`** y detalles del `/chat` en conversación (burbujas, estados
   de carga, markdown en respuestas del Director).
 - **Onboarding** real (cuando exista) debe nacer ya con el sistema de diseño.
+
+---
+
+## 14. Orquestador de IA multi-agente + calendario semanal + tendencias + IA por usuario
+
+> Sesión 23 jun 2026 (rama `claude/determined-heisenberg-zelqe3`, fusionada a producción
+> vía PR #1 y PR #2). Mejora completa de la capa de IA. Doc técnico detallado en
+> **`lib/ai/ARCHITECTURE.md`**. Build/lint/typecheck en verde, 31 tests, `grep "Carlos"`=0.
+
+### 14.1 Qué se construyó
+- **Orquestador de verdad** (`lib/ai/orchestrator.ts`): a partir del contexto del usuario
+  (motor + perfil + conocimiento + señales) produce un **calendario semanal** de forma
+  automática. Es un *async generator* que **emite su razonamiento en streaming** por fases:
+  `Fase 0` tendencias reales (opcional) → `1` Trend Analyst → `2` Idea Generator →
+  `2b` filtrado (orquestador) → `3` Script Writer + Image Director **en paralelo por idea** →
+  `4` síntesis/agenda. Ensamblado final determinista en código (no lo reescribe un LLM).
+- **Agentes tipados** (`lib/ai/agents/`): `schemas.ts` (Zod), `prompts.ts`, `run-object.ts`
+  (`generateObject`), `trend-analyst.ts`, `idea-generator.ts`, `script-writer.ts`,
+  `image-director.ts`. Ningún agente devuelve texto libre.
+- **Degradación graceful**: si falla un agente periférico (tendencias, imagen, guión,
+  síntesis) se anota (`degraded[]`/`warning`) y el pipeline sigue. Solo aborta si caen las ideas.
+- **API SSE** `POST /api/generate-calendar`: emite los eventos y persiste `proposals`
+  (una fila por pieza) + `ai_runs` (rol/modelo/tokens), best-effort.
+- **UI** `/calendar` (`components/calendar/calendar-client.tsx`) con link **Calendario**
+  en el rail: botón "Generar calendario", razonamiento en vivo y calendario final.
+
+### 14.2 IA por GRUPO DE TAREA, elegible por cada usuario (decisión de producto)
+- **Opus 4.8 es el orquestador** (analiza, trocea, coordina). Los subagentes son modelos
+  más baratos. Catálogo en `lib/ai/model-catalog.ts` con 5 grupos y 3-4 opciones c/u + precio:
+  - Orquestador → `anthropic/claude-opus-4.8` (def) · sonnet 4.6 · gemini 3.1 pro · deepseek r1
+  - Texto (ideas+guiones) → `anthropic/claude-haiku-4.5` (def) · gemini 2.5 flash · deepseek v3 · sonnet 4.6
+  - Web/búsqueda (tendencias) → `google/gemini-3.1-pro` (def) · gemini flash · gpt-4.1 · sonnet 4.6
+  - Imágenes (dirección) → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash
+  - Código (reservado, sin uso aún) → sonnet 4.6 · deepseek v3 · gpt-4.1
+- **Por usuario**: `profiles.model_preferences` (jsonb). Resolución pura en
+  `lib/ai/resolve-models.ts` = preferencia del usuario → default del catálogo; mapea grupos
+  a roles del pipeline (idea y guión = texto; tendencias = web; etc.).
+- **UI** `/settings` (`components/settings/model-preferences-form.tsx`, acción
+  `app/settings/actions.ts`) con link **"Ajustes de IA"** en el rail. Lectura/escritura con
+  cliente de sesión (`lib/db/user-settings.ts`) → RLS por usuario. Campo libre con sugerencias.
+- **`/admin`** vuelve a gestionar SOLO chat/demo (globales); las columnas de orquestador en
+  `settings` quedan sin uso (legado, inofensivas).
+
+### 14.3 Tendencias en tiempo real (enchufable, opcional)
+- Capa `lib/ai/trends/` que alimenta al Trend Analyst con datos reales por red. Proveedor
+  por defecto **trendsmcp.ai** por su **API REST** (`POST /api`, Bearer): usamos
+  `get_top_trends` con los `type` exactos (sensibles a mayúsculas). Endpoint en
+  `TRENDS_API_URL`, secreto en `TRENDS_API_KEY` (env, no BD).
+- **Activada** en `settings`, pero **requiere que el usuario ponga `TRENDS_API_KEY` en
+  Vercel** para traer datos. Sin key → degrada a análisis solo-LLM (no rompe).
+- OJO: el repo del reel `ryoppippi/trend-finder-mcp` **no existe (404)**; se eligió
+  trendsmcp.ai. Demiurgos es webapp, no cliente MCP: se consulta la API desde el backend.
+
+### 14.4 Correcciones hechas
+- **Modelos al día**: el `AGENTS_ARCHITECTURE.md` adjunto pedía `claude-opus-4-6` por un
+  ranking de Arena; se usa **Opus 4.8** (sucesor directo, mismo precio). Idem ids actuales.
+- **Chat (`GatewayInternalServerError`)**: persistía con dos modelos válidos → es problema
+  de **cuenta del AI Gateway (saldo/clave)**, no de código. Se cambió el modelo del chat a
+  `claude-sonnet-4.6` (en caliente, vía `settings`). **Pendiente del usuario**: revisar
+  saldo del AI Gateway en Vercel y validez de `AI_GATEWAY_API_KEY`.
+- **Etiqueta engañosa "GPT-5.5"** del cabecero del chat → "Demiurgos".
+
+### 14.5 Acciones pendientes del usuario
+1. **AI Gateway**: revisar saldo/crédito y `AI_GATEWAY_API_KEY` (causa del fallo del chat).
+   El Gateway usa una sola key y enruta a todos los proveedores; BYOK opcional en su dashboard.
+2. **Tendencias reales**: añadir `TRENDS_API_KEY` en Vercel (Settings → Env Vars) y Redeploy.
+   (El usuario decidió no rotar la key que compartió en el chat; queda anotado el riesgo.)
+3. Probar el chat y `/calendar` end-to-end (no verificable desde el sandbox: sin red al LLM).
+
+### 14.6 Posible siguiente paso (no hecho)
+- Orquestación **dinámica**: que Opus invente las tareas/subprompts en cada petición en vez
+  del pipeline por fases fijo. Es un cambio mayor; el diseño actual ya coordina subagentes.
+- Generación de **imagen real** (hoy se produce el *brief* visual); enchufar un generador
+  (p. ej. gemini image) detrás del Image Director, con degradación graceful.

@@ -47,6 +47,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/calendar") ||
     path.startsWith("/dashboard") ||
+    path.startsWith("/settings") ||
     path.startsWith("/admin");
 
   // Rutas privadas: sin sesión, a /login.
