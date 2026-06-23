@@ -7,6 +7,8 @@ import { runTrendAnalyst } from "@/lib/ai/agents/trend-analyst";
 import { runIdeaGenerator } from "@/lib/ai/agents/idea-generator";
 import { runScriptWriter } from "@/lib/ai/agents/script-writer";
 import { runImageDirector } from "@/lib/ai/agents/image-director";
+import { getTrendGrounding } from "@/lib/ai/trends";
+import type { TrendSourceConfig } from "@/lib/ai/trends";
 import {
   SelectionSchema,
   SchedulePlanSchema,
@@ -41,6 +43,8 @@ export type PipelineInput = {
   systemContext: string;
   platforms: string[];
   models: OrchestratorModels;
+  // Fuentes de tendencias en tiempo real (opcional, degradable).
+  trendSources?: TrendSourceConfig;
   dateISO?: string;
   maxPosts?: number;
 };
@@ -49,6 +53,7 @@ export type RunRecord = { role: string; model: string; tokens: number | null };
 
 export type OrchestratorEvent =
   | { type: "phase"; phase: string; status: "start" | "done"; detail?: string }
+  | { type: "trend-sources"; sources: string[] }
   | { type: "trends"; report: TrendReport }
   | { type: "ideas"; count: number }
   | { type: "selection"; weekly_theme: string; selected: number }
@@ -169,6 +174,22 @@ export async function* runCalendarPipeline(
   const maxPosts = input.maxPosts ?? DEFAULT_MAX_POSTS;
   const runs: RunRecord[] = [];
 
+  // ── Fase 0 · Datos reales de tendencias (opcional, degradable) ──
+  let grounding: string | null = null;
+  if (input.trendSources?.enabled) {
+    yield { type: "phase", phase: "trend-sources", status: "start" };
+    try {
+      const g = await getTrendGrounding(input.trendSources);
+      if (g) {
+        grounding = g.text;
+        yield { type: "trend-sources", sources: g.sourcesUsed };
+      }
+    } catch (err) {
+      yield { type: "warning", scope: "trend-sources", message: errMessage(err) };
+    }
+    yield { type: "phase", phase: "trend-sources", status: "done" };
+  }
+
   // ── Fase 1 · Tendencias (el perfil ya viene en systemContext) ──
   yield { type: "phase", phase: "trends", status: "start" };
   let trends: TrendReport;
@@ -178,6 +199,7 @@ export async function* runCalendarPipeline(
       systemContext,
       platforms,
       dateISO,
+      grounding,
     });
     trends = r.report;
     runs.push({ role: "trend", model: r.model, tokens: r.tokens });

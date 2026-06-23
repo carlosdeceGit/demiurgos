@@ -63,6 +63,55 @@ export async function getModelSettings(): Promise<ModelSettings> {
   }
 }
 
+// ── Fuentes de tendencias en tiempo real ─────────────────────
+export type TrendSettings = {
+  enabled: boolean;
+  provider: string;
+  sources: string; // CSV: "tiktok,youtube,google search,reddit"
+};
+
+function fallbackTrends(): TrendSettings {
+  return {
+    enabled: false,
+    provider: "trendsmcp",
+    sources: "tiktok,youtube,google search,reddit",
+  };
+}
+
+export async function getTrendSettings(): Promise<TrendSettings> {
+  const fallback = fallbackTrends();
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("settings")
+      .select("trends_enabled, trends_provider, trends_sources")
+      .eq("id", true)
+      .maybeSingle();
+    if (!data) return fallback;
+    return {
+      enabled: data.trends_enabled ?? fallback.enabled,
+      provider: data.trends_provider ?? fallback.provider,
+      sources: data.trends_sources ?? fallback.sources,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+export async function updateTrendSettings(
+  patch: Partial<TrendSettings>
+): Promise<void> {
+  const admin = createAdminClient();
+  const row: Record<string, string | boolean> = {};
+  if (patch.enabled !== undefined) row.trends_enabled = patch.enabled;
+  if (patch.provider) row.trends_provider = patch.provider;
+  if (patch.sources !== undefined) row.trends_sources = patch.sources;
+  if (Object.keys(row).length === 0) return;
+
+  const { error } = await admin.from("settings").update(row).eq("id", true);
+  if (error) throw error;
+}
+
 export async function updateModelSettings(
   patch: Partial<ModelSettings>
 ): Promise<void> {

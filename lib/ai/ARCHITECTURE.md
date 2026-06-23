@@ -65,6 +65,38 @@ Consumir desde el cliente: leer el stream y reaccionar a `data: {…}` por líne
 > que ya es valioso y nunca bloquea. La generación de la imagen en sí es un paso
 > opcional y enchufable a futuro (otro proveedor del gateway), por diseño desacoplado.
 
+## Tendencias en tiempo real (opcional, enchufable)
+
+El Trend Analyst puede trabajar con **datos reales de tendencias** de redes, no
+solo con el conocimiento del modelo. Capa en `lib/ai/trends/`:
+
+- `getTrendGrounding(config)` consulta un proveedor de tendencias y devuelve un
+  bloque de "grounding" (markdown) que se inyecta en el prompt del Trend Analyst.
+- Proveedor por defecto: **trendsmcp.ai** (servidor MCP remoto sobre HTTP, key
+  Bearer, free tier 100 req/mes). Lo hablamos por `fetch` (la versión instalada de
+  `ai` no trae cliente MCP y no añadimos dependencias).
+- **Importante**: Demiurgos es una webapp Next.js, NO un cliente MCP como Claude
+  Code. Por eso no "instalamos un MCP" como en el reel: consultamos un servidor de
+  tendencias remoto desde el backend. (El repo del reel, `ryoppippi/trend-finder-mcp`,
+  da 404 — no existe en esa ruta.)
+- **OFF por defecto** y totalmente degradable: si está apagado, sin key o falla,
+  el analista sigue solo con su conocimiento. No puede tumbar el pipeline.
+- Config en `/admin` (tabla `settings`: `trends_enabled`, `trends_provider`,
+  `trends_sources`). El **secreto va en env**: `TRENDS_API_KEY` (y opcional
+  `TRENDS_MCP_URL`), nunca en BD — igual patrón que `AI_GATEWAY_API_KEY`.
+
+> No probado en vivo desde el sandbox (sin salida de red). Al activarlo: añade
+> `TRENDS_API_KEY` en Vercel, enciéndelo en `/admin` y verifícalo. El adaptador
+> está aislado en `lib/ai/trends/trendsmcp.ts`: si el wire difiere, es un fichero.
+
+## Sobre el AI Gateway y las cuentas de proveedores
+
+No necesitas pasar cuentas de OpenAI/Anthropic/Google. El **Vercel AI Gateway**
+usa **una sola key** (`AI_GATEWAY_API_KEY`) y enruta+factura a todos los
+proveedores por ti (es lo que ya hace el chat). Opcional: en el dashboard del
+Gateway puedes añadir tus propias keys de proveedor (BYOK) para facturar contra
+tus cuentas en vez de la de Vercel; es config del dashboard, no del código.
+
 ## Ajustes que tienes que poner tú
 
 - **Nada obligatorio para que arranque**: hay defaults en BD y en env. Si un slug de

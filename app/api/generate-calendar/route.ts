@@ -4,7 +4,8 @@ import {
   gatherContext,
 } from "@/lib/ai/compose-context";
 import { activePlatformKeys } from "@/lib/ai/platforms";
-import { getModelSettings } from "@/lib/db/settings";
+import { getModelSettings, getTrendSettings } from "@/lib/db/settings";
+import { resolveTrendConfig } from "@/lib/ai/trends";
 import {
   runCalendarPipeline,
   type OrchestratorEvent,
@@ -50,7 +51,15 @@ export async function POST() {
   }
   const systemContext = composeSystemPrompt(context);
   const platforms = activePlatformKeys(context.profile.platforms ?? null);
-  const settings = await getModelSettings();
+  const [settings, trendSettings] = await Promise.all([
+    getModelSettings(),
+    getTrendSettings(),
+  ]);
+  const trendSources = resolveTrendConfig({
+    enabled: trendSettings.enabled,
+    provider: trendSettings.provider,
+    sourcesCsv: trendSettings.sources,
+  });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -74,6 +83,7 @@ export async function POST() {
             script: settings.scriptModel,
             imageDirector: settings.imageDirectorModel,
           },
+          trendSources,
         })) {
           send(ev);
           if (ev.type === "done") {
