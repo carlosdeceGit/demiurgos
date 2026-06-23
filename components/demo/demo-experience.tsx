@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { Logo } from "@/components/landing/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DemoChat } from "@/components/demo/demo-chat";
 import { DemoDashboard } from "@/components/demo/demo-dashboard";
@@ -38,10 +39,8 @@ export function DemoExperience() {
 
       {/* Cabecera: marca + selector de perfil + tema */}
       <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="bg-foreground text-background grid size-7 place-items-center rounded-lg font-serif text-lg italic">
-            D
-          </span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Logo size={28} />
           <span className="font-semibold tracking-tight">Demiurgos</span>
         </Link>
 
@@ -52,7 +51,7 @@ export function DemoExperience() {
               onClick={() => setProfileId(p.id)}
               className={
                 profileId === p.id
-                  ? "bg-foreground text-background rounded-full px-3 py-1 text-xs font-medium"
+                  ? "bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium"
                   : "bg-secondary hover:bg-secondary/70 rounded-full px-3 py-1 text-xs"
               }
               title={p.sector}

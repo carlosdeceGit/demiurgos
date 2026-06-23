@@ -5,12 +5,13 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Paperclip, SendHorizontal } from "lucide-react";
 
+import { Logo } from "@/components/landing/logo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 const SUGGESTIONS = [
-  "¿Qué formato me conviene en LinkedIn esta semana?",
-  "Dame 5 propuestas para esta semana",
+  "¿Qué publico esta semana, y por qué?",
+  "Dame 5 propuestas con criterio",
   "Vamos a afinar mi perfil",
 ];
 
@@ -56,12 +57,13 @@ export function ChatClient() {
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
           {empty && (
             <div className="text-muted-foreground m-auto max-w-md py-16 text-center">
+              <Logo size={44} className="mx-auto mb-5" />
               <h1 className="text-foreground font-serif text-3xl">
-                Hola, soy tu director creativo.
+                Soy tu <span className="text-primary italic">director creativo</span>.
               </h1>
-              <p className="mt-2 text-sm">
-                Dime qué traes entre manos esta semana, o prueba con una de las
-                sugerencias de abajo.
+              <p className="mt-3 text-sm">
+                Cuéntame qué traes entre manos esta semana, o pégame un post que te
+                haya llamado. Empieza por una de estas:
               </p>
             </div>
           )}
