@@ -37,7 +37,7 @@ const NAV: NavItem[] = [
   { id: "chat", label: "Chat", icon: MessageSquare, href: "/chat" },
   { id: "calendario", label: "Calendario", icon: CalendarDays, href: "/calendar" },
   { id: "dashboard", label: "Dashboard", icon: Gauge, href: "/dashboard" },
-  { id: "biblioteca", label: "Biblioteca", icon: FolderOpen },
+  { id: "biblioteca", label: "Biblioteca", icon: FolderOpen, href: "/library" },
   { id: "ideas", label: "Banco de ideas", icon: Lightbulb },
   { id: "propuestas", label: "Propuestas", icon: LayoutGrid },
   { id: "perfil", label: "Perfil", icon: User },
