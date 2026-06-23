@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Demiurgos — Publica con criterio</title>
+<meta name="description" content="Tu director creativo personal. Aprende tu voz, la cruza con cómo funciona cada red y con lo que pasa esta semana, y te dice qué publicar, cuándo y por qué." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#070809; --bg-2:#0A0C0D; --surface:#101315; --surface-2:#161A1D;
+  --glass:rgba(255,255,255,.035);
+  --border:rgba(255,255,255,.08); --border-2:rgba(255,255,255,.15);
+  --ink:#F3F6F4; --ink-2:#B6BCB9; --muted:#838A87; --faint:#525956;
+  --green:#3FE0A2; --green-2:#16C988; --green-deep:#0B7F58;
+  --green-ink:#04130D; --green-glow:rgba(63,224,162,.45); --green-soft:rgba(63,224,162,.10);
+  --radius:18px; --radius-sm:12px; --pill:999px; --maxw:1160px;
+  --shadow:0 30px 80px -34px rgba(0,0,0,.85);
+  --ring:0 0 0 3px rgba(63,224,162,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Geist",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px; line-height:1.55; letter-spacing:-.011em;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; overflow-x:hidden;
+}
+/* textura de ruido sutil */
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+::selection{background:var(--green);color:var(--green-ink)}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{margin:0;letter-spacing:-.03em;line-height:1.04}
+.serif{font-family:"Instrument Serif",Georgia,serif;letter-spacing:-.01em}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;position:relative;z-index:2}
+.muted{color:var(--muted)}
+.eyebrow{font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--green)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:none;box-shadow:var(--ring);border-radius:12px}
+.skip{position:absolute;left:-999px;background:var(--green);color:var(--green-ink);padding:10px 16px;z-index:300}
+.skip:focus{left:0}
+
+/* CTA pro */
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.55rem;font-weight:600;font-size:.97rem;border-radius:var(--pill);padding:.95rem 1.6rem;cursor:pointer;border:1px solid transparent;transition:transform .15s cubic-bezier(.2,.6,.3,1),box-shadow .25s,filter .25s,background .25s,border-color .25s;white-space:nowrap;overflow:hidden;will-change:transform}
+.btn-primary{color:var(--green-ink);background:linear-gradient(180deg,#67F0BB,#16C988);box-shadow:0 0 0 1px rgba(63,224,162,.35),0 14px 36px -12px var(--green-glow),0 0 40px -16px var(--green-glow)}
+.btn-primary:hover{filter:brightness(1.06);box-shadow:0 0 0 1px rgba(63,224,162,.5),0 20px 50px -14px var(--green-glow),0 0 60px -14px var(--green-glow)}
+.btn-primary::after{content:"";position:absolute;top:0;left:-130%;width:60%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);transition:none}
+.btn-primary:hover::after{animation:shine .9s ease}
+@keyframes shine{to{left:160%}}
+.btn-primary .arrow{transition:transform .2s}
+.btn-primary:hover .arrow{transform:translateX(4px)}
+.btn-ghost{color:var(--ink);background:var(--glass);border-color:var(--border-2);backdrop-filter:blur(6px)}
+.btn-ghost:hover{border-color:var(--green);background:rgba(63,224,162,.06)}
+.btn-lg{padding:1.08rem 1.85rem;font-size:1.05rem}
+.btn-sm{padding:.6rem 1.05rem;font-size:.88rem}
+.reassure{font-size:.82rem;color:var(--muted);display:inline-flex;align-items:center;gap:.45rem}
+.tick{width:15px;height:15px;color:var(--green)}
+
+/* chips */
+.pill{display:inline-flex;align-items:center;gap:.5rem;font-size:.77rem;font-weight:500;color:var(--ink-2);background:var(--glass);border:1px solid var(--border);border-radius:var(--pill);padding:.4rem .85rem;backdrop-filter:blur(6px)}
+.led{position:relative;width:7px;height:7px}
+.led i{position:absolute;inset:0;border-radius:50%;background:var(--green)}
+.led i.ping{animation:ping 2.6s ease-in-out infinite}
+@keyframes ping{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(2);opacity:0}}
+
+/* cards */
+.card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);transition:transform .3s cubic-bezier(.2,.6,.3,1),border-color .3s,background .3s}
+.card.lift::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(140deg,rgba(63,224,162,.5),transparent 40%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .3s;pointer-events:none}
+.card.lift:hover{transform:translateY(-6px);border-color:var(--border-2);background:var(--surface-2)}
+.card.lift:hover::before{opacity:1}
+.icon{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--green-soft);color:var(--green);border:1px solid rgba(63,224,162,.2)}
+.icon svg{width:22px;height:22px;stroke-width:1.7}
+
+/* header */
+header{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .3s,border-color .3s,backdrop-filter .3s;border-bottom:1px solid transparent}
+header.scrolled{background:rgba(7,8,9,.72);backdrop-filter:blur(16px) saturate(1.2);border-color:var(--border)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:70px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:600;font-size:1.08rem;letter-spacing:-.02em}
+.nav-links{display:flex;gap:32px}
+.nav-links a{font-size:.92rem;font-weight:500;color:var(--ink-2);position:relative}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-6px;height:1.5px;width:0;background:var(--green);transition:width .25s}
+.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+.nav-right{display:flex;align-items:center;gap:12px}
+@media(max-width:860px){.nav-links{display:none}}
+
+/* logo */
+.logo{width:36px;height:36px;flex:none;filter:drop-shadow(0 4px 12px rgba(63,224,162,.4))}
+
+/* aurora bg */
+.aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.aurora b{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
+.aurora .a1{width:520px;height:520px;top:-220px;left:50%;transform:translateX(-60%);background:radial-gradient(closest-side,rgba(63,224,162,.55),transparent);animation:drift 18s ease-in-out infinite}
+.aurora .a2{width:420px;height:420px;top:-120px;left:50%;transform:translateX(20%);background:radial-gradient(closest-side,rgba(20,90,70,.7),transparent);animation:drift 22s ease-in-out infinite reverse}
+@keyframes drift{0%,100%{transform:translate(-60%,0)}50%{transform:translate(-48%,40px)}}
+.gridlines{position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse 70% 55% at 50% 0%,#000 20%,transparent 72%);mask-image:radial-gradient(ellipse 70% 55% at 50% 0%,#000 20%,transparent 72%)}
+
+/* spotlight que sigue al cursor */
+.spotlight{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(380px circle at var(--mx,50%) var(--my,30%),rgba(63,224,162,.12),transparent 70%)}
+.hero:hover .spotlight{opacity:1}
+
+/* hero */
+.hero{position:relative;padding-top:70px;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center;padding:84px 0 96px}
+@media(max-width:960px){.hero-inner{grid-template-columns:1fr;gap:44px;padding:56px 0 68px}}
+.h1{font-size:clamp(2.7rem,6.6vw,4.9rem);font-weight:600;letter-spacing:-.035em}
+.h1 .em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--green);letter-spacing:-.01em}
+.lead{font-size:clamp(1.06rem,2.2vw,1.24rem);color:var(--ink-2);max-width:34ch;margin-top:24px}
+.cta-col{margin-top:34px;display:flex;flex-direction:column;gap:14px}
+.cta-line{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.stats{display:flex;gap:30px;margin-top:40px;flex-wrap:wrap}
+.stat .n{font-family:"Instrument Serif",serif;font-size:2rem;color:var(--ink)}
+.stat .l{font-size:.8rem;color:var(--muted)}
+
+/* preview interactiva */
+.stage{position:relative;perspective:1400px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tab{font-size:.82rem;font-weight:500;color:var(--ink-2);background:var(--glass);border:1px solid var(--border);border-radius:var(--pill);padding:.4rem .85rem;cursor:pointer;transition:.2s}
+.tab[aria-selected="true"]{color:var(--green-ink);background:var(--green);border-color:var(--green);font-weight:600}
+.tab:hover:not([aria-selected="true"]){border-color:var(--border-2);color:var(--ink)}
+.preview{position:relative;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--border-2);border-radius:20px;box-shadow:var(--shadow),0 0 0 1px rgba(63,224,162,.06),0 0 60px -20px var(--green-glow);overflow:hidden;transform-style:preserve-3d;transition:transform .2s ease-out}
+.pv-top{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.pv-top i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.14)}
+.pv-top .ttl{margin-left:8px;font-size:.76rem;color:var(--muted)}
+.pv-body{padding:20px;transition:opacity .25s}
+.pv-body.swap{opacity:0;transform:translateY(6px)}
+.pv-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pv-tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--ink-2);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--pill);padding:.25rem .65rem}
+.pv-block{border-top:1px solid var(--border);padding-top:13px;margin-top:13px}
+.pv-label{font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+.pv-label.idea{color:var(--ink)}.pv-label.why{color:#E6B45A}.pv-label.script{color:var(--green)}
+.pv-idea{font-size:1rem;font-weight:600;line-height:1.3}
+.pv-why{font-size:.83rem;color:var(--ink-2);line-height:1.55}
+.pv-li{display:flex;gap:8px;font-size:.82rem;color:var(--ink-2);margin-top:7px}
+.pv-li b{width:5px;height:5px;border-radius:50%;background:var(--green);margin-top:8px;flex:none}
+.float{position:absolute;display:inline-flex;align-items:center;gap:.45rem;font-size:.72rem;background:var(--surface);border:1px solid var(--border-2);border-radius:var(--pill);padding:.4rem .75rem;box-shadow:var(--shadow);animation:bob 6s ease-in-out infinite;z-index:3}
+.float b{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.f1{top:-16px;left:-26px}.f2{top:38%;right:-34px;animation-delay:1.5s}.f3{bottom:-14px;left:6%;animation-delay:2.7s}
+@media(max-width:960px){.float{display:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-11px)}}
+
+/* marquee */
+.marquee-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg-2);padding:24px 0;overflow:hidden;position:relative;z-index:2}
+.marquee-wrap .lbl{text-align:center;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.marquee{display:flex;width:max-content;gap:60px;animation:scroll 30s linear infinite;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.marquee span{font-family:"Instrument Serif",serif;font-style:italic;font-size:1.7rem;color:var(--ink-2);white-space:nowrap}
+@keyframes scroll{to{transform:translateX(-50%)}}
+
+/* secciones */
+.sec{padding:104px 0;position:relative}
+.sec.alt{background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.h2{font-size:clamp(2rem,4.6vw,3rem);font-weight:600;max-width:18ch;margin-top:16px;letter-spacing:-.03em}
+.h2 .em{font-family:"Instrument Serif",serif;font-style:italic;color:var(--green)}
+.sub{font-size:1.08rem;color:var(--ink-2);max-width:54ch;margin-top:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
+@media(max-width:860px){.grid3{grid-template-columns:1fr}}
+.feat{padding:28px}.feat h3{font-size:1.14rem;margin-top:22px}.feat p{font-size:.95rem;color:var(--ink-2);margin:.6rem 0 0}
+.feat .kicker{font-size:.7rem;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin-top:14px;display:block}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:minmax(160px,auto);gap:18px;margin-top:52px}
+.bento .b{padding:26px;display:flex;flex-direction:column;justify-content:flex-end}
+.bento .b h3{font-size:1.12rem;margin-top:16px}.bento .b p{font-size:.92rem;color:var(--ink-2);margin:.45rem 0 0}
+.b-feature{grid-column:span 3;grid-row:span 2;justify-content:space-between;background:radial-gradient(120% 120% at 100% 0%,rgba(63,224,162,.16),transparent 55%),var(--surface)}
+.b-1{grid-column:span 3}.b-2{grid-column:span 2}.b-3{grid-column:span 2}.b-4{grid-column:span 2}
+@media(max-width:860px){.bento{grid-template-columns:1fr}.bento .b,.b-feature,.b-1,.b-2,.b-3,.b-4{grid-column:span 1;grid-row:auto}}
+
+/* split */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center;margin-top:52px}
+@media(max-width:860px){.split{grid-template-columns:1fr;gap:36px}}
+.annot{display:flex;gap:15px;margin-top:24px}
+.annot .n{width:32px;height:32px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:.82rem;font-weight:700;background:var(--green-soft);color:var(--green);border:1px solid rgba(63,224,162,.2)}
+.annot h4{margin:0;font-size:1.02rem}.annot p{margin:.25rem 0 0;font-size:.9rem;color:var(--ink-2)}
+
+/* pasos */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+.step{padding:30px}.step .num{font-family:"Instrument Serif",serif;font-style:italic;font-size:3.4rem;line-height:1;background:linear-gradient(180deg,var(--green),var(--green-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+.step h3{font-size:1.18rem;margin-top:16px}.step p{font-size:.95rem;color:var(--ink-2);margin-top:.55rem}
+
+/* comparativa */
+.cmp{margin-top:52px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.cmp .hd{display:grid;grid-template-columns:1fr 1fr;font-weight:600;font-size:.92rem;border-bottom:1px solid var(--border)}
+.cmp .hd>div{padding:17px 24px;display:flex;align-items:center;gap:9px}
+.cmp .hd .b{color:var(--green);background:var(--green-soft);border-left:1px solid var(--border)}
+.cmp .rw{display:grid;grid-template-columns:1fr 1fr;font-size:.93rem;border-bottom:1px solid var(--border)}
+.cmp .rw:last-child{border-bottom:none}
+.cmp .rw>div{padding:16px 24px;display:flex;gap:11px;align-items:flex-start}
+.cmp .rw .a{color:var(--muted)}.cmp .rw .b{border-left:1px solid var(--border);color:var(--ink)}
+.cmp svg{width:17px;height:17px;flex:none;margin-top:2px}
+
+/* prueba social reservada */
+.proof{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:42px}
+@media(max-width:860px){.proof{grid-template-columns:1fr}}
+.quote{padding:26px;border:1px dashed var(--border-2);border-radius:var(--radius);background:var(--surface)}
+.quote .q{font-size:1rem;color:var(--ink-2);line-height:1.5}
+.quote .who{display:flex;align-items:center;gap:11px;margin-top:18px}
+.quote .av{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border)}
+.reserved{color:var(--faint);font-style:italic;font-size:.72rem}
+
+/* acceso */
+.access{max-width:540px;margin:52px auto 0}
+.access .card{padding:38px;text-align:center;background:radial-gradient(120% 90% at 50% 0%,rgba(63,224,162,.1),transparent 60%),var(--surface)}
+.access .price{font-family:"Instrument Serif",serif;font-size:3.4rem;line-height:1;margin:10px 0}
+.access ul{list-style:none;padding:0;margin:24px 0;text-align:left;display:inline-block}
+.access li{display:flex;gap:11px;align-items:flex-start;font-size:.95rem;color:var(--ink-2);margin:11px 0}
+.access li svg{width:18px;height:18px;color:var(--green);flex:none;margin-top:2px}
+
+/* faq */
+.faq{max-width:780px;margin:48px auto 0}
+.faq details{border-bottom:1px solid var(--border);padding:4px 0}
+.faq summary{list-style:none;cursor:pointer;padding:20px 4px;font-weight:600;font-size:1.05rem;display:flex;justify-content:space-between;gap:16px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pm{transition:transform .2s,color .2s;color:var(--muted);flex:none}
+.faq details[open] summary .pm{transform:rotate(45deg);color:var(--green)}
+.faq .ans{padding:0 4px 20px;color:var(--ink-2);font-size:.98rem;max-width:66ch}
+
+/* final */
+.final{position:relative;overflow:hidden;text-align:center;padding:118px 0}
+.final .h2{margin:18px auto 0;max-width:20ch}.final .sub{margin:18px auto 0}
+
+/* footer + styleguide */
+footer{border-top:1px solid var(--border);background:var(--bg-2)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:36px 24px;flex-wrap:wrap}
+.foot .links{display:flex;gap:26px;font-size:.9rem;color:var(--muted)}
+.foot .links a:hover{color:var(--green)}
+.sgrid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:26px;padding:36px 24px;border-top:1px solid var(--border)}
+@media(max-width:860px){.sgrid{grid-template-columns:1fr}}
+.sg h5{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 16px}
+.logos{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.logomark{width:48px;height:48px;border-radius:13px;display:grid;place-items:center}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:48px;height:48px;border-radius:12px;border:1px solid var(--border);position:relative}
+.sw small{position:absolute;bottom:-19px;left:0;font-size:.58rem;color:var(--faint);white-space:nowrap}
+.copyright{text-align:center;font-size:.78rem;color:var(--faint);padding:6px 0 28px}
+
+/* barra CTA fija móvil */
+.mobile-cta{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(7,8,9,.82);backdrop-filter:blur(14px);border-top:1px solid var(--border)}
+.mobile-cta .btn{width:100%}
+@media(max-width:860px){.mobile-cta{display:block}body{padding-bottom:78px}}
+
+/* reveal */
+[data-reveal]{opacity:0;transform:translateY(24px);transition:opacity .75s cubic-bezier(.2,.6,.3,1),transform .75s cubic-bezier(.2,.6,.3,1)}
+[data-reveal].in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  [data-reveal]{opacity:1;transform:none;transition:none}
+  .aurora b,.float,.led i.ping,.marquee{animation:none}
+}
+.banner{background:linear-gradient(90deg,rgba(63,224,162,.12),transparent);border-bottom:1px solid var(--border);text-align:center;font-size:.78rem;color:var(--ink-2);padding:8px 16px;position:relative;z-index:101}
+.banner b{color:var(--green)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<!-- LOGO reutilizable definido como símbolo -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#67F0BB"/><stop offset="1" stop-color="#0E9C6E"/></linearGradient>
+  <symbol id="mark" viewBox="0 0 40 40">
+    <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="#0B0E0F" stroke="url(#dg)" stroke-width="1.4"/>
+    <path d="M14 11 v18" stroke="url(#dg)" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M14 11 a9 9 0 0 1 0 18" stroke="url(#dg)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    <path d="M27.5 20 l1.1 2.6 2.6 1.1 -2.6 1.1 -1.1 2.6 -1.1 -2.6 -2.6 -1.1 2.6 -1.1 z" fill="#67F0BB"/>
+    <circle cx="9" cy="13.5" r="1" fill="#67F0BB" opacity=".9"/>
+    <circle cx="8" cy="20" r="1" fill="#67F0BB" opacity=".7"/>
+    <circle cx="9" cy="26.5" r="1" fill="#67F0BB" opacity=".5"/>
+  </symbol>
+</defs></svg>
+
+<div class="banner">Boceto de rediseño · <b>Demiurgos · dark esmeralda</b></div>
+
+<header id="hdr">
+  <div class="wrap nav">
+    <a class="brand" href="#top"><svg class="logo"><use href="#mark"/></svg> Demiurgos</a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="#problema">El problema</a>
+      <a href="#solucion">Cómo funciona</a>
+      <a href="#diferencia">Diferencia</a>
+      <a href="#faq">Preguntas</a>
+    </nav>
+    <div class="nav-right">
+      <a class="btn btn-primary btn-sm" data-magnetic href="#acceso">Empezar gratis</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<a id="top"></a>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="aurora" aria-hidden="true"><b class="a1"></b><b class="a2"></b></div>
+  <div class="gridlines" aria-hidden="true"></div>
+  <div class="spotlight spotlight-el" aria-hidden="true"></div>
+  <div class="wrap hero-inner">
+    <div>
+      <span class="pill" data-reveal><span class="led"><i class="ping"></i><i></i></span> Tu director creativo personal</span>
+      <h1 class="h1" data-reveal style="margin-top:24px">Publica con <span class="em">criterio</span>.<br>No por inercia.</h1>
+      <p class="lead" data-reveal>Demiurgos aprende tu voz, la cruza con cómo funciona cada red y con lo que pasa esta semana, y te dice qué publicar, cuándo y por qué. Nada que pudiera haber escrito cualquiera.</p>
+      <div class="cta-col" data-reveal>
+        <div class="cta-line">
+          <a class="btn btn-primary btn-lg" data-magnetic href="#acceso">Empieza con una conversación <span class="arrow">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="#solucion">Ver cómo piensa</a>
+        </div>
+        <span class="reassure"><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Gratis para empezar · No necesitas tarjeta</span>
+      </div>
+      <div class="stats" data-reveal>
+        <div class="stat"><div class="n">6</div><div class="l">redes que entiende a fondo</div></div>
+        <div class="stat"><div class="n">3</div><div class="l">fuentes cruzadas por propuesta</div></div>
+        <div class="stat"><div class="n serif" style="font-style:italic">∞</div><div class="l">tuyo, nunca genérico</div></div>
+      </div>
+    </div>
+
+    <div class="stage" data-reveal>
+      <div class="tabs" role="tablist" aria-label="Plataforma de la propuesta">
+        <button class="tab" role="tab" aria-selected="true" data-p="0">LinkedIn</button>
+        <button class="tab" role="tab" aria-selected="false" data-p="1">YouTube</button>
+        <button class="tab" role="tab" aria-selected="false" data-p="2">X</button>
+        <button class="tab" role="tab" aria-selected="false" data-p="3">Substack</button>
+      </div>
+      <span class="float f1"><b></b> Artículo guardado</span>
+      <span class="float f2"><b></b> Tendencia</span>
+      <span class="float f3"><b></b> Idea suelta</span>
+      <div class="preview" id="tiltCard" role="img" aria-label="Ejemplo de propuesta del Director">
+        <div class="pv-top"><i></i><i></i><i></i><span class="ttl">Demiurgos · Propuestas de la semana</span></div>
+        <div class="pv-body" id="pvBody">
+          <div class="pv-row"><span class="mono" style="font-size:.72rem;color:var(--faint)">PROPUESTA · 03</span><span class="pv-tag"><span style="width:7px;height:7px;border-radius:50%;background:var(--green)"></span> <span id="pvSlot">LinkedIn · Martes</span></span></div>
+          <div class="pv-block" style="border-top:none;padding-top:4px;margin-top:8px"><div class="pv-label idea">Idea</div><div class="pv-idea" id="pvIdea">La métrica que todos enseñan y casi nadie entiende.</div></div>
+          <div class="pv-block"><div class="pv-label why">Por qué ahora</div><div class="pv-why" id="pvWhy">Conecta tu pilar de criterio con una señal que guardaste esta semana. En LinkedIn el carrusel-documento rinde por <em>saves</em>, no por likes.</div></div>
+          <div class="pv-block"><div class="pv-label script">Guion</div><div id="pvScript">
+            <div class="pv-li"><b></b> Portada: la frase incómoda.</div>
+            <div class="pv-li"><b></b> 5 láminas: el error, el dato, tu lectura.</div>
+            <div class="pv-li"><b></b> Cierre: una pregunta. Sin enlaces en el cuerpo.</div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<section class="marquee-wrap">
+  <div class="lbl">Conoce cómo funciona cada red, ahora mismo</div>
+  <div class="marquee" aria-hidden="true">
+    <span>LinkedIn</span><span>·</span><span>YouTube</span><span>·</span><span>TikTok</span><span>·</span><span>Instagram</span><span>·</span><span>X</span><span>·</span><span>Substack</span><span>·</span>
+    <span>LinkedIn</span><span>·</span><span>YouTube</span><span>·</span><span>TikTok</span><span>·</span><span>Instagram</span><span>·</span><span>X</span><span>·</span><span>Substack</span><span>·</span>
+  </div>
+</section>
+
+<!-- PROBLEMA -->
+<section class="sec" id="problema">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>El problema</span>
+    <h2 class="h2" data-reveal>Crear para redes se ha vuelto <span class="em">ruido</span>.</h2>
+    <p class="sub" data-reveal>Hay mil herramientas que generan contenido. Ninguna te conoce. Publicar más rápido no sirve si lo que publicas no suena a ti ni mueve a tu audiencia.</p>
+    <div class="grid3">
+      <div class="card lift feat" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18 18 0 0 1-2.2 3.3M6.6 6.6A18 18 0 0 0 2 12s3 8 10 8a9 9 0 0 0 5.4-1.6"/><path d="m2 2 20 20"/></svg></div><h3>Publicas a ciegas</h3><p>No sabes qué rinde en cada red ni por qué. Pruebas, fallas y vuelves a empezar.</p></div>
+      <div class="card lift feat" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 14h.01M15 14h.01"/></svg></div><h3>Suena a cualquiera</h3><p>La IA genérica escribe rápido, pero sin tu voz, sin tu historia y sin tu criterio.</p></div>
+      <div class="card lift feat" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v3l2 1"/></svg></div><h3>Manda el calendario</h3><p>Creas por inercia para rellenar huecos, no porque haya una buena razón para publicarlo.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUCIÓN -->
+<section class="sec alt" id="solucion">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>La solución</span>
+    <h2 class="h2" data-reveal>Demiurgos no genera posts. <span class="em">Dirige</span> tu contenido.</h2>
+    <p class="sub" data-reveal>Un director creativo personal que cruza tres fuentes antes de proponerte nada. De ahí salen decisiones con criterio, no texto de relleno.</p>
+    <div class="grid3">
+      <div class="card lift feat" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg></div><span class="kicker">Tu perfil</span><h3>Quién eres</h3><p>Tu posicionamiento, tus pilares, tu audiencia y tu voz. Lo que ninguna API ve: tu criterio.</p></div>
+      <div class="card lift feat" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg></div><span class="kicker">El ecosistema</span><h3>Cómo funciona cada red</h3><p>Formato, gancho, frecuencia y mejor momento en LinkedIn, YouTube, TikTok, Instagram, X y Substack.</p></div>
+      <div class="card lift feat" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.6" fill="currentColor"/></svg></div><span class="kicker">Las señales</span><h3>Lo que pasa ahora</h3><p>Las tendencias, ideas y referencias que le compartes esta semana. Contexto fresco, no plantillas.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ASÍ PIENSA -->
+<section class="sec" id="asipiensa">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Así piensa</span>
+    <h2 class="h2" data-reveal>Cada propuesta, con un <span class="em">porqué</span>.</h2>
+    <div class="split">
+      <div data-reveal>
+        <div class="annot"><span class="n">1</span><div><h4>Idea con gancho real</h4><p>Un ángulo en una frase, no un tema vago. Pensado para tu audiencia.</p></div></div>
+        <div class="annot"><span class="n">2</span><div><h4>Por qué ahora</h4><p>Conecta un pilar tuyo, una señal fresca y cómo rinde ese formato en esa red. Si no hay razón, no te lo propone.</p></div></div>
+        <div class="annot"><span class="n">3</span><div><h4>Guion listo para producir</h4><p>No te deja con un titular: te da la estructura adaptada al formato de la plataforma.</p></div></div>
+        <div style="margin-top:30px"><a class="btn btn-ghost" href="#acceso">Probar con mi perfil →</a></div>
+      </div>
+      <div class="stage" data-reveal>
+        <div class="preview" style="transform:rotateY(4deg) rotateX(2deg)">
+          <div class="pv-top"><i></i><i></i><i></i><span class="ttl">Propuesta · YouTube · Jueves</span></div>
+          <div class="pv-body">
+            <div class="pv-block" style="border-top:none;padding-top:0;margin-top:0"><div class="pv-label idea">Idea</div><div class="pv-idea">Lo que aprendí cerrando una ronda que no salió.</div></div>
+            <div class="pv-block"><div class="pv-label why">Por qué ahora</div><div class="pv-why">Tu pilar de “lecciones de fundador” + interés alto del nicho. El vídeo-relato sostiene retención cuando hay tensión real.</div></div>
+            <div class="pv-block"><div class="pv-label script">Guion</div>
+              <div class="pv-li"><b></b> Gancho (0–10s): el dato que duele.</div>
+              <div class="pv-li"><b></b> Nudo: 3 decisiones y su coste.</div>
+              <div class="pv-li"><b></b> Cierre: qué harías distinto.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFICIOS -->
+<section class="sec alt">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Beneficios</span>
+    <h2 class="h2" data-reveal>Menos cantidad. Mucho más <span class="em">criterio</span>.</h2>
+    <div class="bento">
+      <div class="card lift b b-feature" data-reveal>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div><h3 style="font-size:1.5rem">Suena a ti, no a una IA</h3><p style="font-size:1rem;max-width:34ch">Respeta tu voz, tus reglas y tus líneas rojas. Si lo podría haber escrito cualquiera, no te lo propone. Esa es la regla de oro.</p></div>
+      </div>
+      <div class="card lift b b-1" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><h3>Cada red, a su manera</h3><p>Adapta formato, gancho y momento a cómo funciona de verdad cada plataforma hoy.</p></div>
+      <div class="card lift b b-2" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>Siempre con un porqué</h3><p>Cada propuesta llega justificada.</p></div>
+      <div class="card lift b b-3" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20a8 8 0 1 0-8-8"/><path d="M4 12H2M12 4V2"/><circle cx="12" cy="12" r="2.5"/></svg></div><h3>Aprende contigo</h3><p>Tu perfil es un documento vivo.</p></div>
+      <div class="card lift b b-4" data-reveal><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19l7-7a2.8 2.8 0 0 0-4-4l-7 7-1 5z"/><path d="M11 7l4 4"/></svg></div><h3>De la idea al guion</h3><p>El paquete listo para producir.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PASOS -->
+<section class="sec" id="pasos">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Cómo empiezas</span>
+    <h2 class="h2" data-reveal>Del caos a una <span class="em">estrategia</span>, en tres pasos.</h2>
+    <div class="steps">
+      <div class="card lift step" data-reveal><div class="num">01</div><h3>Te perfila</h3><p>Una entrevista, no un formulario. Captura tu voz, tus pilares y tu criterio.</p></div>
+      <div class="card lift step" data-reveal><div class="num">02</div><h3>Cruza el contexto</h3><p>Tu perfil × cómo funciona cada red × las señales que le compartes esta semana.</p></div>
+      <div class="card lift step" data-reveal><div class="num">03</div><h3>Propone con criterio</h3><p>Un set de propuestas con idea, por qué ahora y guion. Tú decides; él argumenta.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DIFERENCIA -->
+<section class="sec alt" id="diferencia">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Por qué es distinto</span>
+    <h2 class="h2" data-reveal>Si lo podría haber escrito <span class="em">ChatGPT</span> sin conocerte, ha fallado.</h2>
+    <p class="sub" data-reveal>Esa es la regla de oro de Demiurgos. Lo que lo separa de cualquier generador no es el modelo: es de dónde parte.</p>
+    <div class="cmp" data-reveal>
+      <div class="hd">
+        <div class="a"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4"/></svg> IA genérica</div>
+        <div class="b"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/></svg> Demiurgos</div>
+      </div>
+      <div class="rw"><div class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg> Parte de cero, en blanco</div><div class="b"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Parte de tu perfil y tu criterio</div></div>
+      <div class="rw"><div class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg> Consejos de gurú de redes</div><div class="b"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Cómo funciona cada plataforma hoy</div></div>
+      <div class="rw"><div class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg> “Esto es tendencia”</div><div class="b"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> “Publica esto porque a tu audiencia le mueve X”</div></div>
+      <div class="rw"><div class="a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg> Te entrega un texto suelto</div><div class="b"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Te entrega idea, porqué y guion</div></div>
+    </div>
+    <div class="proof">
+      <div class="quote" data-reveal><div class="q">“Por fin algo que no me escupe diez posts iguales. Me dice qué grabar y por qué.”</div><div class="who"><span class="av"></span><div><strong>Reservado</strong><br><span class="reserved">Reseña real de los primeros usuarios</span></div></div></div>
+      <div class="quote" data-reveal><div class="q">“El ‘por qué ahora’ es lo que me hizo confiar. No es humo.”</div><div class="who"><span class="av"></span><div><strong>Reservado</strong><br><span class="reserved">Reseña real de los primeros usuarios</span></div></div></div>
+      <div class="quote" data-reveal><div class="q">“Suena a mí. Eso no lo había visto en ninguna herramienta.”</div><div class="who"><span class="av"></span><div><strong>Reservado</strong><br><span class="reserved">Reseña real de los primeros usuarios</span></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESO -->
+<section class="sec" id="acceso">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal style="display:block;text-align:center">Acceso</span>
+    <h2 class="h2" data-reveal style="margin:16px auto 0;text-align:center">Empieza por una <span class="em">conversación</span>.</h2>
+    <div class="access" data-reveal>
+      <div class="card">
+        <span class="pill" style="margin:0 auto"><span class="led"><i class="ping"></i><i></i></span> Acceso temprano</span>
+        <div class="price serif">Gratis</div>
+        <p class="muted" style="margin:0">para empezar · en construcción, sin humo</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Chat con el Director que propone con criterio</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Tu perfil creativo, vivo y editable</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Conocimiento de 6 redes integrado</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Propuestas con idea, porqué y guion</li>
+        </ul>
+        <a class="btn btn-primary btn-lg" data-magnetic href="#" style="width:100%">Crear mi perfil <span class="arrow">→</span></a>
+        <div style="margin-top:14px"><span class="reassure"><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Acceso con enlace mágico · No necesitas tarjeta</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec alt" id="faq">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal style="display:block;text-align:center">Preguntas frecuentes</span>
+    <h2 class="h2" data-reveal style="margin:16px auto 0;text-align:center">Lo que sueles querer saber.</h2>
+    <div class="faq" data-reveal>
+      <details open><summary>¿Cuánto cuesta? <span class="pm">+</span></summary><div class="ans">Ahora mismo es gratis para empezar: estamos en acceso temprano. No hay tarjeta ni letra pequeña. Cuando haya planes, lo verás claro y sin costes ocultos.</div></details>
+      <details><summary>¿Qué redes entiende? <span class="pm">+</span></summary><div class="ans">LinkedIn, YouTube, TikTok, Instagram, X y Substack. Para cada una conoce formato, gancho, frecuencia y mejor momento, y lo mantiene al día.</div></details>
+      <details><summary>¿Tengo que conectar mis cuentas o subir datos? <span class="pm">+</span></summary><div class="ans">No hace falta conectar nada para empezar. Demiurgos aprende de la conversación: le cuentas quién eres y le pasas las señales que te interesan. Tú controlas qué comparte.</div></details>
+      <details><summary>¿Mis datos están seguros? <span class="pm">+</span></summary><div class="ans">Tu perfil y tus conversaciones son tuyos y privados por defecto: cada cuenta solo ve lo suyo. No vendemos tus datos ni publicamos nada en tu nombre sin que tú lo decidas.</div></details>
+      <details><summary>¿En qué punto está el producto? <span class="pm">+</span></summary><div class="ans">Es honesto decirlo: está en construcción. Hoy ya dirige tu contenido desde el chat; el resto del taller (biblioteca, análisis de archivos, propuestas en panel) llega paso a paso. Sin promesas de humo.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="final" id="final">
+  <div class="aurora" aria-hidden="true"><b class="a1" style="opacity:.4"></b></div>
+  <div class="wrap">
+    <span class="pill" data-reveal style="margin:0 auto"><span class="led"><i class="ping"></i><i></i></span> Listo para conocerte</span>
+    <h2 class="h2" data-reveal>Dale forma a tu <span class="em">voz</span>.</h2>
+    <p class="sub" data-reveal style="font-size:1.15rem">Cuéntale quién eres y deja que Demiurgos te diga qué publicar esta semana, y por qué.</p>
+    <div data-reveal style="margin-top:32px;display:flex;flex-direction:column;align-items:center;gap:13px">
+      <a class="btn btn-primary btn-lg" data-magnetic href="#acceso">Empezar gratis <span class="arrow">→</span></a>
+      <span class="reassure"><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> Una conversación · No necesitas tarjeta</span>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="#top"><svg class="logo"><use href="#mark"/></svg> Demiurgos</a>
+      <div class="links"><a href="#solucion">Cómo funciona</a><a href="#diferencia">Diferencia</a><a href="#faq">Preguntas</a><a href="#acceso">Empezar</a></div>
+    </div>
+    <div class="sgrid">
+      <div class="sg"><h5>Logo</h5>
+        <div class="logos">
+          <span class="logomark" style="background:#0B0E0F;border:1px solid var(--border)"><svg width="30" height="30"><use href="#mark"/></svg></span>
+          <span class="logomark" style="background:var(--green)"><svg width="30" height="30" viewBox="0 0 40 40"><path d="M14 11 v18" stroke="#04130D" stroke-width="2.6" stroke-linecap="round"/><path d="M14 11 a9 9 0 0 1 0 18" stroke="#04130D" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M27.5 20 l1.1 2.6 2.6 1.1 -2.6 1.1 -1.1 2.6 -1.1 -2.6 -2.6 -1.1 2.6 -1.1 z" fill="#04130D"/></svg></span>
+          <span class="logomark" style="background:#fff"><svg width="30" height="30" viewBox="0 0 40 40"><path d="M14 11 v18" stroke="#0B0E0F" stroke-width="2.6" stroke-linecap="round"/><path d="M14 11 a9 9 0 0 1 0 18" stroke="#0B0E0F" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M27.5 20 l1.1 2.6 2.6 1.1 -2.6 1.1 -1.1 2.6 -1.1 -2.6 -2.6 -1.1 2.6 -1.1 z" fill="#0B0E0F"/></svg></span>
+        </div>
+        <p class="muted" style="font-size:.8rem;margin-top:18px;max-width:32ch">Una “D” de columna y arco, con una chispa esmeralda y tres nodos: el caos que toma forma.</p>
+      </div>
+      <div class="sg"><h5>Color</h5>
+        <div class="swatches" style="margin-bottom:26px">
+          <span class="sw" style="background:#070809"><small>Tinta 070809</small></span>
+          <span class="sw" style="background:#101315"><small>Superficie</small></span>
+          <span class="sw" style="background:#3FE0A2"><small>Esmeralda</small></span>
+          <span class="sw" style="background:#0B7F58"><small>Verde deep</small></span>
+          <span class="sw" style="background:#F3F6F4"><small>Hueso</small></span>
+        </div>
+      </div>
+      <div class="sg"><h5>Tipografía</h5>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px"><span class="serif" style="font-size:2rem;font-style:italic;color:var(--ink)">Instrument Serif</span></div>
+        <p class="muted" style="font-size:.78rem;margin:0 0 14px">Display · titulares y palabra-acento</p>
+        <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:1.4rem;font-weight:600">Geist</span><span class="muted">Aa Bb 123</span></div>
+        <p class="muted" style="font-size:.78rem;margin:6px 0 0">Sans · interfaz · <span class="mono">Geist Mono</span> para datos</p>
+      </div>
+    </div>
+  </div>
+  <p class="copyright">© 2026 Demiurgos · el artesano que da forma al caos · Boceto dark esmeralda</p>
+</footer>
+
+<div class="mobile-cta"><a class="btn btn-primary" href="#acceso">Empieza con una conversación →</a></div>
+
+<script>
+(function(){
+  var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  // Header scroll
+  var hdr=document.getElementById('hdr');
+  function onScroll(){hdr.classList.toggle('scrolled',scrollY>10);}
+  onScroll();addEventListener('scroll',onScroll,{passive:true});
+
+  // Spotlight que sigue el cursor en el hero
+  var hero=document.getElementById('hero');
+  if(hero&&!reduce){
+    hero.addEventListener('pointermove',function(e){
+      var r=hero.getBoundingClientRect();
+      hero.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      hero.style.setProperty('--my',(e.clientY-r.top)+'px');
+    });
+  }
+
+  // Tilt parallax de la tarjeta
+  var stage=document.querySelector('#hero .stage'), tilt=document.getElementById('tiltCard');
+  if(stage&&tilt&&!reduce&&matchMedia('(pointer:fine)').matches){
+    stage.addEventListener('pointermove',function(e){
+      var r=stage.getBoundingClientRect();
+      var rx=((e.clientY-r.top)/r.height-.5)*-8, ry=((e.clientX-r.left)/r.width-.5)*10;
+      tilt.style.transform='rotateX('+rx+'deg) rotateY('+ry+'deg)';
+    });
+    stage.addEventListener('pointerleave',function(){tilt.style.transform='rotateX(0) rotateY(0)';});
+  }
+
+  // Botones magnéticos
+  if(!reduce&&matchMedia('(pointer:fine)').matches){
+    document.querySelectorAll('[data-magnetic]').forEach(function(b){
+      b.addEventListener('pointermove',function(e){
+        var r=b.getBoundingClientRect();
+        b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.22)+'px,'+((e.clientY-r.top-r.height/2)*.32)+'px)';
+      });
+      b.addEventListener('pointerleave',function(){b.style.transform='';});
+    });
+  }
+
+  // Tabs interactivas de plataforma → cambian la propuesta
+  var P=[
+    {slot:'LinkedIn · Martes', idea:'La métrica que todos enseñan y casi nadie entiende.',
+     why:'Conecta tu pilar de criterio con una señal que guardaste esta semana. En LinkedIn el carrusel-documento rinde por <em>saves</em>, no por likes.',
+     script:['Portada: la frase incómoda.','5 láminas: el error, el dato, tu lectura.','Cierre: una pregunta. Sin enlaces en el cuerpo.']},
+    {slot:'YouTube · Jueves', idea:'Lo que aprendí cerrando una ronda que no salió.',
+     why:'Tu pilar de “lecciones de fundador” + interés alto del nicho. El vídeo-relato sostiene retención cuando hay tensión real.',
+     script:['Gancho (0–10s): el dato que duele.','Nudo: 3 decisiones y su coste.','Cierre: qué harías distinto.']},
+    {slot:'X · Miércoles', idea:'Un hilo: 6 errores que cometí escalando, sin filtro.',
+     why:'En X el hilo con tesis clara y datos propios circula. El primer post se lo juega todo: tiene que abrir un bucle.',
+     script:['Post 1: la promesa concreta del hilo.','Posts 2–7: un error por tuit, con la lección.','Cierre: el meta-aprendizaje + CTA suave.']},
+    {slot:'Substack · Domingo', idea:'El análisis que nadie publica porque incomoda.',
+     why:'La newsletter premia la profundidad. Aquí va tu criterio largo, el que no cabe en un post: tu wedge en formato editorial.',
+     script:['Apertura: una tesis con la que se pueda discrepar.','Desarrollo: 3 argumentos con datos propios.','Cierre: qué implica para el lector esta semana.']}
+  ];
+  var body=document.getElementById('pvBody'),
+      slot=document.getElementById('pvSlot'), idea=document.getElementById('pvIdea'),
+      why=document.getElementById('pvWhy'), scr=document.getElementById('pvScript');
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected','false');});
+      t.setAttribute('aria-selected','true');
+      var d=P[+t.dataset.p];
+      body.classList.add('swap');
+      setTimeout(function(){
+        slot.textContent=d.slot; idea.textContent=d.idea; why.innerHTML=d.why;
+        scr.innerHTML=d.script.map(function(s){return '<div class="pv-li"><b></b> '+s+'</div>';}).join('');
+        body.classList.remove('swap');
+      },200);
+    });
+  });
+
+  // Reveal
+  var els=document.querySelectorAll('[data-reveal]');
+  if(reduce||!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in');});}
+  else{
+    var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{rootMargin:'-50px'});
+    els.forEach(function(e){io.observe(e);});
+  }
+})();
+</script>
+</body>
+</html>
