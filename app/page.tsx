@@ -20,6 +20,7 @@ import {
 
 import { Hero } from "@/components/landing/hero";
 import { LandingHeader } from "@/components/landing/landing-header";
+import { Logo } from "@/components/landing/logo";
 import { Reveal } from "@/components/landing/reveal";
 
 const PLATFORMS = ["LinkedIn", "YouTube", "TikTok", "Instagram", "X", "Substack"];
@@ -439,15 +440,7 @@ function Footer() {
     <footer style={{ borderTop: "1px solid var(--line)" }}>
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-5 py-10 sm:flex-row sm:px-8">
         <div className="flex items-center gap-2.5">
-          <span
-            className="grid size-6 place-items-center rounded-[7px]"
-            style={{ background: "linear-gradient(150deg, var(--green), var(--violet) 130%)" }}
-            aria-hidden
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3l7 4v10l-7 4-7-4V7z" />
-            </svg>
-          </span>
+          <Logo size={26} />
           <span className="text-sm font-semibold">Demiurgos</span>
           <span className="hidden text-sm sm:inline" style={{ color: "var(--faint)" }}>
             · el artesano que da forma al caos

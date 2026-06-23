@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/landing/logo";
 
 const NAV = [
   { href: "#problema", label: "El problema" },
@@ -28,8 +28,8 @@ export function LandingHeader() {
       style={
         scrolled
           ? {
-              background: "color-mix(in oklab, var(--paper) 78%, transparent)",
-              backdropFilter: "blur(14px)",
+              background: "color-mix(in oklab, var(--paper) 72%, transparent)",
+              backdropFilter: "blur(16px) saturate(1.2)",
               borderBottom: "1px solid var(--line)",
             }
           : { borderBottom: "1px solid transparent" }
@@ -37,7 +37,7 @@ export function LandingHeader() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5" aria-label="Demiurgos, inicio">
-          <Logo />
+          <Logo size={32} className="[filter:drop-shadow(0_4px_12px_rgba(63,224,162,0.35))]" />
           <span className="text-[1.05rem] font-semibold tracking-tight">Demiurgos</span>
         </Link>
 
@@ -54,31 +54,10 @@ export function LandingHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1.5">
-          <ThemeToggle />
-          <Link href="/login" className="dmg-cta hidden h-9 px-4 py-0 text-sm sm:inline-flex">
-            Entrar
-          </Link>
-        </div>
+        <Link href="/login" className="dmg-cta h-9 px-4 py-0 text-sm">
+          Empezar gratis
+        </Link>
       </div>
     </header>
-  );
-}
-
-function Logo() {
-  return (
-    <span
-      className="grid size-7 place-items-center rounded-[8px]"
-      style={{
-        background: "linear-gradient(150deg, var(--green) 0%, var(--violet) 130%)",
-        boxShadow: "0 4px 14px -6px color-mix(in oklab, var(--green) 70%, transparent)",
-      }}
-      aria-hidden
-    >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3l7 4v10l-7 4-7-4V7z" />
-        <path d="M12 8v8M8.5 9.5l7 5M15.5 9.5l-7 5" opacity="0.85" />
-      </svg>
-    </span>
   );
 }
