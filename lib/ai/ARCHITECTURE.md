@@ -72,9 +72,11 @@ solo con el conocimiento del modelo. Capa en `lib/ai/trends/`:
 
 - `getTrendGrounding(config)` consulta un proveedor de tendencias y devuelve un
   bloque de "grounding" (markdown) que se inyecta en el prompt del Trend Analyst.
-- Proveedor por defecto: **trendsmcp.ai** (servidor MCP remoto sobre HTTP, key
-  Bearer, free tier 100 req/mes). Lo hablamos por `fetch` (la versión instalada de
-  `ai` no trae cliente MCP y no añadimos dependencias).
+- Proveedor por defecto: **trendsmcp.ai** por su **API REST** (`POST /api`, key
+  Bearer, free tier). Usamos `get_top_trends` (lo que está de moda ahora en cada
+  red); las fuentes son los `type` EXACTOS de trendsmcp ('TikTok Trending
+  Hashtags', 'YouTube Trending', 'Google Trends', 'Reddit Hot Posts'…). Endpoint
+  configurable con `TRENDS_API_URL`.
 - **Importante**: Demiurgos es una webapp Next.js, NO un cliente MCP como Claude
   Code. Por eso no "instalamos un MCP" como en el reel: consultamos un servidor de
   tendencias remoto desde el backend. (El repo del reel, `ryoppippi/trend-finder-mcp`,
