@@ -183,3 +183,77 @@ grep -rn "Carlos" lib app   # debe dar 0 (regla de separación motor/datos)
 Definición de hecho del Hito 1 (cumplida): app desplegada, migraciones+seed cargados
 (6 redes + perfil de Carlos), chat responde en personaje con el perfil cargado, README
 y este handoff disponibles.
+
+---
+
+## 9. Landing pública + rediseño de marca (sesión `claude/sweet-faraday-uqfo4s`)
+
+> Añadido el 23 jun 2026. Track de **diseño/landing** en una rama propia. Objetivo: una
+> landing de marketing profesional y diferencial + rediseño de marca (logo, color,
+> tipografía) orientado a conversión.
+
+### 9.1 Rama y deploy (importante)
+- Rama de trabajo: **`claude/sweet-faraday-uqfo4s`**, creada desde `1738e34` (commit del
+  handoff). **Está POR DETRÁS de producción** (`claude/upbeat-knuth-6uil82`, que ya tiene
+  admin/dashboard/demo/settings). Por eso **NO** despliega a `demiurgos.vercel.app`:
+  Vercel le da un **deploy de PREVIEW** automático en cada push.
+- URL de preview (alias estable de la rama):
+  `https://demiurgos-git-claude-sweet-faraday-uqfo4s-carlos-7014s-projects.vercel.app`
+  - Landing Next real: **la home `/`** (decisión final: la landing está en `/`, no en `/landing`).
+  - Boceto v3 servido estático: **`/landing-v3.html`**.
+- Para llevarlo a producción: **rebasar sobre `claude/upbeat-knuth-6uil82`** y mergear
+  (pendiente; OJO: producción ya cambió `app/page.tsx`, habrá que resolver el conflicto).
+
+### 9.2 Landing real en Next (en la home `/`)
+- `app/page.tsx` — landing de marketing completa (server component) con su `metadata`
+  (canónica `/`, OG). Secciones: hero, tira de plataformas, problema, solución (3 fuentes),
+  beneficios, cómo funciona, diferenciación (regla de oro), visión, CTA final.
+  (Pasó por `/landing` y finalmente se movió a la home `/` a petición del usuario.)
+- `app/opengraph-image.tsx` — OG image dinámica (next/og), prerender estático.
+- `components/landing/` — `hero.tsx` (parallax + señales flotantes, Framer Motion),
+  `landing-header.tsx` (sticky scroll-aware), `reveal.tsx` (reveal al scroll, respeta
+  `prefers-reduced-motion`).
+- `app/globals.css` — sistema **`.dmg-landing`** (paleta "papel+tinta" aislada para no
+  tocar /chat ni /login) + keyframes/utilidades.
+- `app/sitemap.ts` (solo `/`), `app/robots.ts`, metadata global en `app/layout.tsx` (OG/Twitter).
+- **Dependencia nueva**: `motion` (Framer Motion, `^12.40`). Build/typecheck/lint en verde.
+
+### 9.3 Bocetos de diseño (HTML autónomos, en `/design`)
+- `design/landing-v2.html` — boceto editorial claro. Aplica la **arquitectura de
+  conversión SaaS** del documento del usuario: marco 4C, hero story-driven con preview de
+  producto real, nav mínima (Hick) + CTA grande (Fitts), microcopy de reaseguro, progreso
+  dotado (Zeigarnik), bento, comparativa, prueba social **reservada** (sin inventar),
+  acceso honesto **sin tarifas falsas**, FAQ, cierre pico-fin.
+- `design/landing-v3.html` (**el preferido por el usuario**) — **dark esmeralda**: negro
+  elegante `#070809` con verde `#3FE0A2` como único acento. CTAs pro (glow + shine +
+  magnéticos + barra fija móvil), spotlight que sigue el cursor, tarjeta con tilt 3D,
+  **tabs de plataforma que cambian la propuesta en vivo** (LinkedIn/YouTube/X/Substack),
+  aurora, marquee, reveals. Copia en `public/landing-v3.html` para verlo en vivo.
+
+### 9.4 Marca rediseñada (en los bocetos; aún no portada al Next)
+- **Logo nuevo**: una "D" de columna + arco con una **chispa esmeralda** y tres nodos que
+  se desvanecen = "el caos que toma forma". En v3 va como `<symbol id="mark">` SVG con
+  gradiente; 3 lockups (sobre tinta / verde / blanco).
+- **Color (v3)**: tinta `#070809`, superficie `#101315`, esmeralda `#3FE0A2`, verde deep
+  `#0B7F58`, hueso `#F3F6F4`. Verde con criterio (acento/CTA/glow), no a puñados.
+- **Tipografía**: *Instrument Serif* (display + palabra-acento itálica) + *Geist*
+  (UI/cuerpo) + *Geist Mono* (datos).
+- **Copy** anti-humo, basado en la doc. Titular eje: "Publica con criterio. No por
+  inercia." Regla de oro como diferenciación. Sin métricas/clientes inventados.
+
+### 9.5 Reglas respetadas
+- `grep -rn "Carlos" lib app` sigue dando **0** (ejemplos de propuesta genéricos; en
+  `/design` el contenido es ilustrativo).
+- Accesibilidad: foco visible, `prefers-reduced-motion`, contraste, semántica h1/h2/h3.
+
+### 9.6 Commits de esta rama (orden)
+`067077f` landing premium · `3f2d784` mover a /landing + home simple · `d23d165` boceto v2
+· `c0f3a28` boceto v3 dark esmeralda + public/ · (luego) mover landing a la home `/` +
+este update del handoff.
+
+### 9.7 Pendiente / siguiente paso
+- **Portar el boceto v3 (dark esmeralda) a la landing Next real** (componentes, tokens,
+  logo, SEO/OG) — hoy el Next usa la paleta clara "papel+tinta", el dark esmeralda solo
+  vive en `landing-v3.html`.
+- Decidir si esta rama se **rebasa y mergea sobre producción** (`claude/upbeat-knuth-6uil82`)
+  para que la landing salga en `demiurgos.vercel.app`.
