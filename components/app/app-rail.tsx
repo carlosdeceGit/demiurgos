@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  CalendarDays,
   FolderOpen,
   Gauge,
   LayoutGrid,
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 
 export type RailSection =
   | "chat"
+  | "calendario"
   | "dashboard"
   | "biblioteca"
   | "ideas"
@@ -32,6 +34,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { id: "chat", label: "Chat", icon: MessageSquare, href: "/chat" },
+  { id: "calendario", label: "Calendario", icon: CalendarDays, href: "/calendar" },
   { id: "dashboard", label: "Dashboard", icon: Gauge, href: "/dashboard" },
   { id: "biblioteca", label: "Biblioteca", icon: FolderOpen },
   { id: "ideas", label: "Banco de ideas", icon: Lightbulb },

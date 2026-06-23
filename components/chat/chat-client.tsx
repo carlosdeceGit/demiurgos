@@ -47,7 +47,7 @@ export function ChatClient() {
           <span className="font-medium">Director creativo</span>
         </div>
         <span className="text-brand-violet bg-brand-violet/10 rounded-full px-2.5 py-1 font-mono text-xs">
-          GPT-5.5
+          Demiurgos
         </span>
       </header>
 

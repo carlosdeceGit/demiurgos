@@ -37,6 +37,7 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const needsAuth =
     path.startsWith("/chat") ||
+    path.startsWith("/calendar") ||
     path.startsWith("/dashboard") ||
     path.startsWith("/admin");
 
