@@ -1,20 +1,36 @@
 import { createGateway } from "@ai-sdk/gateway";
 
 // Capa de IA model-agnostic: una sola key (Vercel AI Gateway) para todos los
-// proveedores, con fallbacks. Cambiar de modelo es cambiar un string de entorno.
+// proveedores, con fallbacks. Cambiar de modelo es cambiar un string de entorno
+// (o, mejor, un valor en la tabla settings desde /admin, sin redeploy).
 const gateway = createGateway({
   apiKey: process.env.AI_GATEWAY_API_KEY,
 });
 
-// Modelos del consejo, configurables por entorno. En el Hito 1 solo se usa el
-// Director. Crítico y Analista quedan documentados para hitos posteriores.
+// Modelos por rol, configurables por entorno. Son los DEFAULTS de fallback:
+// la tabla settings (BD) manda en runtime (ver lib/db/settings.ts).
+//
+// Nota sobre la elección de modelos (junio 2026):
+//  - El orquestador usa Opus 4.8: top de la familia Opus al mismo precio que
+//    4.6/4.7 ($5/$25). El doc original pedía 4.6 por un ranking de Arena; 4.8 es
+//    el sucesor directo y mejor opción por defecto. Cámbialo en /admin si quieres.
+//  - Los ids son slugs del gateway (creador/modelo). Si tu gateway expone otro
+//    slug, ponlo en /admin o en la env correspondiente.
 export const MODELS = {
-  // Defaults de fallback (si fallara la lectura de settings en BD). Se eligen
-  // ids que la documentación de Vercel AI Gateway usa como válidos.
-  director: process.env.DIRECTOR_MODEL ?? "anthropic/claude-opus-4.7",
-  critic: process.env.CRITIC_MODEL ?? "anthropic/claude-opus-4.7",
-  analyst: process.env.ANALYST_MODEL ?? "google/gemini-2.5-pro",
-  demo: process.env.DEMO_MODEL ?? "anthropic/claude-opus-4.7",
+  // Chat (Director) y demo — ya existían.
+  director: process.env.DIRECTOR_MODEL ?? "anthropic/claude-opus-4.8",
+  critic: process.env.CRITIC_MODEL ?? "anthropic/claude-opus-4.8",
+  analyst: process.env.ANALYST_MODEL ?? "google/gemini-3.1-pro",
+  demo: process.env.DEMO_MODEL ?? "anthropic/claude-opus-4.8",
+
+  // Orquestador multi-agente (calendario semanal).
+  orchestrator:
+    process.env.ORCHESTRATOR_MODEL ?? "anthropic/claude-opus-4.8",
+  trend: process.env.TREND_MODEL ?? "google/gemini-3.1-pro",
+  idea: process.env.IDEA_MODEL ?? "anthropic/claude-haiku-4.5",
+  script: process.env.SCRIPT_MODEL ?? "anthropic/claude-sonnet-4.6",
+  imageDirector:
+    process.env.IMAGE_DIRECTOR_MODEL ?? "anthropic/claude-sonnet-4.6",
 } as const;
 
 export function directorModel() {
