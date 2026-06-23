@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/db/server";
 
-// Intercambia el código del enlace mágico por una sesión y redirige al chat.
+// Intercambia el código del enlace mágico por una sesión y redirige al panel.
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/chat";
+  const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
     const supabase = await createClient();

@@ -96,3 +96,252 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   Landing (marketing) — "dark esmeralda": negro elegante con verde como
+   único acento. Aislada en .dmg-landing (dark-only) para no afectar a
+   /chat ni /login.
+   ─────────────────────────────────────────────────────────────────── */
+.dmg-landing {
+  --paper: #070809;
+  --paper-2: #0a0c0d;
+  --surface: #101315;
+  --surface-2: #161a1d;
+  --ink: #f3f6f4;
+  --ink-soft: #b6bcb9;
+  --muted: #838a87;
+  --faint: #525956;
+  --line: #1c2123;
+  --line-strong: #2a2f31;
+  --green: #3fe0a2;
+  --green-strong: #16c988;
+  --green-deep: #0b7f58;
+  --green-ink: #04130d;
+  --green-soft: rgba(63, 224, 162, 0.1);
+  --green-glow: rgba(63, 224, 162, 0.45);
+  /* "toques" fríos verde-azulados y un oro suave, no púrpura */
+  --violet: #5be0c2;
+  --violet-soft: rgba(91, 224, 194, 0.1);
+  --amber: #e6b45a;
+  --amber-soft: rgba(230, 180, 90, 0.12);
+
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.011em;
+}
+
+.dmg-landing ::selection {
+  background: var(--green);
+  color: var(--green-ink);
+}
+
+.dmg-serif {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* CTA principal verde — glow + barrido de brillo */
+.dmg-cta {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--green-ink);
+  background: linear-gradient(180deg, #67f0bb 0%, var(--green-strong) 100%);
+  box-shadow:
+    0 0 0 1px rgba(63, 224, 162, 0.35),
+    0 14px 36px -12px var(--green-glow),
+    0 0 40px -16px var(--green-glow);
+  transition:
+    transform 0.18s cubic-bezier(0.21, 0.5, 0.25, 1),
+    box-shadow 0.22s ease,
+    filter 0.22s ease;
+}
+.dmg-cta::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg);
+}
+.dmg-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow:
+    0 0 0 1px rgba(63, 224, 162, 0.5),
+    0 20px 50px -14px var(--green-glow),
+    0 0 60px -14px var(--green-glow);
+}
+.dmg-cta:hover::after {
+  animation: dmg-shine 0.9s ease;
+}
+.dmg-cta:active {
+  transform: translateY(0);
+}
+@keyframes dmg-shine {
+  to { left: 160%; }
+}
+
+/* Botón secundario — vidrio */
+.dmg-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.3rem;
+  font-weight: 550;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line-strong);
+  backdrop-filter: blur(6px);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+.dmg-ghost:hover {
+  transform: translateY(-2px);
+  border-color: var(--green);
+  background: rgba(63, 224, 162, 0.06);
+}
+
+/* Píldoras / etiquetas */
+.dmg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+}
+
+/* Tarjetas */
+.dmg-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  transition:
+    transform 0.25s cubic-bezier(0.21, 0.5, 0.25, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.dmg-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+  box-shadow:
+    0 28px 60px -32px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(63, 224, 162, 0.1);
+}
+
+/* Retícula de fondo sutil con desvanecido radial */
+.dmg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+}
+
+/* Resplandor "aurora" del hero */
+.dmg-aurora::before,
+.dmg-aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+.dmg-aurora::before {
+  width: 38rem;
+  height: 38rem;
+  top: -16rem;
+  left: 50%;
+  transform: translateX(-55%);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--green) 60%, transparent), transparent);
+  animation: dmg-drift 16s ease-in-out infinite;
+}
+.dmg-aurora::after {
+  width: 30rem;
+  height: 30rem;
+  top: -10rem;
+  left: 50%;
+  transform: translateX(10%);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--violet) 55%, transparent), transparent);
+  animation: dmg-drift 20s ease-in-out infinite reverse;
+}
+
+/* Línea de gradiente de marca */
+.dmg-hr {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+/* Texto con acento verde→violeta */
+.dmg-gradient-text {
+  background: linear-gradient(100deg, var(--green) 0%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Marquesina de plataformas */
+.dmg-marquee {
+  display: flex;
+  width: max-content;
+  animation: dmg-marquee 28s linear infinite;
+}
+.dmg-marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+@keyframes dmg-drift {
+  0%, 100% { transform: translateX(-55%) translateY(0) scale(1); }
+  50% { transform: translateX(-45%) translateY(2rem) scale(1.08); }
+}
+@keyframes dmg-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes dmg-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes dmg-pulse-dot {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.dmg-float { animation: dmg-float 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dmg-landing *,
+  .dmg-landing *::before,
+  .dmg-landing *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -236,3 +236,166 @@ npm run test       # vitest (compose-context y seed)
 npm run seed       # sembrar DB (solo en local; el entorno remoto no llega a Supabase por red)
 grep -rn "Carlos" lib app   # debe dar 0 (regla de separación motor/datos)
 ```
+
+---
+
+## 9. Landing pública en la home + flujo de entrada
+
+> Añadido el 23 jun 2026 (integrado en producción desde la rama de diseño
+> `claude/sweet-faraday-uqfo4s`).
+
+- **La home `/` es ahora la landing de marketing** (antes era un placeholder).
+  Diseño "dark esmeralda" (ver sección 10). Server component en `app/page.tsx`,
+  secciones: hero (con tabs de plataforma que cambian la propuesta en vivo, parallax),
+  problema, solución (3 fuentes), beneficios, cómo funciona, diferenciación, visión, CTA.
+- **Flujo de entrada**: landing → CTA "Empezar gratis" / "Entrar" → `/login` (enlace
+  mágico, sirve para login y registro) → `/auth/callback` → **`/dashboard`** (el panel).
+  El callback redirige por defecto a `/dashboard` (antes `/chat`). El middleware
+  (`lib/db/middleware.ts`) protege `/dashboard`, `/chat` y `/admin`.
+- **Componentes**: `components/landing/` → `hero.tsx`, `landing-header.tsx`, `reveal.tsx`,
+  `logo.tsx`. La landing está aislada en `.dmg-landing` (dark-only) y NO afecta a la
+  paleta de /chat, /dashboard, /admin (siguen con el tema claro/oscuro global).
+- **Marca/SEO añadidos**: `app/icon.svg` (favicon, se quitó `favicon.ico`),
+  `app/opengraph-image.tsx` (OG dark), `app/sitemap.ts`, `app/robots.ts`, metadata
+  ampliada en `app/layout.tsx`. Dependencia nueva: `motion` (Framer Motion).
+- **Bocetos de referencia** en `/design`: `landing-v2.html` (editorial claro, conversión
+  SaaS 4C) y `landing-v3.html` (dark esmeralda, base del diseño actual).
+
+## 10. Sistema de diseño / Identidad de marca Demiurgos (CANÓNICO — todas las webs)
+
+> Fuente de verdad de marca para **cualquier web de Demiurgos** (landing, app, dashboards,
+> futuros sitios). Si haces una pantalla nueva, sale de aquí. Versión: **"dark esmeralda"**,
+> jun 2026. Implementación de referencia: `app/globals.css` (`.dmg-landing`),
+> `components/landing/logo.tsx`.
+
+### 10.1 Esencia de marca
+- **Qué es**: director creativo personal para marca personal en redes.
+- **Personalidad**: culto, con criterio, anti-humo, directo. Elegante y tecnológico, sin
+  postureo.
+- **Tagline**: "el artesano que da forma al mundo a partir del caos" (del griego
+  *dēmiourgós*).
+- **Metáfora visual rectora**: **caos → forma**. Señales sueltas que se ordenan en una
+  decisión. Negro (el caos/el lienzo) + una chispa verde (el criterio que da forma).
+
+### 10.2 Logo
+- **Concepto**: la **"D"** de Demiurgos formada por **columna + arco**, con una **chispa
+  esmeralda** (✦ de 4 puntas) en la boca y un **resplandor interior** que la hace "emitir
+  luz". El toque especial = esa chispa luminosa (acto de creación).
+- **Implementación**: `components/landing/logo.tsx` → `<Logo size={n} />`. SVG `viewBox
+  0 0 40 40`: tile redondeado `rx 12` fondo `#0A0D0E` con borde esmeralda al 35%; glow
+  radial interior; D en degradado `#7CF3C6 → #3FE0A2 → #0FA56F` (stroke 3, linecap round);
+  chispa `#C9FCE8`.
+- **Favicon**: `app/icon.svg` (mismo dibujo, stroke 3.4 para legibilidad pequeña). Next lo
+  sirve como icono. NO usar el `favicon.ico` por defecto (se eliminó).
+- **Lockups**: marca sola (header/footer), marca + wordmark "Demiurgos" (Geist 600). En el
+  boceto `design/landing-v3.html` hay 3 fondos de prueba (tinta / verde / blanco).
+- **Uso**: espacio libre mínimo = altura de la chispa alrededor; tamaño mínimo cómodo
+  ~24 px; sobre fondos oscuros preferente. No deformar, no recolorear fuera de la paleta,
+  no quitar la chispa (es la firma).
+
+### 10.3 Color — "dark esmeralda" (verde como ÚNICO acento)
+Tokens (hex) — definidos en `.dmg-landing`:
+```
+--paper:        #070809   /* fondo base, casi negro */
+--paper-2:      #0A0C0D   /* secciones alternas */
+--surface:      #101315   /* tarjetas/paneles */
+--surface-2:    #161A1D   /* hover de tarjeta */
+--ink:          #F3F6F4   /* texto principal (hueso) */
+--ink-soft:     #B6BCB9   /* texto secundario */
+--muted:        #838A87   /* texto terciario */
+--faint:        #525956   /* sutil / metadatos */
+--line:         #1C2123   /* bordes */
+--line-strong:  #2A2F31   /* bordes destacados */
+--green:        #3FE0A2   /* ACENTO único: CTA, énfasis, glow, foco */
+--green-strong: #16C988   /* gradiente del CTA */
+--green-deep:   #0B7F58   /* gradiente / sombras verdes */
+--green-ink:    #04130D   /* texto sobre verde */
+--green-soft:   rgba(63,224,162,.10)  /* fondos de icon/badge */
+--green-glow:   rgba(63,224,162,.45)  /* resplandor del CTA */
+--violet:       #5BE0C2   /* "toque" frío verde-azulado (NO púrpura) */
+--violet-soft:  rgba(91,224,194,.10)
+--amber:        #E6B45A   /* oro suave, solo para "por qué/avisos" */
+--amber-soft:   rgba(230,180,90,.12)
+```
+**Reglas de color (importantes):**
+- Verde **con disciplina**: acento, CTA, foco, palabra-clave y glows. Nunca como fondo de
+  bloques grandes ni a puñados.
+- Identidad **monocroma negra + verde**. El teal y el oro son apoyos mínimos (diferenciar
+  "guion" vs "por qué"), no protagonistas. Prohibido el púrpura/violeta de versiones viejas.
+- Contraste AA siempre. Texto principal `--ink` sobre `--paper`.
+- **La marca es dark-first.** Si en algún producto hace falta modo claro, créalo como
+  variante equivalente, pero la identidad pública (landing) es oscura.
+
+### 10.4 Tipografía
+- **Display / titulares**: *Instrument Serif* (Google Fonts), incluida **itálica** para la
+  palabra-acento (ej. "Publica con *criterio*"). Tracking ligeramente negativo.
+- **UI / cuerpo**: *Geist* (400/500/600/700). Body 15–16 px, line-height ~1.55.
+- **Datos / chips técnicos**: *Geist Mono*.
+- **Patrón de titular**: sans bold + 1 palabra clave en serif itálica verde. No mezclar más
+  de una serif por titular.
+- Variables ya cargadas en `app/layout.tsx`: `--font-instrument-serif`, `--font-geist-sans`,
+  `--font-geist-mono`. Clase helper `.dmg-serif`.
+
+### 10.5 Forma, sombra y luz
+- **Radios**: tarjetas 18 px, inputs/botones pequeños ~12 px, píldoras 999 px.
+- **Bordes**: 1 px en `--line`; hover sube a `--line-strong` + halo verde al 10%.
+- **Sombras**: oscuras y suaves (`0 28px 60px -32px rgba(0,0,0,.8)`), nunca grises lechosas.
+- **Glow**: el verde "ilumina" CTAs, logo y aciertos. Es la fuente de luz de la marca.
+- **Texturas de fondo**: retícula sutil con desvanecido radial (`.dmg-grid`), "aurora"
+  verde difusa (`.dmg-aurora`), ruido fino opcional (en el boceto).
+
+### 10.6 Componentes base (referencia en `globals.css`)
+- **CTA primario (`.dmg-cta`)**: pastilla verde con gradiente `#67F0BB → --green-strong`,
+  texto `--green-ink`, **glow** + **barrido de brillo (shine)** al hover, lift -2 px.
+  Grande (Ley de Fitts), 1 CTA principal por sección, persistente en header y barra fija
+  en móvil.
+- **Botón secundario (`.dmg-ghost`)**: vidrio (`rgba(255,255,255,.035)` + blur), borde
+  `--line-strong`, hover a borde verde.
+- **Tarjeta (`.dmg-card` + `.dmg-card-hover`)**: superficie `--surface`, hover lift + halo
+  verde.
+- **Píldora/badge (`.dmg-pill`)**: glass con borde `--line`, LED verde con "ping" para
+  estados vivos.
+- **Icon badge**: cuadro `--green-soft` con icono verde (line, stroke 1.7).
+- **Tabs interactivas**: activa = fondo verde + texto `--green-ink`; inactiva = glass.
+
+### 10.7 Iconografía
+- Estilo **línea** (tipo Lucide), stroke 1.5–2, `currentColor`. En React: `lucide-react`;
+  en HTML autónomo: SVG inline. Nada de iconos 3D ni de relleno recargado.
+
+### 10.8 Motion / microinteracciones
+- **Principios**: sutil, rápido, con propósito. Fluidez > espectáculo. Easing
+  `cubic-bezier(.2,.6,.3,1)` / `[0.21,0.5,0.25,1]`.
+- **Repertorio**: reveals al scroll (una vez), parallax/tilt 3D de la tarjeta de producto,
+  spotlight verde que sigue el cursor (hero), CTAs magnéticos + shine, aurora animada,
+  marquee de redes, LED "ping".
+- **Obligatorio**: respetar `prefers-reduced-motion` (desactivar animaciones).
+- Stack: **Framer Motion** (`motion`) en Next; JS mínimo vanilla en bocetos.
+
+### 10.9 Accesibilidad (no negociable)
+- Foco visible (anillo verde), navegación por teclado, contraste AA.
+- Semántica HTML: un `h1` por página, jerarquía `h2/h3` coherente, `header/main/section/
+  footer`, `aria-label` en navegación e iconos decorativos `aria-hidden`.
+- Objetivos táctiles grandes; CTA alcanzable con el pulgar en móvil.
+
+### 10.10 Voz y copy
+- Español de España. Claro, directo, **anti-humo**. Titulares memorables orientados a
+  resultado (ej. "Publica con criterio. No por inercia.").
+- Prohibido: relleno tipo "revolucionamos el futuro", tecnicismos vacíos, entusiasmo
+  publirreportaje. Negritas con intención.
+- **Honestidad**: nada de métricas, clientes ni funciones inventadas. Lo que no existe se
+  deja como bloque **reservado** o se omite. Producto "en construcción" se dice sin maquillar.
+- Eje de diferenciación: la **regla de oro** ("si lo podría haber escrito ChatGPT sin
+  conocerte, ha fallado").
+
+### 10.11 Conversión (heredado del documento SaaS del usuario)
+- Marco **4C**: Claridad (hero que se entiende en 3 s) · Credibilidad (prueba social real,
+  reservada hasta tenerla) · Conversión (CTA prominente + microcopy de reaseguro) ·
+  Conveniencia (nav mínima, rápido, móvil).
+- Leyes aplicadas: **Hick** (nav y opciones mínimas), **Fitts** (CTA grande/persistente),
+  **Zeigarnik/Progreso dotado** (perfil "en marcha"), **Pico-Fin** (cierre positivo).
+- Microcopy estándar de reaseguro: "Gratis para empezar · No necesitas tarjeta".
+
+### 10.12 Regla motor/datos (recordatorio que también aplica al diseño)
+- En código (`/lib`, `/app`) **0 referencias a "Carlos"**. Los ejemplos de propuestas de la
+  landing son **genéricos**. El contenido ilustrativo con datos reales solo vive en
+  `/design` (mockups) o como seed de DB.

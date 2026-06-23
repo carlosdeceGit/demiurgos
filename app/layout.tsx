@@ -22,9 +22,42 @@ const instrumentSerif = Instrument_Serif({
 // Aplica el tema guardado antes del primer pintado para evitar parpadeo.
 const themeScript = `try{var t=localStorage.getItem('dmg-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}`;
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://demiurgos.vercel.app";
+
 export const metadata: Metadata = {
-  title: "Demiurgos",
-  description: "Tu director creativo personal para marca personal en redes.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Demiurgos — Tu director creativo para redes",
+    template: "%s · Demiurgos",
+  },
+  description:
+    "Demiurgos aprende tu voz y tu criterio, lo cruza con cómo funciona cada red y con lo que pasa esta semana, y decide qué publicar, cuándo y por qué. Sin posts genéricos.",
+  keywords: [
+    "director creativo",
+    "marca personal",
+    "redes sociales",
+    "estrategia de contenido",
+    "IA creativa",
+    "LinkedIn",
+    "creadores",
+  ],
+  authors: [{ name: "Demiurgos" }],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    url: siteUrl,
+    siteName: "Demiurgos",
+    title: "Demiurgos — Tu director creativo para redes",
+    description:
+      "Aprende quién eres, cómo funciona cada red y qué pasa esta semana. Y decide qué publicar, cuándo y por qué.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Demiurgos — Tu director creativo para redes",
+    description:
+      "Aprende quién eres, cómo funciona cada red y qué pasa esta semana. Y decide qué publicar, cuándo y por qué.",
+  },
 };
 
 export default function RootLayout({
