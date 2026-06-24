@@ -1,4 +1,5 @@
 import {
+  ORCHESTRATOR_JUDGE_PROMPT,
   ORCHESTRATOR_SELECT_PROMPT,
   ORCHESTRATOR_SYNTH_PROMPT,
 } from "@/lib/ai/agents/prompts";
@@ -7,11 +8,15 @@ import { runTrendAnalyst } from "@/lib/ai/agents/trend-analyst";
 import { runIdeaGenerator } from "@/lib/ai/agents/idea-generator";
 import { runScriptWriter } from "@/lib/ai/agents/script-writer";
 import { runImageDirector } from "@/lib/ai/agents/image-director";
+import { runVideoDirector } from "@/lib/ai/agents/video-director";
+import { runAudioDirector } from "@/lib/ai/agents/audio-director";
 import { getTrendGrounding } from "@/lib/ai/trends";
 import type { TrendSourceConfig } from "@/lib/ai/trends";
 import {
+  JudgeVerdictSchema,
   SelectionSchema,
   SchedulePlanSchema,
+  type AudioBrief,
   type CalendarPost,
   type Idea,
   type ImageBrief,
@@ -19,6 +24,7 @@ import {
   type SchedulePlan,
   type Selection,
   type TrendReport,
+  type VideoBrief,
   type WeeklyCalendar,
 } from "@/lib/ai/agents/schemas";
 
@@ -35,8 +41,16 @@ export type OrchestratorModels = {
   orchestrator: string;
   trend: string;
   idea: string;
+  // Productores por pieza. Cada uno con su 2.º modelo de COMPETICIÓN opcional
+  // (null = sin competición). Se resuelven en resolve-models.ts por usuario.
   script: string;
+  scriptCompetitor?: string | null;
   imageDirector: string;
+  imageCompetitor?: string | null;
+  video: string;
+  videoCompetitor?: string | null;
+  audio: string;
+  audioCompetitor?: string | null;
 };
 
 export type PipelineInput = {
@@ -105,6 +119,8 @@ type Enriched = {
   idea: Idea;
   script: Script | null;
   brief: ImageBrief | null;
+  video: VideoBrief | null;
+  audio: AudioBrief | null;
   degraded: string[];
 };
 
@@ -139,6 +155,8 @@ export function assembleCalendar(
       video_prompt: e.brief?.video_prompt ?? null,
       aspect_ratio: e.brief?.aspect_ratio ?? null,
       cover_description: e.brief?.cover_description ?? null,
+      video_brief: e.video,
+      audio_brief: e.audio,
       best_time: slot?.best_time ?? e.script?.best_time ?? null,
       why_now: e.idea.why_now,
       rationale: slot?.rationale ?? null,
@@ -162,6 +180,89 @@ function emptyTrends(): TrendReport {
     weekly_context: "Sin informe de tendencias (el analista no respondió).",
     avoid_this_week: [],
   };
+}
+
+// ── Etapa de productor con COMPETICIÓN (genérica) ─────────────
+// Encarga el MISMO entregable (guión, imagen, vídeo, audio) a uno o dos modelos.
+// Con 2.º contendiente, el ORQUESTADOR hace de juez. Nunca lanza: degrada.
+//  - 0 responden → null (degradado, se añade `role` a degraded[] fuera).
+//  - 1 responde  → gana por incomparecencia (sin juez).
+//  - 2 responden → el orquestador juzga; si el juez falla, gana A (el del usuario).
+type StageRun<T> = { value: T; tokens: number | null; model: string };
+
+async function runCompetitiveStage<T>(args: {
+  orchestratorModel: string;
+  systemContext: string;
+  idea: Idea;
+  role: string; // "script" | "image_director" | "video" | "audio"
+  kind: string; // etiqueta legible del entregable para el juez
+  primary: string;
+  competitor?: string | null;
+  run: (modelId: string) => Promise<StageRun<T>>;
+}): Promise<{ value: T | null; runs: RunRecord[] }> {
+  const { orchestratorModel, systemContext, idea, role, kind, primary } = args;
+  const runs: RunRecord[] = [];
+
+  // Sin competición: una sola llamada.
+  if (!args.competitor) {
+    try {
+      const r = await args.run(primary);
+      runs.push({ role, model: r.model, tokens: r.tokens });
+      return { value: r.value, runs };
+    } catch {
+      return { value: null, runs };
+    }
+  }
+
+  // Competición: los dos a la vez.
+  const [a, b] = await Promise.allSettled([
+    args.run(primary),
+    args.run(args.competitor),
+  ]);
+  const candA = a.status === "fulfilled" ? a.value : null;
+  const candB = b.status === "fulfilled" ? b.value : null;
+  if (candA) runs.push({ role, model: candA.model, tokens: candA.tokens });
+  if (candB) runs.push({ role: `${role}_b`, model: candB.model, tokens: candB.tokens });
+
+  // 0 o 1 respuestas: sin juicio.
+  if (!candA && !candB) return { value: null, runs };
+  if (!candA || !candB) return { value: (candA ?? candB)!.value, runs };
+
+  // 2 respuestas: el orquestador juzga.
+  try {
+    const { object, tokens } = await runObjectAgent({
+      modelId: orchestratorModel,
+      systemContext,
+      rolePrompt: ORCHESTRATOR_JUDGE_PROMPT,
+      prompt: buildJudgePrompt(kind, idea, candA.value, candB.value),
+      schema: JudgeVerdictSchema,
+      schemaName: "JudgeVerdict",
+    });
+    runs.push({ role: `${role}_judge`, model: orchestratorModel, tokens });
+    return { value: object.winner === "B" ? candB.value : candA.value, runs };
+  } catch {
+    // El juez falló: nos quedamos con el preferido del usuario (A).
+    return { value: candA.value, runs };
+  }
+}
+
+function buildJudgePrompt(kind: string, idea: Idea, a: unknown, b: unknown): string {
+  return [
+    `Entregable juzgado: ${kind}.`,
+    "Idea de partida:",
+    "```json",
+    JSON.stringify(idea, null, 2),
+    "```",
+    "Candidato A (preferido del usuario):",
+    "```json",
+    JSON.stringify(a, null, 2),
+    "```",
+    "Candidato B (rival):",
+    "```json",
+    JSON.stringify(b, null, 2),
+    "```",
+    "Elige el mejor para publicar (winner 'A' o 'B') y una frase de porqué.",
+  ].join("\n");
 }
 
 // ── Pipeline ──────────────────────────────────────────────────
@@ -266,40 +367,91 @@ export async function* runCalendarPipeline(
   const enriched: Enriched[] = await Promise.all(
     chosen.map(async (idea) => {
       const degraded: string[] = [];
-      const [scriptRes, briefRes] = await Promise.allSettled([
-        runScriptWriter({ modelId: models.script, systemContext, idea }),
-        runImageDirector({
-          modelId: models.imageDirector,
-          systemContext,
-          idea,
-        }),
-      ]);
+      // Los cuatro productores por pieza, EN PARALELO. Cada uno puede COMPETIR
+      // (dos modelos + el orquestador de juez) y ninguno lanza: degrada solo.
+      const [scriptStage, imageStage, videoStage, audioStage] =
+        await Promise.all([
+          runCompetitiveStage<Script>({
+            orchestratorModel: models.orchestrator,
+            systemContext,
+            idea,
+            role: "script",
+            kind: "guión y copy",
+            primary: models.script,
+            competitor: models.scriptCompetitor,
+            run: (modelId) =>
+              runScriptWriter({ modelId, systemContext, idea }).then((r) => ({
+                value: r.script,
+                tokens: r.tokens,
+                model: r.model,
+              })),
+          }),
+          runCompetitiveStage<ImageBrief>({
+            orchestratorModel: models.orchestrator,
+            systemContext,
+            idea,
+            role: "image_director",
+            kind: "brief visual",
+            primary: models.imageDirector,
+            competitor: models.imageCompetitor,
+            run: (modelId) =>
+              runImageDirector({ modelId, systemContext, idea }).then((r) => ({
+                value: r.brief,
+                tokens: r.tokens,
+                model: r.model,
+              })),
+          }),
+          runCompetitiveStage<VideoBrief>({
+            orchestratorModel: models.orchestrator,
+            systemContext,
+            idea,
+            role: "video",
+            kind: "dirección de vídeo",
+            primary: models.video,
+            competitor: models.videoCompetitor,
+            run: (modelId) =>
+              runVideoDirector({ modelId, systemContext, idea }).then((r) => ({
+                value: r.brief,
+                tokens: r.tokens,
+                model: r.model,
+              })),
+          }),
+          runCompetitiveStage<AudioBrief>({
+            orchestratorModel: models.orchestrator,
+            systemContext,
+            idea,
+            role: "audio",
+            kind: "guion de audio",
+            primary: models.audio,
+            competitor: models.audioCompetitor,
+            run: (modelId) =>
+              runAudioDirector({ modelId, systemContext, idea }).then((r) => ({
+                value: r.brief,
+                tokens: r.tokens,
+                model: r.model,
+              })),
+          }),
+        ]);
 
-      let script: Script | null = null;
-      if (scriptRes.status === "fulfilled") {
-        script = scriptRes.value.script;
-        runs.push({
-          role: "script",
-          model: scriptRes.value.model,
-          tokens: scriptRes.value.tokens,
-        });
-      } else {
-        degraded.push("script");
-      }
+      runs.push(
+        ...scriptStage.runs,
+        ...imageStage.runs,
+        ...videoStage.runs,
+        ...audioStage.runs
+      );
+      if (!scriptStage.value) degraded.push("script");
+      if (!imageStage.value) degraded.push("image_director");
+      if (!videoStage.value) degraded.push("video");
+      if (!audioStage.value) degraded.push("audio");
 
-      let brief: ImageBrief | null = null;
-      if (briefRes.status === "fulfilled") {
-        brief = briefRes.value.brief;
-        runs.push({
-          role: "image_director",
-          model: briefRes.value.model,
-          tokens: briefRes.value.tokens,
-        });
-      } else {
-        degraded.push("image_director");
-      }
-
-      return { idea, script, brief, degraded } satisfies Enriched;
+      return {
+        idea,
+        script: scriptStage.value,
+        brief: imageStage.value,
+        video: videoStage.value,
+        audio: audioStage.value,
+        degraded,
+      } satisfies Enriched;
     })
   );
 

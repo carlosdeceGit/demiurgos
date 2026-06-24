@@ -14,6 +14,8 @@ export type TaskGroupId =
   | "text"
   | "web"
   | "image"
+  | "video"
+  | "audio"
   | "code";
 
 export type ModelOption = {
@@ -28,6 +30,14 @@ export type TaskGroup = {
   description: string;
   defaultModel: string;
   options: ModelOption[];
+  // El ORQUESTADOR puede repartir esta tarea a DOS modelos a la vez y quedarse
+  // con el mejor resultado (modo "competición"): declara la capacidad aquí, el
+  // 2.º aspirante por defecto es `competeWith` y el orquestador hace de juez.
+  // Ver lib/ai/ARCHITECTURE.md §"Competición de modelos". CABLEADO para "text"
+  // (orchestrator.ts → runScriptStage); para "video" es declaración (su grupo
+  // aún no se ejecuta en el pipeline). Sin esto, el grupo resuelve a UN modelo.
+  competition?: boolean;
+  competeWith?: string; // slug del 2.º aspirante por defecto
 };
 
 export const TASK_GROUPS: TaskGroup[] = [
@@ -48,8 +58,10 @@ export const TASK_GROUPS: TaskGroup[] = [
     id: "text",
     label: "Texto (ideas y guiones)",
     description:
-      "El grueso del trabajo: generar ideas y redactar guiones/copys. No necesita el modelo top.",
+      "El grueso del trabajo: generar ideas y redactar guiones/copys. No necesita el modelo top. Admite COMPETICIÓN: el orquestador puede pedir el guion a dos modelos a la vez y quedarse con el mejor.",
     defaultModel: "anthropic/claude-haiku-4.5",
+    competition: true,
+    competeWith: "google/gemini-2.5-flash",
     options: [
       { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5", pricing: "$1 / $5" },
       { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
@@ -74,12 +86,43 @@ export const TASK_GROUPS: TaskGroup[] = [
     id: "image",
     label: "Imágenes (dirección visual)",
     description:
-      "Define el estilo y el prompt de imagen/vídeo de cada pieza. Gemini recomendado.",
+      "Define el estilo y el prompt de imagen de cada pieza. Gemini recomendado. Puedes activar COMPETICIÓN (dos modelos + el orquestador de juez).",
     defaultModel: "google/gemini-3.1-pro",
+    competeWith: "anthropic/claude-sonnet-4.6",
     options: [
       { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro (visión)", pricing: "≈$1.25 / $5" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6 (visión)", pricing: "$3 / $15" },
       { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
+    ],
+  },
+  {
+    id: "video",
+    label: "Vídeo (dirección y montaje)",
+    description:
+      "Convierte cada guion en un brief de vídeo: plano a plano, ritmo, duración, formato (Reel/Short/TikTok), b-roll y texto en pantalla. La generación del vídeo en sí (Veo/Sora/Runway) es un motor enchufable a futuro; hoy se produce la dirección. Admite COMPETICIÓN.",
+    defaultModel: "google/gemini-3.1-pro",
+    competition: true,
+    competeWith: "anthropic/claude-sonnet-4.6",
+    options: [
+      { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro (visión/vídeo)", pricing: "≈$1.25 / $5" },
+      { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6 (visión)", pricing: "$3 / $15" },
+      { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
+      { id: "google/veo-3", label: "Veo 3 (generación, futuro)", pricing: "por segundo" },
+      { id: "openai/sora-2", label: "Sora 2 (generación, futuro)", pricing: "por segundo" },
+    ],
+  },
+  {
+    id: "audio",
+    label: "Audio (voz, locución y música)",
+    description:
+      "Escribe el guion de locución (VO), elige tono/voz y sugiere música/SFX por escena. La síntesis de voz (TTS) y la música son motores enchufables a futuro; hoy se produce el guion de audio. Puedes activar COMPETICIÓN.",
+    defaultModel: "anthropic/claude-haiku-4.5",
+    competeWith: "google/gemini-2.5-flash",
+    options: [
+      { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5 (guion de voz)", pricing: "$1 / $5" },
+      { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
+      { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6 (más calidad)", pricing: "$3 / $15" },
+      { id: "elevenlabs/tts-v3", label: "ElevenLabs TTS (síntesis, futuro)", pricing: "por carácter" },
     ],
   },
   {
@@ -98,6 +141,31 @@ export const TASK_GROUPS: TaskGroup[] = [
 
 export const TASK_GROUP_IDS = TASK_GROUPS.map((g) => g.id);
 
-export function catalogDefault(group: TaskGroupId): string {
-  return TASK_GROUPS.find((g) => g.id === group)!.defaultModel;
+export function getTaskGroup(group: TaskGroupId): TaskGroup | undefined {
+  return TASK_GROUPS.find((g) => g.id === group);
 }
+
+export function catalogDefault(group: TaskGroupId): string {
+  return getTaskGroup(group)!.defaultModel;
+}
+
+// Rival RECOMENDADO del grupo (el que se usa al activar competición sin elegir
+// otro). Independiente de si compite por defecto: null solo si no hay sugerencia.
+export function catalogCompetitor(group: TaskGroupId): string | null {
+  return getTaskGroup(group)?.competeWith ?? null;
+}
+
+// ¿Este grupo compite por DEFECTO? (marca la casilla en /settings y resuelve los
+// perfiles antiguos que aún no configuraron competición).
+export function catalogCompetesByDefault(group: TaskGroupId): boolean {
+  return getTaskGroup(group)?.competition === true;
+}
+
+// Grupos cuya tarea se ejecuta por pieza en el pipeline y, por tanto, pueden
+// COMPETIR (dos modelos + juez). El orquestador (juez) y los reservados no entran.
+export const COMPETITION_GROUPS: TaskGroupId[] = [
+  "text",
+  "image",
+  "video",
+  "audio",
+];

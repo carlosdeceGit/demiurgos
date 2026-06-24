@@ -590,12 +590,17 @@ en cambios futuros.
 
 ### 14.2 IA por GRUPO DE TAREA, elegible por cada usuario (decisión de producto)
 - **Opus 4.8 es el orquestador** (analiza, trocea, coordina). Los subagentes son modelos
-  más baratos. Catálogo en `lib/ai/model-catalog.ts` con 5 grupos y 3-4 opciones c/u + precio:
+  más baratos. Catálogo en `lib/ai/model-catalog.ts` con 7 grupos y 3-5 opciones c/u + precio:
   - Orquestador → `anthropic/claude-opus-4.8` (def) · sonnet 4.6 · gemini 3.1 pro · deepseek r1
-  - Texto (ideas+guiones) → `anthropic/claude-haiku-4.5` (def) · gemini 2.5 flash · deepseek v3 · sonnet 4.6
+  - Texto (ideas+guiones) → `anthropic/claude-haiku-4.5` (def) · gemini 2.5 flash · deepseek v3 · sonnet 4.6 — **compite**
   - Web/búsqueda (tendencias) → `google/gemini-3.1-pro` (def) · gemini flash · gpt-4.1 · sonnet 4.6
   - Imágenes (dirección) → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash
+  - **Vídeo (dirección/montaje)** → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash · *veo 3 / sora 2 (gen, futuro)* — **compite**
+  - **Audio (voz/locución/música)** → `anthropic/claude-haiku-4.5` (def) · gemini flash · sonnet 4.6 · *elevenlabs (TTS, futuro)*
   - Código (reservado, sin uso aún) → sonnet 4.6 · deepseek v3 · gpt-4.1
+  - Cableados hoy en el pipeline: orquestador, texto, web, imagen. **Vídeo, audio y código**
+    ya están en catálogo y `/settings` (el orquestador puede repartirles), pero su ejecución
+    en el pipeline está **pendiente de cablear** (hoja de ruta).
 - **Por usuario**: `profiles.model_preferences` (jsonb). Resolución pura en
   `lib/ai/resolve-models.ts` = preferencia del usuario → default del catálogo; mapea grupos
   a roles del pipeline (idea y guión = texto; tendencias = web; etc.).
@@ -636,6 +641,67 @@ en cambios futuros.
   del pipeline por fases fijo. Es un cambio mayor; el diseño actual ya coordina subagentes.
 - Generación de **imagen real** (hoy se produce el *brief* visual); enchufar un generador
   (p. ej. gemini image) detrás del Image Director, con degradación graceful.
+- **Aviso de coste estimado en `/calendar`** antes de generar (idea del usuario, aplazada a
+  propósito jun 2026). Con competición activa son hasta 4 productores × 2 modelos + jueces por
+  pieza, así que conviene mostrar un estimado (nº de piezas × productores activos × modelos,
+  con precios orientativos del catálogo) y/o un desglose real post-generación a partir de
+  `ai_runs.tokens`. No implementado por petición expresa; queda como mejora futura.
+
+### 14.7 Arquitectura ampliada: categorías nuevas + competición (esta sesión, jun 2026)
+> Doc fuente: `lib/ai/ARCHITECTURE.md` (nueva sección "El orquestador es la pieza clave",
+> tabla de grupos ampliada y sección "Competición de modelos"). Cambios:
+- **Refuerzo del orquestador como pieza central** en toda la arquitectura: el doc deja
+  explícito que el orquestador **descompone → reparte → supervisa/juzga/cierra**, y que toda
+  capacidad nueva entra como *grupo de tarea que él reparte*, nunca como agente autónomo.
+- **Categorías nuevas** en `lib/ai/model-catalog.ts` (y por tanto en `/settings`):
+  - **Vídeo** (dirección y montaje: plano, ritmo, formato Reel/Short/TikTok, b-roll, texto en
+    pantalla). Generación real (Veo/Sora/Runway) = motor enchufable a futuro.
+  - **Audio** (guion de voz/VO, tono, música/SFX). Síntesis TTS (ElevenLabs) = futuro.
+  - Estado: reservadas como `código` — visibles y elegibles, ejecución en el pipeline pendiente.
+- **Competición de modelos**: flag `competition` + `competeWith` en el catálogo. Lo declaran
+  **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1 Pro vs Sonnet 4.6): el
+  orquestador encarga la tarea a **dos modelos a la vez** y **hace de juez** (winner+why),
+  con traza A/B en `ai_runs` y degradación graceful si solo responde uno.
+- **Competición de TEXTO ya CABLEADA** (`orchestrator.ts`):
+  - `runScriptStage` corre el guión con A (`models.script`) y B (`models.scriptCompetitor`)
+    en `Promise.allSettled`; si responden los dos, el orquestador juzga con
+    `ORCHESTRATOR_JUDGE_PROMPT` + `JudgeVerdictSchema` (`{winner,why}`). Si solo uno responde,
+    gana por incomparecencia; si el juez falla, gana A. La imagen sigue en paralelo.
+  - `scriptCompetitor` se resuelve en `resolve-models.ts` (`competitorModel`): **siempre** un
+    2.º modelo distinto al elegido por el usuario (si coincide, cae al default; si también,
+    null = sin competición). `OrchestratorModels.scriptCompetitor?: string|null`.
+  - Trazas `ai_runs`: roles `script` (A), `script_b` (B) y `judge`. `role` es texto libre (sin
+    CHECK), así que entran sin migración.
+  - Tests nuevos en `tests/resolve-models.test.ts` (el rival nunca = elección del usuario).
+  - **Vídeo**: la competición queda declarada en catálogo pero su ejecución en el pipeline
+    sigue pendiente (como el propio grupo vídeo/audio/código).
+- **Verificado**: `npm run build && npm run lint && npm run typecheck` + `vitest` (todos verdes).
+
+### 14.8 Todas las categorías cableadas + competición elegible por el usuario (jun 2026)
+> Amplía 14.7. Doc fuente: `lib/ai/ARCHITECTURE.md`. Cambios:
+- **Vídeo y Audio EJECUTÁNDOSE en el pipeline**: nuevos agentes `video-director.ts`
+  (planos/ritmo/duración/b-roll/formato → `VideoBriefSchema`) y `audio-director.ts`
+  (locución/tono/música/SFX → `AudioBriefSchema`). Cada pieza del calendario lleva ahora
+  guion + brief visual + **dirección de vídeo** + **guion de audio**. Se muestran en
+  `/calendar` (desplegables) y se persisten en `proposals.based_on` (sin migración).
+- **Competición GENERALIZADA**: `runScriptStage` → helper genérico `runCompetitiveStage<T>`
+  que usan los 4 productores (texto/imagen/vídeo/audio). Mismo patrón: A vs B en paralelo,
+  el orquestador juzga (`JudgeVerdict`), 1→gana solo, juez caído→gana A. Trazas `ai_runs`
+  con roles `<grupo>`, `<grupo>_b`, `<grupo>_judge`. Compiten por defecto texto y vídeo;
+  imagen y audio traen rival recomendado pero apagados.
+- **El usuario elige modelo principal Y competidor por grupo, con CUALQUIER slug del gateway**
+  (no solo las 3-4 sugeridas). `/settings`: cada grupo competible tiene casilla "Competición"
+  + campo del 2.º modelo (vacío = recomendado). Preferencias ahora `{models, competitors}`
+  en `profiles.model_preferences`; `sanitizePreferences` mantiene compatibilidad con el
+  formato plano antiguo. Tokens del competidor: `off` / `auto` / `<slug>`.
+- `resolve-models.ts`: `competitorModel` (off/auto/slug + default del grupo; nunca = principal,
+  vía `recommendedCompetitor`). `OrchestratorModels` con `script/image/video/audio` + sus
+  `*Competitor`. `model-catalog.ts`: `COMPETITION_GROUPS`, `catalogCompetesByDefault`,
+  `catalogCompetitor` (rival recomendado), `getTaskGroup`.
+- **Código**: sigue reservado (no encaja en un calendario de contenido), pero seleccionable.
+- **Saldo del AI Gateway**: el usuario confirma que YA hay saldo. El camino real con LLM no se
+  puede probar desde el sandbox (sin `AI_GATEWAY_API_KEY` allí); se valida en producción.
+- **Verificado**: build + lint + typecheck + `vitest` (54 tests) en verde.
 
 ---
 
