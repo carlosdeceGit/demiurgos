@@ -590,12 +590,17 @@ en cambios futuros.
 
 ### 14.2 IA por GRUPO DE TAREA, elegible por cada usuario (decisión de producto)
 - **Opus 4.8 es el orquestador** (analiza, trocea, coordina). Los subagentes son modelos
-  más baratos. Catálogo en `lib/ai/model-catalog.ts` con 5 grupos y 3-4 opciones c/u + precio:
+  más baratos. Catálogo en `lib/ai/model-catalog.ts` con 7 grupos y 3-5 opciones c/u + precio:
   - Orquestador → `anthropic/claude-opus-4.8` (def) · sonnet 4.6 · gemini 3.1 pro · deepseek r1
-  - Texto (ideas+guiones) → `anthropic/claude-haiku-4.5` (def) · gemini 2.5 flash · deepseek v3 · sonnet 4.6
+  - Texto (ideas+guiones) → `anthropic/claude-haiku-4.5` (def) · gemini 2.5 flash · deepseek v3 · sonnet 4.6 — **compite**
   - Web/búsqueda (tendencias) → `google/gemini-3.1-pro` (def) · gemini flash · gpt-4.1 · sonnet 4.6
   - Imágenes (dirección) → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash
+  - **Vídeo (dirección/montaje)** → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash · *veo 3 / sora 2 (gen, futuro)* — **compite**
+  - **Audio (voz/locución/música)** → `anthropic/claude-haiku-4.5` (def) · gemini flash · sonnet 4.6 · *elevenlabs (TTS, futuro)*
   - Código (reservado, sin uso aún) → sonnet 4.6 · deepseek v3 · gpt-4.1
+  - Cableados hoy en el pipeline: orquestador, texto, web, imagen. **Vídeo, audio y código**
+    ya están en catálogo y `/settings` (el orquestador puede repartirles), pero su ejecución
+    en el pipeline está **pendiente de cablear** (hoja de ruta).
 - **Por usuario**: `profiles.model_preferences` (jsonb). Resolución pura en
   `lib/ai/resolve-models.ts` = preferencia del usuario → default del catálogo; mapea grupos
   a roles del pipeline (idea y guión = texto; tendencias = web; etc.).
@@ -636,6 +641,25 @@ en cambios futuros.
   del pipeline por fases fijo. Es un cambio mayor; el diseño actual ya coordina subagentes.
 - Generación de **imagen real** (hoy se produce el *brief* visual); enchufar un generador
   (p. ej. gemini image) detrás del Image Director, con degradación graceful.
+
+### 14.7 Arquitectura ampliada: categorías nuevas + competición (esta sesión, jun 2026)
+> Doc fuente: `lib/ai/ARCHITECTURE.md` (nueva sección "El orquestador es la pieza clave",
+> tabla de grupos ampliada y sección "Competición de modelos"). Cambios:
+- **Refuerzo del orquestador como pieza central** en toda la arquitectura: el doc deja
+  explícito que el orquestador **descompone → reparte → supervisa/juzga/cierra**, y que toda
+  capacidad nueva entra como *grupo de tarea que él reparte*, nunca como agente autónomo.
+- **Categorías nuevas** en `lib/ai/model-catalog.ts` (y por tanto en `/settings`):
+  - **Vídeo** (dirección y montaje: plano, ritmo, formato Reel/Short/TikTok, b-roll, texto en
+    pantalla). Generación real (Veo/Sora/Runway) = motor enchufable a futuro.
+  - **Audio** (guion de voz/VO, tono, música/SFX). Síntesis TTS (ElevenLabs) = futuro.
+  - Estado: reservadas como `código` — visibles y elegibles, ejecución en el pipeline pendiente.
+- **Competición de modelos**: flag `competition` + `competeWith` en el catálogo. Lo declaran
+  **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1 Pro vs Sonnet 4.6): el
+  orquestador encarga la tarea a **dos modelos a la vez** y **hace de juez** (winner+why),
+  con traza A/B en `ai_runs` y degradación graceful si solo responde uno. Mecánica diseñada
+  y documentada; **pendiente de cablear** en `orchestrator.ts` (encaja en el `Promise.allSettled`
+  ya existente de la Fase 3 como "dos runners + un paso de juicio").
+- **Verificado**: `npm run build && npm run lint && npm run typecheck` en verde.
 
 ---
 

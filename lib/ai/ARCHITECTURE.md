@@ -14,6 +14,28 @@ Se apoya en el motor de contexto que ya existía (`compose-context.ts`): motor +
 perfil + conocimiento del ecosistema + señales. Es decir, la "Fase 1 · perfil
 builder" del doc ya está resuelta: el perfil entra en el `system` de cada agente.
 
+## El orquestador es la pieza clave (regla rectora)
+
+Todo el sistema gira en torno a **un único orquestador** (Opus 4.8 por defecto).
+No es "un agente más": es **el cerebro que reparte trabajo**. El resto de modelos
+son **subagentes ejecutores** que solo actúan cuando el orquestador les da una
+tarea concreta y un prompt preciso. Diseño no negociable:
+
+1. **El orquestador descompone**: lee el contexto, decide el tema de la semana,
+   filtra ideas y trocea el trabajo en tareas atómicas (un guion, un brief visual,
+   un brief de vídeo, una locución…). Nada se ejecuta sin que él lo ordene.
+2. **El orquestador reparte**: a cada tarea le asigna un **grupo de tarea**
+   (texto, web, imagen, vídeo, audio, código) y, dentro del grupo, el modelo que
+   el usuario eligió. Los subagentes nunca se auto-asignan trabajo.
+3. **El orquestador supervisa y cierra**: recoge los resultados (en paralelo),
+   degrada con elegancia los que fallen, **juzga** cuando hay competición (ver §
+   correspondiente) y sintetiza la agenda final. El ensamblado del calendario es
+   determinista en código, pero la **decisión** es siempre suya.
+
+Mantén esta jerarquía al tocar cualquier parte: si añades una capacidad nueva
+(p. ej. vídeo o audio), entra como **un grupo de tarea más que el orquestador
+puede repartir**, nunca como un agente autónomo que decide por su cuenta.
+
 ## Pipeline (`lib/ai/orchestrator.ts`)
 
 `runCalendarPipeline()` es un **async generator** que emite eventos de progreso
@@ -59,13 +81,26 @@ resolución en `lib/ai/resolve-models.ts`; preferencia por usuario en
 `profiles.model_preferences` (jsonb). Resolución = elección del usuario → default
 del catálogo (degradación graceful si un modelo no enruta).
 
-| Grupo de tarea | Rol(es) del pipeline | Default | Alternativas |
-|---|---|---|---|
-| Orquestador (razonamiento) | coordinación/filtrado/síntesis | `anthropic/claude-opus-4.8` | sonnet 4.6 · gemini 3.1 pro · deepseek r1 |
-| Texto (ideas y guiones) | Idea Generator + Script Writer | `anthropic/claude-haiku-4.5` | gemini 2.5 flash · deepseek v3 · sonnet 4.6 |
-| Web / búsqueda | Trend Analyst | `google/gemini-3.1-pro` | gemini 2.5 flash · gpt-4.1 · sonnet 4.6 |
-| Imágenes (dirección) | Image Director | `google/gemini-3.1-pro` | sonnet 4.6 · gemini 2.5 flash |
-| Código (reservado) | — (futuro) | `anthropic/claude-sonnet-4.6` | deepseek v3 · gpt-4.1 |
+El **orquestador es quien decide a qué grupo va cada tarea**; el grupo solo dice
+*qué modelo* ejecuta. La tabla es el "menú" del que el orquestador reparte:
+
+| Grupo de tarea | Qué reparte el orquestador aquí | Default | Alternativas | Compite |
+|---|---|---|---|---|
+| Orquestador (razonamiento) | coordinación/filtrado/síntesis/juez | `anthropic/claude-opus-4.8` | sonnet 4.6 · gemini 3.1 pro · deepseek r1 | — |
+| Texto (ideas y guiones) | Idea Generator + Script Writer | `anthropic/claude-haiku-4.5` | gemini 2.5 flash · deepseek v3 · sonnet 4.6 | ✅ (vs gemini 2.5 flash) |
+| Web / búsqueda | Trend Analyst | `google/gemini-3.1-pro` | gemini 2.5 flash · gpt-4.1 · sonnet 4.6 | — |
+| Imágenes (dirección) | Image Director | `google/gemini-3.1-pro` | sonnet 4.6 · gemini 2.5 flash | — |
+| **Vídeo (dirección y montaje)** | brief de vídeo (plano/ritmo/formato) | `google/gemini-3.1-pro` | sonnet 4.6 · gemini 2.5 flash · *veo 3 / sora 2 (gen, futuro)* | ✅ (vs sonnet 4.6) |
+| **Audio (voz/locución y música)** | guion de VO, tono/voz, música/SFX | `anthropic/claude-haiku-4.5` | gemini 2.5 flash · sonnet 4.6 · *elevenlabs (TTS, futuro)* | — |
+| Código (reservado) | — (futuro) | `anthropic/claude-sonnet-4.6` | deepseek v3 · gpt-4.1 | — |
+
+**Estado de los grupos.** Cableados hoy en el pipeline del calendario: orquestador,
+texto, web e imagen. **Vídeo, audio y código** ya viven en el catálogo y aparecen
+en `/settings` (el orquestador puede repartirles trabajo y el usuario ya elige su
+modelo), pero su **ejecución dentro del pipeline está pendiente de cablear** — son
+la hoja de ruta inmediata. Para vídeo/audio, el grupo produce **dirección/guion**
+(siempre útil y barato); la **generación** real (Veo/Sora/Runway, ElevenLabs) es un
+motor enchufable a futuro, igual que la imagen (ver nota de Image Generator).
 
 > Los modelos del **chat/demo** siguen siendo globales en `/admin` (tabla
 > `settings`). Los del **orquestador** los manda cada usuario desde `/settings`.
@@ -74,6 +109,35 @@ del catálogo (degradación graceful si un modelo no enruta).
 > el pipeline produce el **brief visual** (prompt de imagen/vídeo, ratio, estilo),
 > que ya es valioso y nunca bloquea. La generación de la imagen en sí es un paso
 > opcional y enchufable a futuro (otro proveedor del gateway), por diseño desacoplado.
+
+## Competición de modelos (dos IAs por la misma tarea)
+
+Algunos grupos de tarea admiten **competición**: el orquestador encarga la misma
+tarea a **dos modelos a la vez** y luego **hace de juez** y se queda con el mejor
+resultado. Es el orquestador, fiel a su papel, quien reparte por duplicado y quien
+decide — los aspirantes no se comparan entre ellos.
+
+Hoy lo declaran **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1
+Pro vs Sonnet 4.6) con el flag `competition` + `competeWith` en el catálogo. Para
+qué sirve: la parte más sensible a calidad/voz (el guion, la dirección del vídeo)
+se beneficia de dos enfoques baratos en paralelo y un juez caro que elige, en vez
+de pagar un único modelo top para todo.
+
+Mecánica (diseñada; **pendiente de cablear** en `orchestrator.ts`):
+
+```
+1. resolver(grupo) → modeloA = elección del usuario ; modeloB = competeWith
+2. Promise.allSettled([ run(modeloA, tarea), run(modeloB, tarea) ])
+3. si solo responde uno → ese gana (degradación graceful, sin juez)
+4. si responden los dos → el ORQUESTADOR juzga (generateObject:
+   { winner: 'A'|'B', why }) sobre criterios del perfil (gancho, claridad, voz)
+5. se queda el ganador ; se traza en ai_runs (ambos intentos + veredicto) para A/B
+```
+
+Encaja sin romper nada: el pipeline ya usa `Promise.allSettled` por agente en la
+Fase 3, así que la competición es "dos runners + un paso de juicio" dentro de la
+tarea, no una fase nueva. Coste acotado: solo se activa por grupo (config), no en
+todo. Mientras no esté cableado, cada grupo resuelve a **un** modelo (el de hoy).
 
 ## Tendencias en tiempo real (opcional, enchufable)
 
