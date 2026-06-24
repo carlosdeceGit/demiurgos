@@ -29,12 +29,22 @@ export type SignalRow = {
 };
 export type MessageRow = { role: string; content: string };
 
+// Historial de feedback del usuario sobre propuestas anteriores.
+export type LearningRow = {
+  idea: string | null;
+  platform: string | null;
+  status: string; // 'liked' | 'ejecutada' | 'disliked'
+  feedback_reason: string | null;
+  based_on: Record<string, unknown> | null;
+};
+
 export type ComposeInput = {
   motor: string; // capa 1: el motor (INSTRUCCIONES.md)
   profile: ProfileRow | null; // capa 3: instancia del usuario
   knowledge: KnowledgeRow[]; // capa 4: conocimiento del ecosistema
   signals: SignalRow[]; // señales frescas (últimas 20)
   messages: MessageRow[]; // memoria de conversación (últimas 20)
+  learning: LearningRow[]; // aprendizaje acumulado de feedback
 };
 
 const SIGNALS_LIMIT = 20;
@@ -64,8 +74,57 @@ function renderProfile(profile: ProfileRow): string {
   ].join("\n\n");
 }
 
+// Renderiza el historial de feedback como instrucciones claras para el modelo.
+function renderLearning(rows: LearningRow[]): string {
+  const positive = rows.filter(
+    (r) => r.status === "liked" || r.status === "ejecutada"
+  );
+  const negative = rows.filter((r) => r.status === "disliked");
+
+  const parts: string[] = [];
+
+  if (positive.length > 0) {
+    parts.push(
+      "## Propuestas que han funcionado (liked o ejecutadas) — refuerza estos patrones\n" +
+        positive
+          .map((r) => {
+            const hook =
+              typeof r.based_on?.hook === "string" ? r.based_on.hook : r.idea;
+            const fmt =
+              typeof r.based_on?.format === "string"
+                ? ` · ${r.based_on.format}`
+                : "";
+            return `- [${r.status}] ${r.platform ?? ""}${fmt} · "${hook ?? ""}"`;
+          })
+          .join("\n")
+    );
+  }
+
+  if (negative.length > 0) {
+    parts.push(
+      "## Propuestas rechazadas — NO repitas estos patrones\n" +
+        negative
+          .map((r) => {
+            const hook =
+              typeof r.based_on?.hook === "string" ? r.based_on.hook : r.idea;
+            const reason = r.feedback_reason
+              ? ` · motivo: ${r.feedback_reason}`
+              : "";
+            return `- [disliked${reason}] ${r.platform ?? ""} · "${hook ?? ""}"`;
+          })
+          .join("\n")
+    );
+  }
+
+  return (
+    parts.join("\n\n") +
+    "\n\nREGLA: Amplifica los patrones de lo que ha funcionado. Excluye activamente" +
+    " los temas, formatos y estilos de lo rechazado. No repitas propuestas ya ejecutadas."
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
-// Ensamblado puro: motor + perfil + conocimiento + señales + memoria.
+// Ensamblado puro: motor + perfil + conocimiento + señales + aprendizaje + memoria.
 // Sin acceso a red ni a disco → fácil de testear.
 // ─────────────────────────────────────────────────────────────
 export function composeSystemPrompt(input: ComposeInput): string {
@@ -107,6 +166,15 @@ export function composeSystemPrompt(input: ComposeInput): string {
       })
       .join("\n");
     parts.push(section("SEÑALES RECIENTES", body));
+  }
+
+  if (input.learning.length > 0) {
+    parts.push(
+      section(
+        "APRENDIZAJE ACUMULADO (señales de comportamiento del usuario — úsalas siempre)",
+        renderLearning(input.learning)
+      )
+    );
   }
 
   if (input.messages.length > 0) {
@@ -177,6 +245,15 @@ export async function gatherContext(
     .order("created_at", { ascending: false })
     .limit(MESSAGES_LIMIT);
 
+  // Historial de feedback: últimas 40 acciones (liked, ejecutada, disliked).
+  const { data: learningDesc } = await supabase
+    .from("proposals")
+    .select("idea, platform, status, feedback_reason, based_on")
+    .eq("user_id", userId)
+    .in("status", ["liked", "ejecutada", "disliked"])
+    .order("created_at", { ascending: false })
+    .limit(40);
+
   return {
     motor,
     profile: (profile as ProfileRow | null) ?? null,
@@ -184,5 +261,6 @@ export async function gatherContext(
     // Se piden en desc (los más recientes) y se invierten a orden cronológico.
     signals: (signalsDesc ?? []).reverse(),
     messages: (messagesDesc ?? []).reverse(),
+    learning: (learningDesc ?? []) as LearningRow[],
   };
 }

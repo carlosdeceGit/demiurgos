@@ -26,6 +26,7 @@ const base: ComposeInput = {
     { role: "user", content: "hola" },
     { role: "assistant", content: "qué tal" },
   ],
+  learning: [],
 };
 
 describe("composeSystemPrompt", () => {
@@ -61,16 +62,45 @@ describe("composeSystemPrompt", () => {
     expect(out).toContain("onboarding");
   });
 
-  it("omite secciones vacías de conocimiento/señales/memoria", () => {
+  it("omite secciones vacías de conocimiento/señales/memoria/aprendizaje", () => {
     const out = composeSystemPrompt({
       ...base,
       knowledge: [],
       signals: [],
       messages: [],
+      learning: [],
     });
     expect(out).not.toContain("CONOCIMIENTO DEL ECOSISTEMA");
     expect(out).not.toContain("SEÑALES RECIENTES");
     expect(out).not.toContain("MEMORIA DE LA CONVERSACIÓN");
+    expect(out).not.toContain("APRENDIZAJE ACUMULADO");
+  });
+
+  it("incluye aprendizaje y diferencia liked/ejecutada de disliked", () => {
+    const out = composeSystemPrompt({
+      ...base,
+      learning: [
+        {
+          idea: "Hilo sobre storytelling",
+          platform: "linkedin",
+          status: "liked",
+          feedback_reason: null,
+          based_on: { hook: "El hilo que cambió mi forma de escribir", format: "hilo" },
+        },
+        {
+          idea: "5 tips de productividad",
+          platform: "instagram",
+          status: "disliked",
+          feedback_reason: "El tema",
+          based_on: null,
+        },
+      ],
+    });
+    expect(out).toContain("APRENDIZAJE ACUMULADO");
+    expect(out).toContain("El hilo que cambió mi forma de escribir");
+    expect(out).toContain("disliked");
+    expect(out).toContain("El tema");
+    expect(out).toContain("REGLA");
   });
 });
 
