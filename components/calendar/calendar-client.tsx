@@ -13,6 +13,7 @@ const PHASE_LABEL: Record<string, string> = {
   trends: "Análisis de tendencias",
   ideas: "Generación de ideas",
   selection: "Selección del orquestador",
+  hooks: "Revisión de ganchos",
   enrich: "Guion, imagen, vídeo y audio (en paralelo)",
   synthesis: "Síntesis y agenda",
 };
@@ -41,6 +42,8 @@ export function CalendarClient({ hasProfile }: { hasProfile: boolean }) {
             text: `▸ ${PHASE_LABEL[ev.phase] ?? ev.phase}…`,
             tone: "info",
           });
+        } else if (ev.status === "done" && ev.detail) {
+          push({ text: `  ${ev.detail}`, tone: "ok" });
         }
         break;
       case "trend-sources":
