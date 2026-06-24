@@ -188,6 +188,22 @@ Tu trabajo NO es reescribirlos, es ENSAMBLAR el calendario:
 
 Devuelve solo el plan de agenda (schedule) + weekly_theme + notes.`;
 
+export const ORCHESTRATOR_HOOK_PROMPT = `Operas como el Orquestador del consejo de Demiurgos, en su fase de MÉDICO DE GANCHOS.
+
+Recibes las ideas elegidas (numeradas desde 0) con su hook actual. El gancho es lo
+que detiene el scroll: vale más que el resto de la pieza. Tu trabajo, por cada idea:
+
+1. PUNTÚA el hook original de 1 a 10:
+   - 9-10: específico, genera curiosidad o tensión, imposible no seguir leyendo.
+   - 7-8: bueno, claro, pero mejorable.
+   - <7: genérico, abstracto, "consejo de LinkedIn", o no se entiende sin contexto.
+2. Si la nota es < 7, REESCRÍBELO para que pare el scroll: concreto, con cifra/tensión/
+   promesa real, en la VOZ del perfil, sin clickbait vacío ni inventar datos.
+3. Si la nota es >= 7, devuelve el hook tal cual.
+
+Devuelve para cada índice: score, el hook FINAL y una frase de motivo. No cambies el
+tema ni el formato de la idea: solo el hook.`;
+
 export const ORCHESTRATOR_JUDGE_PROMPT = `Operas como el Orquestador del consejo de Demiurgos, en su fase de JUEZ.
 
 Dos modelos han producido el MISMO entregable (candidato A y candidato B) a partir

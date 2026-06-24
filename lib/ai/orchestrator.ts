@@ -1,4 +1,5 @@
 import {
+  ORCHESTRATOR_HOOK_PROMPT,
   ORCHESTRATOR_JUDGE_PROMPT,
   ORCHESTRATOR_SELECT_PROMPT,
   ORCHESTRATOR_SYNTH_PROMPT,
@@ -13,11 +14,13 @@ import { runAudioDirector } from "@/lib/ai/agents/audio-director";
 import { getTrendGrounding } from "@/lib/ai/trends";
 import type { TrendSourceConfig } from "@/lib/ai/trends";
 import {
+  HookReviewSchema,
   JudgeVerdictSchema,
   SelectionSchema,
   SchedulePlanSchema,
   type AudioBrief,
   type CalendarPost,
+  type HookReview,
   type Idea,
   type ImageBrief,
   type Script,
@@ -102,6 +105,39 @@ export function balanceSelection(ideas: Idea[], maxPromotional = 2): Idea[] {
     promo += 1;
     return promo <= maxPromotional;
   });
+}
+
+// Aplica la revisión de ganchos: sustituye el hook por el FINAL que devolvió el
+// orquestador (por índice), si trae uno no vacío. Si no hay revisión, no toca nada.
+export function applyHookReview(
+  ideas: Idea[],
+  review: HookReview | null
+): Idea[] {
+  if (!review) return ideas;
+  const byIndex = new Map(review.hooks.map((h) => [h.index, h]));
+  return ideas.map((idea, i) => {
+    const r = byIndex.get(i);
+    return r && r.hook.trim() ? { ...idea, hook: r.hook.trim() } : idea;
+  });
+}
+
+function buildHookPrompt(ideas: Idea[]): string {
+  const numbered = ideas
+    .map((idea, i) =>
+      JSON.stringify({
+        index: i,
+        hook: idea.hook,
+        topic: idea.topic,
+        angle: idea.angle,
+        platform: idea.platform,
+      })
+    )
+    .join("\n");
+  return [
+    "Ideas elegidas a revisar (índice: idea):",
+    numbered,
+    "Puntúa cada hook (1-10) y devuelve el hook final por índice (reescribe los < 7).",
+  ].join("\n");
 }
 
 export type RunRecord = { role: string; model: string; tokens: number | null };
@@ -401,7 +437,7 @@ export async function* runCalendarPipeline(
   }
 
   // Selección del orquestador + red de seguridad del mix (recorta promo > 2).
-  const chosen = balanceSelection(pickSelectedIdeas(ideas, selection, maxPosts));
+  let chosen = balanceSelection(pickSelectedIdeas(ideas, selection, maxPosts));
   const weeklyTheme =
     selection?.weekly_theme ?? "Selección de la semana";
   const editorialNote = selection?.editorial_note ?? "";
@@ -411,6 +447,34 @@ export async function* runCalendarPipeline(
     selected: chosen.length,
   };
   yield { type: "phase", phase: "selection", status: "done" };
+
+  // ── Fase 2c · Médico de ganchos (el orquestador puntúa y reescribe los flojos) ──
+  if (chosen.length > 0) {
+    yield { type: "phase", phase: "hooks", status: "start" };
+    try {
+      const { object, tokens } = await runObjectAgent({
+        modelId: models.orchestrator,
+        systemContext,
+        rolePrompt: ORCHESTRATOR_HOOK_PROMPT,
+        prompt: buildHookPrompt(chosen),
+        schema: HookReviewSchema,
+        schemaName: "HookReview",
+      });
+      const improved = object.hooks.filter((h) => h.score < 7).length;
+      chosen = applyHookReview(chosen, object);
+      runs.push({ role: "hook_doctor", model: models.orchestrator, tokens });
+      yield {
+        type: "phase",
+        phase: "hooks",
+        status: "done",
+        detail: `${improved} gancho(s) reescrito(s)`,
+      };
+    } catch (err) {
+      // Degradable: si falla, seguimos con los hooks originales.
+      yield { type: "warning", scope: "hooks", message: errMessage(err) };
+      yield { type: "phase", phase: "hooks", status: "done" };
+    }
+  }
 
   // ── Fase 3 · Enriquecido en paralelo (script + image director por idea) ──
   yield { type: "phase", phase: "enrich", status: "start" };

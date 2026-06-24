@@ -135,6 +135,29 @@ export const SelectionSchema = z.object({
 });
 export type Selection = z.infer<typeof SelectionSchema>;
 
+// ── Fase 2c · Orchestrator (Hook doctor) ──────────────────────
+// El gancho es ~80 % del rendimiento en social. El orquestador puntúa cada hook
+// de las ideas elegidas y reescribe los flojos (score < 7) manteniendo la idea
+// y la voz. Devuelve el hook FINAL por índice.
+export const HookReviewSchema = z.object({
+  hooks: z
+    .array(
+      z.object({
+        index: z
+          .number()
+          .int()
+          .describe("Índice (0-based) de la idea elegida que se revisa"),
+        score: z.number().int().describe("Nota del hook ORIGINAL, de 1 a 10"),
+        hook: z
+          .string()
+          .describe("Hook final: reescrito si score < 7, el mismo si no"),
+        reason: z.string().describe("Por qué esa nota / qué se mejoró (1 frase)"),
+      })
+    )
+    .min(1),
+});
+export type HookReview = z.infer<typeof HookReviewSchema>;
+
 // ── Fase 3 · Script Writer ────────────────────────────────────
 export const ScriptSchema = z.object({
   script: z.string(),

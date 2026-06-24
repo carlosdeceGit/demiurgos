@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Clock, ExternalLink } from "lucide-react";
+import { Download, Clock } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import type { ProposalRow } from "@/components/propuestas/proposals-grid";
 
