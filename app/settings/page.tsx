@@ -2,11 +2,13 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/db/server";
 import { AppRail } from "@/components/app/app-rail";
-import { ModelPreferencesForm } from "@/components/settings/model-preferences-form";
+import { SettingsShell } from "@/components/settings/settings-shell";
 import { getUserModelPreferences } from "@/lib/db/user-settings";
 import { isAdminEmail } from "@/lib/auth/admin";
+import { mapContentSource, mapSyncLog } from "@/lib/library/queries";
+import { driveOAuthConfigured } from "@/lib/library/drive";
 
-export const metadata = { title: "Demiurgos · Ajustes de IA" };
+export const metadata = { title: "Demiurgos · Ajustes" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -21,27 +23,51 @@ export default async function SettingsPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const prefs = await getUserModelPreferences(supabase, user.id);
+  const [prefs, { data: sources }, { data: logs }] = await Promise.all([
+    getUserModelPreferences(supabase, user.id),
+    supabase
+      .from("content_sources")
+      .select(
+        "id, provider, provider_folder_id, provider_folder_name, provider_account_email, sync_status, sync_error, last_sync_at"
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("content_sync_logs")
+      .select(
+        "id, started_at, finished_at, status, files_found, files_imported, files_updated, files_failed, error_log"
+      )
+      .eq("user_id", user.id)
+      .order("started_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  const displayName = profile?.display_name ?? user.email ?? "Tú";
 
   return (
     <div className="flex h-dvh">
       <AppRail
         active="ajustes"
-        displayName={profile?.display_name ?? user.email ?? "Tú"}
+        displayName={displayName}
         email={user.email ?? ""}
         isAdmin={isAdminEmail(user.email)}
       />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-2xl space-y-6 p-6">
           <div>
-            <h1 className="font-serif text-2xl">Ajustes de IA</h1>
+            <h1 className="font-serif text-2xl">Ajustes</h1>
             <p className="text-muted-foreground text-sm">
-              Elige qué IA usa cada parte del orquestador. Opus 4.8 dirige y
-              reparte el trabajo; tú decides qué modelo hace cada tarea según
-              calidad y precio.
+              Gestiona tu cuenta, modelos de IA e integraciones.
             </p>
           </div>
-          <ModelPreferencesForm current={prefs} />
+          <SettingsShell
+            displayName={displayName}
+            email={user.email ?? ""}
+            prefs={prefs}
+            sources={(sources ?? []).map(mapContentSource)}
+            logs={(logs ?? []).map(mapSyncLog)}
+            driveConfigured={driveOAuthConfigured()}
+          />
         </div>
       </main>
     </div>

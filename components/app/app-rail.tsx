@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   CalendarDays,
   FolderOpen,
-  Gauge,
+  Home,
   LayoutGrid,
   Lightbulb,
   LogOut,
@@ -36,14 +36,14 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { id: "chat", label: "Chat", icon: MessageSquare, href: "/chat" },
-  { id: "calendario", label: "Calendario", icon: CalendarDays, href: "/calendar" },
-  { id: "dashboard", label: "Dashboard", icon: Gauge, href: "/dashboard" },
+  { id: "dashboard", label: "Inicio", icon: Home, href: "/dashboard" },
+  { id: "chat", label: "Director", icon: MessageSquare, href: "/chat" },
+  { id: "ideas", label: "Ideas", icon: Lightbulb, href: "/ideas" },
   { id: "propuestas", label: "Propuestas", icon: LayoutGrid, href: "/propuestas" },
-  { id: "ideas", label: "Banco de ideas", icon: Lightbulb, href: "/ideas" },
+  { id: "calendario", label: "Calendario", icon: CalendarDays, href: "/calendar" },
   { id: "biblioteca", label: "Biblioteca", icon: FolderOpen, href: "/library" },
   { id: "perfil", label: "Perfil", icon: User, href: "/profile" },
-  { id: "ajustes", label: "Ajustes de IA", icon: SlidersHorizontal, href: "/settings" },
+  { id: "ajustes", label: "Ajustes", icon: SlidersHorizontal, href: "/settings" },
 ];
 
 export function AppRail({

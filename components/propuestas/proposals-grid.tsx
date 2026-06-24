@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -10,6 +11,8 @@ import {
   Clock,
   ChevronDown,
   Expand,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 
 import { ProposalDrawer } from "@/components/propuestas/proposal-drawer";
@@ -342,11 +345,46 @@ export function ProposalsGrid({ proposals: initial }: { proposals: ProposalRow[]
   const [filter, setFilter] = useState<FilterId>("todas");
   const [platformFilter, setPlatformFilter] = useState<string>("todas");
   const [drawerProposal, setDrawerProposal] = useState<ProposalRow | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [genStatus, setGenStatus] = useState<string | null>(null);
+  const router = useRouter();
 
   // Plataformas únicas presentes
   const platforms = Array.from(
     new Set(proposals.map((p) => p.platform).filter(Boolean) as string[])
   );
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setGenStatus("Iniciando...");
+    try {
+      const res = await fetch("/api/generate-calendar", { method: "POST" });
+      if (!res.body) throw new Error("No stream");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          try {
+            const ev = JSON.parse(line.slice(5).trim()) as { type?: string; agent?: string };
+            if (ev.type === "agent_start" && ev.agent) setGenStatus(`${ev.agent}…`);
+            if (ev.type === "done") setGenStatus("Listo");
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch {
+      setGenStatus("Error al generar");
+    } finally {
+      setGenerating(false);
+      router.refresh();
+    }
+  }
 
   async function handleUpdate(id: string, status: string, reason?: string) {
     // Actualizar UI optimistamente
@@ -397,6 +435,24 @@ export function ProposalsGrid({ proposals: initial }: { proposals: ProposalRow[]
           <p className="text-muted-foreground mt-1 text-sm">
             Recomendaciones generadas por el Director para tu semana.
           </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            type="button"
+            disabled={generating}
+            onClick={handleGenerate}
+            className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm text-primary transition-all hover:bg-primary/20 disabled:opacity-60"
+          >
+            {generating ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Wand2 className="size-4" />
+            )}
+            Generar propuestas
+          </button>
+          {genStatus && (
+            <span className="text-[11px] text-muted-foreground">{genStatus}</span>
+          )}
         </div>
       </header>
 
