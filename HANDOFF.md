@@ -703,6 +703,33 @@ en cambios futuros.
   puede probar desde el sandbox (sin `AI_GATEWAY_API_KEY` allí); se valida en producción.
 - **Verificado**: build + lint + typecheck + `vitest` (54 tests) en verde.
 
+### 14.9 Taxonomía de contenido + calidad del enjambre (jun 2026)
+> Doc fuente: `lib/ai/ARCHITECTURE.md` (§"Taxonomía de contenido y calidad del enjambre").
+- **Taxonomía**: `IdeaSchema` gana `content_type` (post_text/post_image/carousel/
+  video_script/video_live/music/mixed) y `content_category` (educational/informative/
+  entertainment/trending/awareness/promotional/curated). Nuevos enums en `schemas.ts`.
+- **Reparto por tipo** (`producersFor`): el orquestador activa SOLO los productores que el
+  tipo necesita (post_text→guión; carousel→guión+slides+imagen; video_*→los 4; music→
+  guión+imagen+audio). Lo omitido a propósito NO cuenta como `degraded`. Pura, testeada.
+- **Anti-repetición**: la API lee las últimas ~25 propuestas (`recentIdeaSummaries`) y pasa
+  `recentIdeas` al pipeline → se inyectan en el prompt del Idea Generator con regla de no
+  repetir. Cierra el hueco de que el contexto no incluía lo ya propuesto.
+- **Mix**: prompts de IdeaGenerator (reparto ~30 % educational, máx 2 promotional…) y
+  Orchestrator Select (verifica el mix); + red de seguridad en código `balanceSelection`
+  (recorta promotional > 2). Pura, testeada.
+- **Carrusel**: `ScriptSchema` gana `slides` (title/body/visual_brief, null si no aplica);
+  el ScriptWriter recibe el `content_type` y los rellena. Se muestran en `/calendar`.
+- **CalendarPost** += content_type, content_category, slides, music_brief, pieces (estos dos
+  reservados, tipos listos, hoy null).
+- **BD**: migración **`0008_proposals_taxonomy.sql`** (¡el brief decía 0004, que ya existía!).
+  Columnas content_type/content_category/expires_at/feedback_reason + 2 índices.
+  **APLICADA en Supabase** (proyecto Demiurgos Web). content_type/category se persisten como
+  columnas; slides/briefs en `based_on`.
+- **Pendiente de calidad** (no hecho, por impacto): (1) activar trends reales
+  (`TRENDS_API_KEY`), (2) auto-crítica de hooks (puntuar 1-10 y reescribir <7), (3) rúbrica
+  de evaluación persistida para medir/compara modelos. Documentado en ARCHITECTURE.
+- **Verificado**: build + lint + typecheck + `vitest` (61 tests) en verde.
+
 ---
 
 ## 15. Biblioteca de contenidos (`/library`)

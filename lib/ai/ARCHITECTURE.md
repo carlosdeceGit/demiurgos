@@ -159,6 +159,39 @@ eso es **config por usuario** (puede apagar lo que no quiera). Resolución pura
 cubierta por tests (`tests/resolve-models.test.ts`): off/auto/slug y el invariante
 "el rival nunca es igual al modelo del usuario".
 
+## Taxonomía de contenido y calidad del enjambre
+
+Cada idea lleva dos ejes (en `IdeaSchema`, `lib/ai/agents/schemas.ts`):
+- **`content_type`** `post_text · post_image · carousel · video_script · video_live ·
+  music · mixed`. Define **qué productores activa el orquestador** (`producersFor`):
+  un `post_text` solo gasta guión; un `carousel`, guión (con `slides`) + imagen; un
+  `video_*`, los cuatro; `music`, guión + imagen + audio. Es el orquestador
+  repartiendo solo lo necesario (mejor coste y piezas más limpias).
+- **`content_category`** `educational · informative · entertainment · trending ·
+  awareness · promotional · curated`. Define la **intención** y se usa para
+  equilibrar el mix de la semana.
+
+Palancas de calidad cableadas (lo que hace que el resultado sirva de verdad):
+- **Anti-repetición**: el pipeline recibe `recentIdeas` (resumen "tema — ángulo" de
+  las últimas ~25 propuestas, leídas en la API) y se inyectan en el prompt del Idea
+  Generator con la regla dura de no repetir. Evita que la semana N clone la N-1.
+- **Mix por prompt + red de seguridad en código**: el Idea Generator reparte
+  categorías (~30 % educational, máx 2 promotional…) y el selector valida el mix;
+  además `balanceSelection` **recorta en código** el exceso de promotional (los
+  prompts "se olvidan", el código no). Función pura, testeada.
+- **Reparto por tipo**: `producersFor` evita malgastar agentes y mantiene coherencia
+  pieza↔producción. Lo omitido a propósito NO cuenta como `degraded`.
+
+Persistencia: `content_type`/`content_category` son **columnas** de `proposals`
+(filtrables/indexadas, migración `0008_proposals_taxonomy.sql`); `slides` y los
+briefs estructurados viajan en `based_on` (jsonb). `music_brief`/`pieces` quedan
+reservados (tipos listos) para `music`/`mixed`.
+
+> Pendientes de calidad (no hechos aún, por orden de impacto): activar **trends
+> reales** (`TRENDS_API_KEY`), **auto-crítica de hooks** (puntuar y reescribir los
+> flojos) y una **rúbrica de evaluación** persistida en `ai_runs`/`proposals` para
+> medir y comparar modelos. Ver HANDOFF §14.9.
+
 ## Tendencias en tiempo real (opcional, enchufable)
 
 El Trend Analyst puede trabajar con **datos reales de tendencias** de redes, no

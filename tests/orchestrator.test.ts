@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   assembleCalendar,
+  balanceSelection,
   isoWeek,
   pickSelectedIdeas,
+  producersFor,
 } from "@/lib/ai/orchestrator";
 import type {
   Idea,
@@ -22,6 +24,8 @@ function idea(overrides: Partial<Idea> = {}): Idea {
     angle: "educativo",
     pillar: "Pilar 1",
     why_now: "Encaja con la tendencia X",
+    content_type: "post_text",
+    content_category: "educational",
     ...overrides,
   };
 }
@@ -75,6 +79,78 @@ describe("pickSelectedIdeas", () => {
   });
 });
 
+describe("producersFor", () => {
+  it("post_text solo necesita guión", () => {
+    expect(producersFor("post_text")).toEqual({
+      script: true,
+      image: false,
+      video: false,
+      audio: false,
+    });
+  });
+
+  it("carousel necesita guión + imagen, no vídeo/audio", () => {
+    expect(producersFor("carousel")).toEqual({
+      script: true,
+      image: true,
+      video: false,
+      audio: false,
+    });
+  });
+
+  it("video_script activa los cuatro productores", () => {
+    expect(producersFor("video_script")).toEqual({
+      script: true,
+      image: true,
+      video: true,
+      audio: true,
+    });
+  });
+
+  it("music activa guión + imagen + audio (no vídeo)", () => {
+    expect(producersFor("music")).toEqual({
+      script: true,
+      image: true,
+      video: false,
+      audio: true,
+    });
+  });
+
+  it("tipo desconocido produce todo (degradación segura)", () => {
+    expect(producersFor("???")).toEqual({
+      script: true,
+      image: true,
+      video: true,
+      audio: true,
+    });
+  });
+});
+
+describe("balanceSelection", () => {
+  it("recorta el exceso de promotional a 2 y conserva el orden y el resto", () => {
+    const list = [
+      idea({ topic: "edu", content_category: "educational" }),
+      idea({ topic: "p1", content_category: "promotional" }),
+      idea({ topic: "info", content_category: "informative" }),
+      idea({ topic: "p2", content_category: "promotional" }),
+      idea({ topic: "p3", content_category: "promotional" }),
+      idea({ topic: "ent", content_category: "entertainment" }),
+    ];
+    const out = balanceSelection(list);
+    const topics = out.map((i) => i.topic);
+    expect(topics).toEqual(["edu", "p1", "info", "p2", "ent"]); // p3 fuera
+    expect(out.filter((i) => i.content_category === "promotional")).toHaveLength(2);
+  });
+
+  it("no toca un lote sin exceso de promotional", () => {
+    const list = [
+      idea({ content_category: "educational" }),
+      idea({ content_category: "promotional" }),
+    ];
+    expect(balanceSelection(list)).toHaveLength(2);
+  });
+});
+
 describe("assembleCalendar", () => {
   const script: Script = {
     script: "guión",
@@ -83,6 +159,7 @@ describe("assembleCalendar", () => {
     cta: "comenta",
     best_time: "09:00",
     format_notes: "notas",
+    slides: null,
   };
   const brief: ImageBrief = {
     image_prompt: "prompt",
@@ -120,6 +197,8 @@ describe("assembleCalendar", () => {
     expect(cal.posts[0].day).toBe("martes");
     expect(cal.posts[0].best_time).toBe("18:00"); // el plan gana al script
     expect(cal.posts[0].script).toBe("guión");
+    expect(cal.posts[0].content_type).toBe("post_text"); // taxonomía propagada
+    expect(cal.posts[0].content_category).toBe("educational");
   });
 
   it("degrada con honestidad cuando faltan script/imagen", () => {

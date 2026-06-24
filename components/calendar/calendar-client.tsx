@@ -217,6 +217,7 @@ export function CalendarClient({ hasProfile }: { hasProfile: boolean }) {
                 <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                   <Badge>{p.platform}</Badge>
                   <Badge>{p.format}</Badge>
+                  {p.content_category && <Badge>{p.content_category}</Badge>}
                   {p.day && (
                     <span className="text-muted-foreground">
                       {p.day}
@@ -255,6 +256,21 @@ export function CalendarClient({ hasProfile }: { hasProfile: boolean }) {
                       {p.image_prompt}
                       {p.aspect_ratio ? `\n(ratio ${p.aspect_ratio})` : ""}
                     </p>
+                  </details>
+                )}
+                {p.slides && p.slides.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-muted-foreground cursor-pointer text-xs">
+                      Carrusel · {p.slides.length} slides
+                    </summary>
+                    <ol className="text-muted-foreground mt-1 list-decimal space-y-1 pl-4 text-xs">
+                      {p.slides.map((s, j) => (
+                        <li key={j} className="whitespace-pre-wrap">
+                          <span className="font-medium">{s.title}</span>
+                          {s.body ? ` — ${s.body}` : ""}
+                        </li>
+                      ))}
+                    </ol>
                   </details>
                 )}
                 {p.video_brief && (

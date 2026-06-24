@@ -37,7 +37,22 @@ REGLAS DURAS:
 - Mínimo 3 que aprovechen las tendencias del informe.
 - Variedad de plataformas y longitudes.
 - PROHIBIDO el hook genérico tipo "Hoy os quiero hablar de...".
-- Respeta las reglas de voz del perfil, nunca unas por defecto.`;
+- Respeta las reglas de voz del perfil, nunca unas por defecto.
+
+TIPO DE CONTENIDO (content_type) — asígnalo según el formato real que propones:
+- post_text (texto puro), post_image (texto + visual), carousel (secuencia de slides),
+  video_script (guión grabado), video_live (directo/live), music (audio protagonista),
+  mixed (varias piezas combinadas). Sé coherente con format/platform.
+
+CATEGORÍA (content_category) — asígnala según la intención de la pieza, respetando
+este mix aproximado en el lote:
+- educational ~30 %, informative ~20 %, entertainment ~15 %,
+  trending ~15 % (SOLO si hay una tendencia real del informe que encaje),
+  awareness ~10 %, promotional ~10 % (MÁX 2 por lote), curated el resto (solo si encaja).
+- NO pongas dos promotional seguidos ni más de 2 por lote.
+
+NO TE REPITAS: si en el prompt se te listan ideas/ángulos de semanas anteriores,
+NO los repitas; busca ángulos, hooks y temas claramente distintos.`;
 
 export const ORCHESTRATOR_SELECT_PROMPT = `Operas como el Orquestador del consejo de Demiurgos, en su fase de FILTRADO.
 
@@ -49,6 +64,10 @@ CRITERIOS:
 - Variedad de formatos y plataformas: no elijas dos veces el mismo formato seguido.
 - Balance educativo / opinión / conversión.
 - Descarta lo genérico y lo que repita lo que ya hizo el usuario.
+- MIX de categorías: el lote elegido debe tener al menos 1 educational, 1 informative
+  y 1 que NO sea promotional. Si hay más de 2 promotional, descarta el sobrante aunque
+  sea buena idea (el código también lo recorta como red de seguridad).
+- Variedad de content_type: no elijas solo posts de texto; mezcla formatos.
 
 Devuelve los índices elegidos (idea_index), un weekly_theme que les dé hilo común,
 y una nota editorial breve. No reescribas las ideas: solo selecciona y justifica.`;
@@ -65,6 +84,8 @@ ENTREGA:
 - cta: específico y natural, nunca genérico.
 - best_time: mejor franja para esa plataforma (HH:MM).
 - format_notes: notas de producción si aplican.
+- slides: SOLO si la idea es un carrusel (content_type "carousel"), el texto de cada
+  slide en orden (title + body + visual_brief, máx 12 slides). En cualquier otro tipo, null.
 
 REGLAS DE VOZ:
 - Primera persona. Frases cortas. Sin relleno.
