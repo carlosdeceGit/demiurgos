@@ -1,6 +1,6 @@
 # Demiurgos — Handoff de contexto (para continuar en otra sesión)
 
-> Última actualización: 22 jun 2026. Resume TODO lo necesario para seguir sin
+> Última actualización: 24 jun 2026. Resume TODO lo necesario para seguir sin
 > empezar de cero. Léelo entero al abrir una sesión nueva.
 > Para arrancar rápido: di "Lee HANDOFF.md en la raíz del repo y continúa".
 
@@ -548,3 +548,119 @@ en cambios futuros.
 - **Elevar el panel `/admin`** y detalles del `/chat` en conversación (burbujas, estados
   de carga, markdown en respuestas del Director).
 - **Onboarding** real (cuando exista) debe nacer ya con el sistema de diseño.
+
+---
+
+## 14. Rediseño de producto — sesión 24 jun 2026 (rama `claude/awesome-mayer-s7lytd`)
+
+Esta sesión implementó el rediseño completo de producto acordado en el briefing del usuario.
+**Rama pendiente de merge a main.** Todos los cambios están en `claude/awesome-mayer-s7lytd`.
+
+### 14.1 Decisiones de producto cerradas
+
+| Decisión | Elección |
+|---|---|
+| Conexión redes sociales | Apify (background, no OAuth) |
+| Imágenes | Orquestador AI, solo cuando se necesita |
+| Volumen semanal | Configurable: Bajo(10)/Medio(15)/Alto(20) |
+| Calendario | Vista de propuestas reales + generación |
+| Historial ideas | Últimas 3 generaciones |
+| Notificaciones | Email (Resend) + push — pendiente |
+| Learning al borrar red | Se preserva |
+| Caducidad propuestas | 21 días, cuenta atrás últimos 5 |
+| Idioma | Solo español, "coming soon" para otros |
+| Dislike | Razón opcional por chips |
+| Onboarding | 4 pasos conversacionales, máx 5 min |
+| Drawer propuesta | Con descarga ZIP (.md + recursos) — pendiente |
+
+### 14.2 Tipos de contenido y categorías (implementados en DB y UI)
+
+**Tipos** (`content_type`): `post_text`, `post_image`, `carousel`, `video_script`, `video_live`, `music`, `mixed`
+
+**Categorías** (`content_category`): `informative`, `educational`, `promotional`, `awareness`, `entertainment`, `trending`, `curated`
+
+### 14.3 Módulos implementados
+
+#### Onboarding (`/onboarding`)
+- `app/onboarding/page.tsx` — server component, redirige si ya completado
+- `components/onboarding/onboarding-wizard.tsx` — 4 pasos con AnimatePresence
+  - Paso 1: nombre + posicionamiento + tipo de creador (chips)
+  - Paso 2: 3 pilares (tema + por qué tú), tercero opcional
+  - Paso 3: tono de voz (multi-chips) + never_do
+  - Paso 4: URLs de redes + frecuencia de publicación
+- `app/api/onboarding/route.ts` — upserta `profiles`, inserta señales por red
+
+#### Propuestas (`/propuestas`)
+- `app/propuestas/page.tsx` — trae proposals excluyendo expired/descartada
+- `components/propuestas/proposals-grid.tsx` — grid con filtros por status y plataforma
+  - `ProposalCard`: badge de estado, hook en serif, "por qué ahora" (ámbar), script expandible, caducidad, feedback inline
+  - Dislike muestra chips: El tema/El tono/El formato/El canal/El momento
+- `app/api/proposals/[id]/route.ts` — PATCH con status + feedback_reason
+
+#### Learning loop (en `lib/ai/compose-context.ts`)
+- Tipo `LearningRow` y campo `learning: LearningRow[]` en `ComposeInput`
+- Función `renderLearning()` — separa liked/ejecutadas vs disliked con motivos
+- Sección "APRENDIZAJE ACUMULADO" en el system prompt (entre señales y memoria)
+- `gatherContext()` ahora trae hasta 40 propuestas con feedback para inyectarlas
+- Tests actualizados en `tests/compose-context.test.ts`
+
+#### Calendario (`/calendar`) — reescrito como vista persistente
+- `app/calendar/page.tsx` — pasa proposals de DB como `CalendarProposal[]`
+- `components/calendar/calendar-client.tsx` — cuadrícula 7 días + navegación semanal
+  - `proposalDate()` parsea `week_of` + `suggested_slot` ("lunes 18:00") → fecha ISO
+  - `ProposalMiniCard` con hover actions (like/ejecutada/dislike)
+  - Panel SSE colapsable con `router.refresh()` al terminar generación
+  - Estado vacío con CTA "Generar semana"
+  - Sección "Sin fecha asignada" para propuestas sin slot
+
+#### Banco de Ideas (`/ideas`)
+- Migración `0006_ideas_table`: tabla `ideas` con `generation_id`, RLS
+- `app/api/generate-ideas/route.ts` — `generateObject` con `ideaModel`, 10 ideas JSON, guarda con `generation_id` compartido
+- `app/api/ideas/[id]/route.ts` — PATCH status (nueva/guardada/descartada)
+- `components/ideas/ideas-client.tsx` — agrupa por `generation_id`, muestra últimas 3 generaciones, guardar/descartar con optimistic update
+- `app/ideas/page.tsx` — server component, trae top-3 generation_ids
+- AppRail: `/ideas` activado
+
+#### Migración de DB aplicada
+- `0006_ideas_table` (Supabase): tabla `ideas` + RLS
+- (Sesión anterior) migración `proposals_v2_feedback_expiry`: añadió `expires_at`, `content_type`, `content_category`, `feedback_reason`; cambió `draft → nueva`
+
+### 14.4 Pendientes (en orden de prioridad)
+
+1. **Merge de rama** `claude/awesome-mayer-s7lytd` → `main` (el usuario lo confirma)
+2. **Drawer de detalle de propuesta** — ver propuesta completa + descarga ZIP (proposal.md + resources.md + image_prompt)
+3. **Regeneración semanal automática** — cron (Supabase Edge Function o Railway) que llama `/api/generate-calendar` por usuario
+4. **Integración Apify** — análisis de redes sociales, se activa desde onboarding y dashboard; resultado va a señales
+5. **Notificaciones email** (Resend ya configurado) — "tu semana está lista" tras generación
+6. **Dashboard** — sección de estado del sistema (última generación, señales recientes, plataformas conectadas)
+7. **Perfil** — pantalla `/perfil` para editar posicionamiento, pilares, voz, redes
+8. **Biblioteca** — guardado de contenido publicado para retroalimentar el aprendizaje
+9. **Orquestador**: actualizar schema con `contentTypeEnum`, `contentCategoryEnum`, campos `slides`/`scenes` — el usuario lo lleva en otro chat
+
+### 14.5 Archivos clave modificados en esta sesión
+
+```
+app/
+  onboarding/page.tsx                 (nuevo)
+  ideas/page.tsx                      (nuevo)
+  propuestas/page.tsx                 (nuevo)
+  calendar/page.tsx                   (modificado)
+  api/onboarding/route.ts             (nuevo)
+  api/proposals/[id]/route.ts         (nuevo)
+  api/generate-ideas/route.ts         (nuevo)
+  api/ideas/[id]/route.ts             (nuevo)
+  api/generate-calendar/route.ts      (expires_at + status nueva)
+  api/demo-chat/route.ts              (learning: [])
+components/
+  onboarding/onboarding-wizard.tsx    (nuevo)
+  propuestas/proposals-grid.tsx       (nuevo)
+  ideas/ideas-client.tsx              (nuevo)
+  calendar/calendar-client.tsx        (reescrito)
+  app/app-rail.tsx                    (propuestas + ideas activados)
+lib/ai/
+  compose-context.ts                  (LearningRow, renderLearning, sección APRENDIZAJE)
+tests/
+  compose-context.test.ts             (learning tests añadidos)
+supabase/migrations/
+  0006_ideas_table                    (aplicada vía MCP)
+```
