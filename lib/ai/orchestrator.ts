@@ -1,4 +1,5 @@
 import {
+  ORCHESTRATOR_JUDGE_PROMPT,
   ORCHESTRATOR_SELECT_PROMPT,
   ORCHESTRATOR_SYNTH_PROMPT,
 } from "@/lib/ai/agents/prompts";
@@ -10,6 +11,7 @@ import { runImageDirector } from "@/lib/ai/agents/image-director";
 import { getTrendGrounding } from "@/lib/ai/trends";
 import type { TrendSourceConfig } from "@/lib/ai/trends";
 import {
+  JudgeVerdictSchema,
   SelectionSchema,
   SchedulePlanSchema,
   type CalendarPost,
@@ -36,6 +38,9 @@ export type OrchestratorModels = {
   trend: string;
   idea: string;
   script: string;
+  // 2.º modelo para el guión en modo COMPETICIÓN (null = sin competición).
+  // Se resuelve en resolve-models.ts a partir del catálogo (grupo "text").
+  scriptCompetitor?: string | null;
   imageDirector: string;
 };
 
@@ -164,6 +169,85 @@ function emptyTrends(): TrendReport {
   };
 }
 
+// ── Etapa de guión con COMPETICIÓN ────────────────────────────
+// Si hay un 2.º contendiente (models.scriptCompetitor), encarga el MISMO guión
+// a dos modelos a la vez y el ORQUESTADOR hace de juez. Nunca lanza: degrada.
+//  - 0 responden → script null (degradado).
+//  - 1 responde  → gana por incomparecencia (sin juez).
+//  - 2 responden → el orquestador juzga; si el juez falla, gana A (el del usuario).
+async function runScriptStage(args: {
+  models: OrchestratorModels;
+  systemContext: string;
+  idea: Idea;
+}): Promise<{ script: Script | null; runs: RunRecord[] }> {
+  const { models, systemContext, idea } = args;
+  const runs: RunRecord[] = [];
+
+  // Sin competición: comportamiento de siempre.
+  if (!models.scriptCompetitor) {
+    try {
+      const r = await runScriptWriter({
+        modelId: models.script,
+        systemContext,
+        idea,
+      });
+      runs.push({ role: "script", model: r.model, tokens: r.tokens });
+      return { script: r.script, runs };
+    } catch {
+      return { script: null, runs };
+    }
+  }
+
+  // Competición: los dos a la vez.
+  const [a, b] = await Promise.allSettled([
+    runScriptWriter({ modelId: models.script, systemContext, idea }),
+    runScriptWriter({ modelId: models.scriptCompetitor, systemContext, idea }),
+  ]);
+  const candA = a.status === "fulfilled" ? a.value : null;
+  const candB = b.status === "fulfilled" ? b.value : null;
+  if (candA) runs.push({ role: "script", model: candA.model, tokens: candA.tokens });
+  if (candB) runs.push({ role: "script_b", model: candB.model, tokens: candB.tokens });
+
+  // 0 o 1 respuestas: sin juicio.
+  if (!candA && !candB) return { script: null, runs };
+  if (!candA || !candB) return { script: (candA ?? candB)!.script, runs };
+
+  // 2 respuestas: el orquestador juzga.
+  try {
+    const { object, tokens } = await runObjectAgent({
+      modelId: models.orchestrator,
+      systemContext,
+      rolePrompt: ORCHESTRATOR_JUDGE_PROMPT,
+      prompt: buildJudgePrompt(idea, candA.script, candB.script),
+      schema: JudgeVerdictSchema,
+      schemaName: "JudgeVerdict",
+    });
+    runs.push({ role: "judge", model: models.orchestrator, tokens });
+    return { script: object.winner === "B" ? candB.script : candA.script, runs };
+  } catch {
+    // El juez falló: nos quedamos con el preferido del usuario (A).
+    return { script: candA.script, runs };
+  }
+}
+
+function buildJudgePrompt(idea: Idea, a: Script, b: Script): string {
+  return [
+    "Idea de partida:",
+    "```json",
+    JSON.stringify(idea, null, 2),
+    "```",
+    "Candidato A (preferido del usuario):",
+    "```json",
+    JSON.stringify(a, null, 2),
+    "```",
+    "Candidato B (rival):",
+    "```json",
+    JSON.stringify(b, null, 2),
+    "```",
+    "Elige el mejor para publicar (winner 'A' o 'B') y una frase de porqué.",
+  ].join("\n");
+}
+
 // ── Pipeline ──────────────────────────────────────────────────
 
 export async function* runCalendarPipeline(
@@ -266,29 +350,26 @@ export async function* runCalendarPipeline(
   const enriched: Enriched[] = await Promise.all(
     chosen.map(async (idea) => {
       const degraded: string[] = [];
-      const [scriptRes, briefRes] = await Promise.allSettled([
-        runScriptWriter({ modelId: models.script, systemContext, idea }),
+      // El guión puede COMPETIR (dos modelos + el orquestador de juez); la
+      // imagen va en paralelo. La etapa de guión no lanza: degrada sola.
+      const [scriptStage, briefRes] = await Promise.all([
+        runScriptStage({ models, systemContext, idea }),
         runImageDirector({
           modelId: models.imageDirector,
           systemContext,
           idea,
-        }),
+        }).then(
+          (value) => ({ ok: true as const, value }),
+          (error) => ({ ok: false as const, error })
+        ),
       ]);
 
-      let script: Script | null = null;
-      if (scriptRes.status === "fulfilled") {
-        script = scriptRes.value.script;
-        runs.push({
-          role: "script",
-          model: scriptRes.value.model,
-          tokens: scriptRes.value.tokens,
-        });
-      } else {
-        degraded.push("script");
-      }
+      const script = scriptStage.script;
+      if (!script) degraded.push("script");
+      runs.push(...scriptStage.runs);
 
       let brief: ImageBrief | null = null;
-      if (briefRes.status === "fulfilled") {
+      if (briefRes.ok) {
         brief = briefRes.value.brief;
         runs.push({
           role: "image_director",

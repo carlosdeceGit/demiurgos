@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  competitorModel,
   effectiveModel,
   resolvePipelineModels,
   sanitizePreferences,
 } from "@/lib/ai/resolve-models";
-import { catalogDefault } from "@/lib/ai/model-catalog";
+import { catalogCompetitor, catalogDefault } from "@/lib/ai/model-catalog";
 
 describe("sanitizePreferences", () => {
   it("se queda solo con grupos válidos y strings no vacíos", () => {
@@ -63,5 +64,40 @@ describe("resolvePipelineModels", () => {
     expect(models.idea).toBe(catalogDefault("text"));
     expect(models.trend).toBe(catalogDefault("web"));
     expect(models.imageDirector).toBe(catalogDefault("image"));
+  });
+
+  it("incluye scriptCompetitor (competición del guión) distinto del elegido", () => {
+    const models = resolvePipelineModels({});
+    expect(models.scriptCompetitor).toBe(competitorModel("text", {}));
+    expect(models.scriptCompetitor).not.toBe(models.script);
+  });
+});
+
+describe("competitorModel (competición del grupo texto)", () => {
+  const rival = catalogCompetitor("text");
+  const def = catalogDefault("text");
+
+  it("texto compite: el rival difiere del modelo elegido", () => {
+    expect(rival).not.toBeNull();
+    expect(competitorModel("text", {})).toBe(rival);
+    expect(competitorModel("text", {})).not.toBe(effectiveModel("text", {}));
+  });
+
+  it("si el usuario elige el propio rival, cae al default (sigue compitiendo)", () => {
+    const c = competitorModel("text", { text: rival! });
+    expect(c).toBe(def);
+    expect(c).not.toBe(rival);
+  });
+
+  it("nunca devuelve el mismo modelo que el elegido por el usuario", () => {
+    for (const choice of [def, rival!, "openai/gpt-4.1"]) {
+      const c = competitorModel("text", { text: choice });
+      if (c !== null) expect(c).not.toBe(choice);
+    }
+  });
+
+  it("grupos sin competición devuelven null", () => {
+    expect(competitorModel("web", {})).toBeNull();
+    expect(competitorModel("image", {})).toBeNull();
   });
 });

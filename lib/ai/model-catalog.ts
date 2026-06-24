@@ -33,8 +33,9 @@ export type TaskGroup = {
   // El ORQUESTADOR puede repartir esta tarea a DOS modelos a la vez y quedarse
   // con el mejor resultado (modo "competición"): declara la capacidad aquí, el
   // 2.º aspirante por defecto es `competeWith` y el orquestador hace de juez.
-  // Ver lib/ai/ARCHITECTURE.md §"Competición de modelos". (Diseño; pendiente de
-  // cablear en el pipeline — hoy cada grupo resuelve a UN modelo.)
+  // Ver lib/ai/ARCHITECTURE.md §"Competición de modelos". CABLEADO para "text"
+  // (orchestrator.ts → runScriptStage); para "video" es declaración (su grupo
+  // aún no se ejecuta en el pipeline). Sin esto, el grupo resuelve a UN modelo.
   competition?: boolean;
   competeWith?: string; // slug del 2.º aspirante por defecto
 };
@@ -140,4 +141,10 @@ export const TASK_GROUP_IDS = TASK_GROUPS.map((g) => g.id);
 
 export function catalogDefault(group: TaskGroupId): string {
   return TASK_GROUPS.find((g) => g.id === group)!.defaultModel;
+}
+
+// 2.º aspirante por defecto de un grupo en COMPETICIÓN (o null si no compite).
+export function catalogCompetitor(group: TaskGroupId): string | null {
+  const g = TASK_GROUPS.find((x) => x.id === group);
+  return g?.competition ? (g.competeWith ?? null) : null;
 }

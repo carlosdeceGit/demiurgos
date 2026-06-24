@@ -1,4 +1,5 @@
 import {
+  catalogCompetitor,
   catalogDefault,
   TASK_GROUP_IDS,
   type TaskGroupId,
@@ -28,6 +29,21 @@ export function effectiveModel(
   return chosen && chosen.trim() ? chosen.trim() : catalogDefault(group);
 }
 
+// 2.º contendiente del grupo "text" cuando compite, SIEMPRE distinto al elegido
+// por el usuario. Si el rival por defecto coincide con su elección, cae al
+// default del catálogo; si también coincide, no hay competición (null).
+export function competitorModel(
+  group: TaskGroupId,
+  prefs: UserModelPreferences
+): string | null {
+  const rival = catalogCompetitor(group);
+  if (!rival) return null;
+  const chosen = effectiveModel(group, prefs);
+  if (rival !== chosen) return rival;
+  const fallback = catalogDefault(group);
+  return fallback !== chosen ? fallback : null;
+}
+
 // Traduce los grupos de tarea a los roles concretos del pipeline del calendario.
 // (idea y guión comparten el grupo "text"; tendencias = "web"; etc.)
 export function resolvePipelineModels(
@@ -38,6 +54,9 @@ export function resolvePipelineModels(
     trend: effectiveModel("web", prefs),
     idea: effectiveModel("text", prefs),
     script: effectiveModel("text", prefs),
+    // Competición del grupo "texto": el guión se encarga a dos modelos y el
+    // orquestador hace de juez (ver orchestrator.ts). null = sin competición.
+    scriptCompetitor: competitorModel("text", prefs),
     imageDirector: effectiveModel("image", prefs),
   };
 }

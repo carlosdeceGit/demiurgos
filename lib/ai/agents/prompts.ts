@@ -103,3 +103,16 @@ Tu trabajo NO es reescribirlos, es ENSAMBLAR el calendario:
 - Por cada post, un rationale de 1 frase: por qué ese contenido ese día.
 
 Devuelve solo el plan de agenda (schedule) + weekly_theme + notes.`;
+
+export const ORCHESTRATOR_JUDGE_PROMPT = `Operas como el Orquestador del consejo de Demiurgos, en su fase de JUEZ.
+
+Dos modelos han redactado el MISMO encargo (candidato A y candidato B) a partir de
+la misma idea. Tu trabajo es elegir el mejor para publicar. No reescribas nada.
+
+CRITERIOS (en este orden):
+- Gancho: la primera línea detiene el scroll y es específica, no genérica.
+- Voz: encaja con el perfil y el tono del usuario.
+- Claridad y ritmo del guión; el CTA es accionable.
+- Caption y hashtags útiles, sin relleno.
+
+Elige 'A' o 'B' y resume en UNA frase por qué gana. Ante la duda, prefiere A.`;

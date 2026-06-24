@@ -117,27 +117,33 @@ tarea a **dos modelos a la vez** y luego **hace de juez** y se queda con el mejo
 resultado. Es el orquestador, fiel a su papel, quien reparte por duplicado y quien
 decide — los aspirantes no se comparan entre ellos.
 
-Hoy lo declaran **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1
-Pro vs Sonnet 4.6) con el flag `competition` + `competeWith` en el catálogo. Para
-qué sirve: la parte más sensible a calidad/voz (el guion, la dirección del vídeo)
-se beneficia de dos enfoques baratos en paralelo y un juez caro que elige, en vez
-de pagar un único modelo top para todo.
+Lo declaran **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1 Pro
+vs Sonnet 4.6) con el flag `competition` + `competeWith` en el catálogo. Para qué
+sirve: la parte más sensible a calidad/voz (el guion, la dirección del vídeo) se
+beneficia de dos enfoques baratos en paralelo y un juez caro que elige, en vez de
+pagar un único modelo top para todo.
 
-Mecánica (diseñada; **pendiente de cablear** en `orchestrator.ts`):
+**Estado: Texto ya está CABLEADO** (`orchestrator.ts` → `runScriptStage`, Fase 3).
+Vídeo lo declara en catálogo pero su ejecución en el pipeline sigue pendiente
+(igual que el grupo en sí). Mecánica del guión:
 
 ```
-1. resolver(grupo) → modeloA = elección del usuario ; modeloB = competeWith
-2. Promise.allSettled([ run(modeloA, tarea), run(modeloB, tarea) ])
-3. si solo responde uno → ese gana (degradación graceful, sin juez)
-4. si responden los dos → el ORQUESTADOR juzga (generateObject:
-   { winner: 'A'|'B', why }) sobre criterios del perfil (gancho, claridad, voz)
-5. se queda el ganador ; se traza en ai_runs (ambos intentos + veredicto) para A/B
+1. resolvePipelineModels → script = elección del usuario ; scriptCompetitor =
+   competitorModel("text") (SIEMPRE distinto al elegido; null = no compite)
+2. Promise.allSettled([ runScriptWriter(A), runScriptWriter(B) ])
+3. 0 responden → script null (degrada: bandera "script" en el post)
+4. 1 responde  → ese gana por incomparecencia (sin juez)
+5. 2 responden → el ORQUESTADOR juzga con ORCHESTRATOR_JUDGE_PROMPT
+   (generateObject JudgeVerdict { winner:'A'|'B', why }); si el juez falla, gana A
+6. trazas en ai_runs: rol "script" (A), "script_b" (B) y "judge" (veredicto) → A/B
 ```
 
-Encaja sin romper nada: el pipeline ya usa `Promise.allSettled` por agente en la
-Fase 3, así que la competición es "dos runners + un paso de juicio" dentro de la
-tarea, no una fase nueva. Coste acotado: solo se activa por grupo (config), no en
-todo. Mientras no esté cableado, cada grupo resuelve a **un** modelo (el de hoy).
+Encaja sin romper nada: la Fase 3 ya corría en paralelo, así que la competición es
+"dos runners + un paso de juicio" **dentro** de la etapa de guión, no una fase
+nueva; la imagen sigue en paralelo. Coste acotado: solo se activa si hay 2.º
+contendiente (config del catálogo). Sin competición, el guión resuelve a **un**
+modelo, exactamente como antes. La resolución pura está cubierta por tests
+(`tests/resolve-models.test.ts`): el rival nunca es igual al modelo del usuario.
 
 ## Tendencias en tiempo real (opcional, enchufable)
 

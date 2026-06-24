@@ -124,6 +124,17 @@ export const ImageBriefSchema = z.object({
 });
 export type ImageBrief = z.infer<typeof ImageBriefSchema>;
 
+// ── Fase 3 · Orchestrator (juez de competición) ───────────────
+// Cuando un grupo compite (dos modelos hacen la MISMA tarea), el orquestador
+// hace de juez y elige el mejor. No reescribe: solo dictamina.
+export const JudgeVerdictSchema = z.object({
+  winner: z
+    .enum(["A", "B"])
+    .describe("Qué candidato gana: 'A' (preferido del usuario) o 'B' (rival)"),
+  why: z.string().describe("Una frase: por qué gana ese, según los criterios"),
+});
+export type JudgeVerdict = z.infer<typeof JudgeVerdictSchema>;
+
 // ── Fase 4 · Orchestrator (síntesis / ensamblado) ─────────────
 // El orquestador NO reescribe los guiones: solo agenda, da coherencia y
 // explica el porqué. El calendario final se ensambla en código a partir de

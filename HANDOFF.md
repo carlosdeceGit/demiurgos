@@ -656,10 +656,21 @@ en cambios futuros.
 - **Competición de modelos**: flag `competition` + `competeWith` en el catálogo. Lo declaran
   **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1 Pro vs Sonnet 4.6): el
   orquestador encarga la tarea a **dos modelos a la vez** y **hace de juez** (winner+why),
-  con traza A/B en `ai_runs` y degradación graceful si solo responde uno. Mecánica diseñada
-  y documentada; **pendiente de cablear** en `orchestrator.ts` (encaja en el `Promise.allSettled`
-  ya existente de la Fase 3 como "dos runners + un paso de juicio").
-- **Verificado**: `npm run build && npm run lint && npm run typecheck` en verde.
+  con traza A/B en `ai_runs` y degradación graceful si solo responde uno.
+- **Competición de TEXTO ya CABLEADA** (`orchestrator.ts`):
+  - `runScriptStage` corre el guión con A (`models.script`) y B (`models.scriptCompetitor`)
+    en `Promise.allSettled`; si responden los dos, el orquestador juzga con
+    `ORCHESTRATOR_JUDGE_PROMPT` + `JudgeVerdictSchema` (`{winner,why}`). Si solo uno responde,
+    gana por incomparecencia; si el juez falla, gana A. La imagen sigue en paralelo.
+  - `scriptCompetitor` se resuelve en `resolve-models.ts` (`competitorModel`): **siempre** un
+    2.º modelo distinto al elegido por el usuario (si coincide, cae al default; si también,
+    null = sin competición). `OrchestratorModels.scriptCompetitor?: string|null`.
+  - Trazas `ai_runs`: roles `script` (A), `script_b` (B) y `judge`. `role` es texto libre (sin
+    CHECK), así que entran sin migración.
+  - Tests nuevos en `tests/resolve-models.test.ts` (el rival nunca = elección del usuario).
+  - **Vídeo**: la competición queda declarada en catálogo pero su ejecución en el pipeline
+    sigue pendiente (como el propio grupo vídeo/audio/código).
+- **Verificado**: `npm run build && npm run lint && npm run typecheck` + `vitest` (todos verdes).
 
 ---
 
