@@ -321,6 +321,9 @@ export function CalendarClient({ proposals: initial }: { proposals: CalendarProp
           pushLog({ text: `  ${ev.detail}`, tone: "ok" });
         }
         break;
+      case "trend-sources":
+        pushLog({ text: `  fuentes reales: ${ev.sources.join(", ")}`, tone: "ok" });
+        break;
       case "trends":
         pushLog({ text: `  ${ev.report.trending_topics.length} temas detectados`, tone: "ok" });
         break;
