@@ -646,6 +646,20 @@ en cambios futuros.
   pieza, así que conviene mostrar un estimado (nº de piezas × productores activos × modelos,
   con precios orientativos del catálogo) y/o un desglose real post-generación a partir de
   `ai_runs.tokens`. No implementado por petición expresa; queda como mejora futura.
+- **Calidad del output del orquestador — roadmap por impacto** (ver §14.9 y `ARCHITECTURE.md`
+  §"Taxonomía de contenido y calidad del enjambre"). Ya hechos: reparto por tipo
+  (`producersFor`), anti-repetición (`recentIdeas`) y red de seguridad del mix
+  (`balanceSelection`). Pendientes, en este orden:
+  1. **Trends reales**: añadir `TRENDS_API_KEY` en Vercel (Settings → Env Vars) + Redeploy.
+     Sin esto, la categoría `trending` y los `why_now` son conocimiento del modelo (genérico).
+  2. **Auto-crítica de hooks**: paso barato donde el orquestador puntúa cada hook 1-10 y manda
+     reescribir los < 7. El hook es ~80 % del rendimiento en social; es lo que más mueve la
+     aguja una vez activados los trends. (Recomendado como siguiente tarea.)
+  3. **Rúbrica de evaluación**: el orquestador-juez puntúa 5 ejes (gancho, especificidad, voz,
+     accionabilidad, encaje-tendencia) y se persiste el score en `proposals`/`ai_runs` para
+     medir evolución y comparar modelos objetivamente.
+  4. **Música/mixed reales**: poblar `music_brief` (tempo/letra) y `pieces` (mixed); hoy los
+     tipos existen pero esos dos campos quedan en null.
 
 ### 14.7 Arquitectura ampliada: categorías nuevas + competición (esta sesión, jun 2026)
 > Doc fuente: `lib/ai/ARCHITECTURE.md` (nueva sección "El orquestador es la pieza clave",
