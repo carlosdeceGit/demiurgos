@@ -648,17 +648,16 @@ en cambios futuros.
   `ai_runs.tokens`. No implementado por petición expresa; queda como mejora futura.
 - **Calidad del output del orquestador — roadmap por impacto** (ver §14.9 y `ARCHITECTURE.md`
   §"Taxonomía de contenido y calidad del enjambre"). Ya hechos: reparto por tipo
-  (`producersFor`), anti-repetición (`recentIdeas`) y red de seguridad del mix
-  (`balanceSelection`). Pendientes, en este orden:
+  (`producersFor`), anti-repetición (`recentIdeas`), red de seguridad del mix
+  (`balanceSelection`) y **auto-crítica de hooks** (Fase 2c, ver §14.10). Pendientes,
+  en este orden:
   1. **Trends reales**: añadir `TRENDS_API_KEY` en Vercel (Settings → Env Vars) + Redeploy.
      Sin esto, la categoría `trending` y los `why_now` son conocimiento del modelo (genérico).
-  2. **Auto-crítica de hooks**: paso barato donde el orquestador puntúa cada hook 1-10 y manda
-     reescribir los < 7. El hook es ~80 % del rendimiento en social; es lo que más mueve la
-     aguja una vez activados los trends. (Recomendado como siguiente tarea.)
-  3. **Rúbrica de evaluación**: el orquestador-juez puntúa 5 ejes (gancho, especificidad, voz,
+     (Recomendado como siguiente, ahora que los hooks ya se auto-critican.)
+  2. **Rúbrica de evaluación**: el orquestador-juez puntúa 5 ejes (gancho, especificidad, voz,
      accionabilidad, encaje-tendencia) y se persiste el score en `proposals`/`ai_runs` para
      medir evolución y comparar modelos objetivamente.
-  4. **Música/mixed reales**: poblar `music_brief` (tempo/letra) y `pieces` (mixed); hoy los
+  3. **Música/mixed reales**: poblar `music_brief` (tempo/letra) y `pieces` (mixed); hoy los
      tipos existen pero esos dos campos quedan en null.
 
 ### 14.7 Arquitectura ampliada: categorías nuevas + competición (esta sesión, jun 2026)
@@ -743,6 +742,22 @@ en cambios futuros.
   (`TRENDS_API_KEY`), (2) auto-crítica de hooks (puntuar 1-10 y reescribir <7), (3) rúbrica
   de evaluación persistida para medir/compara modelos. Documentado en ARCHITECTURE.
 - **Verificado**: build + lint + typecheck + `vitest` (61 tests) en verde.
+
+### 14.10 Médico de ganchos: auto-crítica y reescritura de hooks (jun 2026)
+> Doc fuente: `lib/ai/ARCHITECTURE.md` (Fase 2c + §"Taxonomía y calidad del enjambre").
+- **Por qué**: el gancho es ~80 % del rendimiento en social; es la palanca de calidad de mayor
+  impacto inmediato. Nueva **Fase 2c** entre la selección y el enriquecido.
+- **Qué hace**: el orquestador (Opus) puntúa cada hook de las ideas elegidas (1-10) y
+  **reescribe los < 7** manteniendo idea, formato y voz. `ORCHESTRATOR_HOOK_PROMPT` +
+  `HookReviewSchema` ({index, score, hook, reason}). Se aplica con `applyHookReview` (pura,
+  sustituye por índice; ignora hooks vacíos/índices fuera de rango).
+- **Degradable**: si la revisión falla, el pipeline sigue con los hooks originales (warning).
+- **Traza/feedback**: rol `hook_doctor` en `ai_runs`; el nº de ganchos reescritos se emite en
+  el evento `phase`(done, detail) y se ve en el log en vivo de `/calendar`.
+- **Coste**: 1 sola llamada al orquestador por generación (no por pieza) → barato.
+- **Tests**: `tests/orchestrator.test.ts` (`applyHookReview`: sustitución por índice, null,
+  vacíos/fuera de rango). Total 64 tests en verde + build + lint + typecheck.
+- **Sin migración** (el hook va en los campos ya existentes de la idea/propuesta).
 
 ---
 

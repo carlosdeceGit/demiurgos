@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyHookReview,
   assembleCalendar,
   balanceSelection,
   isoWeek,
@@ -148,6 +149,40 @@ describe("balanceSelection", () => {
       idea({ content_category: "promotional" }),
     ];
     expect(balanceSelection(list)).toHaveLength(2);
+  });
+});
+
+describe("applyHookReview", () => {
+  const ideas = [
+    idea({ topic: "a", hook: "hook flojo A" }),
+    idea({ topic: "b", hook: "hook flojo B" }),
+  ];
+
+  it("sustituye el hook por el final que devuelve el orquestador, por índice", () => {
+    const out = applyHookReview(ideas, {
+      hooks: [
+        { index: 0, score: 4, hook: "Hook reescrito brutal", reason: "flojo" },
+        { index: 1, score: 8, hook: "hook flojo B", reason: "ok" },
+      ],
+    });
+    expect(out[0].hook).toBe("Hook reescrito brutal");
+    expect(out[1].hook).toBe("hook flojo B"); // sin cambios
+    expect(out[0].topic).toBe("a"); // no toca el resto de la idea
+  });
+
+  it("sin revisión (null) deja las ideas intactas", () => {
+    expect(applyHookReview(ideas, null)).toEqual(ideas);
+  });
+
+  it("ignora hooks vacíos y los índices fuera de rango", () => {
+    const out = applyHookReview(ideas, {
+      hooks: [
+        { index: 0, score: 3, hook: "   ", reason: "vacío" },
+        { index: 9, score: 2, hook: "fuera", reason: "no existe" },
+      ],
+    });
+    expect(out[0].hook).toBe("hook flojo A"); // vacío → no sustituye
+    expect(out).toHaveLength(2);
   });
 });
 

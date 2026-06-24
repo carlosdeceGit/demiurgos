@@ -229,7 +229,7 @@ export function IdeasClient({ ideas: initial }: { ideas: IdeaRow[] }) {
           <div>
             <p className="font-serif text-xl text-muted-foreground">Sin ideas todavía</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pulsa "Generar 10 ideas" y el Director explorará posibilidades para tu perfil.
+              Pulsa «Generar 10 ideas» y el Director explorará posibilidades para tu perfil.
             </p>
           </div>
           <Button onClick={generate} disabled={generating} className="gap-2 rounded-full">

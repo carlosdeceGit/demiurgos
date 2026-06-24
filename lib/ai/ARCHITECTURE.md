@@ -45,6 +45,7 @@ puede repartir**, nunca como un agente autónomo que decide por su cuenta.
 Fase 1  Trend Analyst            (web)            → TrendReport
 Fase 2  Idea Generator           (text)           → 18-25 ideas
 Fase 2b Orchestrator · filtrado  (opus)           → top 5-7 + weekly_theme
+Fase 2c Orchestrator · hooks      (opus)           → puntúa y reescribe los hooks < 7
 Fase 3  por idea, EN PARALELO los 4 productores:
           Script Writer (text) + Image Director (image)
           + Video Director (video) + Audio Director (audio)
@@ -181,6 +182,11 @@ Palancas de calidad cableadas (lo que hace que el resultado sirva de verdad):
   prompts "se olvidan", el código no). Función pura, testeada.
 - **Reparto por tipo**: `producersFor` evita malgastar agentes y mantiene coherencia
   pieza↔producción. Lo omitido a propósito NO cuenta como `degraded`.
+- **Médico de ganchos (Fase 2c)**: el gancho es ~80 % del rendimiento en social, así
+  que el orquestador puntúa cada hook de las ideas elegidas (1-10) y **reescribe los
+  < 7** antes de producir (`ORCHESTRATOR_HOOK_PROMPT` → `HookReviewSchema`; aplicado
+  con `applyHookReview`, puro y testeado). Degradable: si falla, siguen los originales.
+  Traza `ai_runs` rol `hook_doctor`; el nº de reescritos sale en el log de `/calendar`.
 
 Persistencia: `content_type`/`content_category` son **columnas** de `proposals`
 (filtrables/indexadas, migración `0008_proposals_taxonomy.sql`); `slides` y los
@@ -188,9 +194,9 @@ briefs estructurados viajan en `based_on` (jsonb). `music_brief`/`pieces` quedan
 reservados (tipos listos) para `music`/`mixed`.
 
 > Pendientes de calidad (no hechos aún, por orden de impacto): activar **trends
-> reales** (`TRENDS_API_KEY`), **auto-crítica de hooks** (puntuar y reescribir los
-> flojos) y una **rúbrica de evaluación** persistida en `ai_runs`/`proposals` para
-> medir y comparar modelos. Ver HANDOFF §14.9.
+> reales** (`TRENDS_API_KEY`) y una **rúbrica de evaluación** persistida en
+> `ai_runs`/`proposals` para medir y comparar modelos. (La auto-crítica de hooks ya
+> está cableada, ver Fase 2c arriba.) Ver HANDOFF §14.9–§14.10.
 
 ## Tendencias en tiempo real (opcional, enchufable)
 
