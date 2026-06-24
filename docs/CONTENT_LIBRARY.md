@@ -95,6 +95,10 @@ conexión vive en su fila de `content_sources` (con `user_id` y RLS). El flujo
 está **implementado de extremo a extremo**; solo faltan las credenciales de
 Google para activarlo en producción.
 
+**Dónde lo hace el usuario:** en su **Perfil** (`/profile`, enlace "Perfil" del
+riel). Allí está el bloque "Google Drive". La Biblioteca (`/library`) solo enlaza
+al Perfil para conectar; el contenido sincronizado aparece en la Biblioteca.
+
 Flujo completo:
 1. **Conectar** → `GET /api/library/oauth/start`: genera un `state` (CSRF en
    cookie httpOnly) y redirige al consent de Google
@@ -146,12 +150,16 @@ API (`app/api/library/`):
 - `POST /sources` / `DELETE /sources?id=` — conectar/desconectar carpeta Drive.
 - `POST /sync` — "Sincronizar ahora".
 
-UI (`app/library/page.tsx` + `components/library/`):
-- `library-view.tsx` — drag&drop, progreso, buscador, filtros, lista, estados
-  vacíos.
-- `content-detail.tsx` — drawer con el Markdown, edición, reprocesar, eliminar.
-- `drive-panel.tsx` — conectar carpeta, sincronizar, historial.
-- `status-badge.tsx` — estados con color/icono de marca.
+UI:
+- `app/library/page.tsx` + `components/library/library-view.tsx` — drag&drop,
+  progreso, buscador, filtros, lista, estados vacíos; enlace al Perfil para Drive.
+- `components/library/content-detail.tsx` — drawer con el Markdown, edición,
+  reprocesar, eliminar.
+- `components/library/status-badge.tsx` — estados con color/icono de marca.
+- `app/profile/page.tsx` + `components/profile/profile-view.tsx` — **Perfil** del
+  usuario: cabecera de cuenta + **conexión de Google Drive** (reutiliza
+  `components/library/drive-panel.tsx`: conectar cuenta, elegir carpeta,
+  sincronizar, historial).
 
 ## 7. Validaciones y seguridad
 

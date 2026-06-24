@@ -665,9 +665,11 @@ ya apunta a `/library` (antes "pronto"); el middleware protege la ruta.
   avisa con claridad y no rompe nada. Pasos exactos en el doc §5.
 - **Rutas** `app/api/library/`: `upload`, `[id]` (GET/PATCH/DELETE), `[id]/reprocess`,
   `sources` (POST/DELETE), `sources/[id]` (PATCH) + `sources/[id]/folders` (GET),
-  `oauth/start` + `oauth/callback`, `sync` (POST). **UI** `components/library/`:
-  `library-view` (drag&drop, buscador, filtros, estados vacíos), `content-detail`
-  (drawer + edición), `drive-panel`, `status-badge`. Marca dark esmeralda + tokens.
+  `oauth/start` + `oauth/callback`, `sync` (POST). **UI**: `/library`
+  (`library-view`: drag&drop, buscador, filtros, estados vacíos; `content-detail`,
+  `status-badge`) y **`/profile`** (`components/profile/profile-view` — cabecera de
+  cuenta + **conexión de Drive por usuario**, reutiliza `library/drive-panel`).
+  El item "Perfil" del riel ya apunta a `/profile`. Marca dark esmeralda + tokens.
 - **Estados**: pending/processing/completed/failed/needs_review/synced. Validación de
   formato y tamaño (10 MB), errores legibles que no rompen la app.
 - **Verde**: build + lint + typecheck + tests (40, incl. `tests/library-convert.test.ts`).
