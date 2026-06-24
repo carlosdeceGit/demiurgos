@@ -32,6 +32,30 @@ function sse(ev: OrchestratorEvent): string {
   return `data: ${JSON.stringify(ev)}\n\n`;
 }
 
+// Resumen "tema — ángulo" de las últimas propuestas, para evitar repeticiones.
+async function recentIdeaSummaries(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<string[]> {
+  try {
+    const { data } = await supabase
+      .from("proposals")
+      .select("idea, based_on")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    return (data ?? [])
+      .map((r) => {
+        const based = (r.based_on ?? {}) as { hook?: string; angle?: string };
+        const angle = based.angle ? ` (${based.angle})` : "";
+        return `${r.idea ?? based.hook ?? ""}${angle}`.trim();
+      })
+      .filter((s) => s.length > 0);
+  } catch {
+    return [];
+  }
+}
+
 export async function POST() {
   const supabase = await createClient();
   const {
@@ -65,6 +89,10 @@ export async function POST() {
     sourcesCsv: trendSettings.sources,
   });
 
+  // Anti-repetición: temas/ángulos de propuestas recientes para que el generador
+  // de ideas no repita la semana anterior. Best-effort (si falla, sigue sin ello).
+  const recentIdeas = await recentIdeaSummaries(supabase, user.id);
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -82,6 +110,7 @@ export async function POST() {
           platforms,
           models,
           trendSources,
+          recentIdeas,
         })) {
           send(ev);
           if (ev.type === "done") {
@@ -128,6 +157,8 @@ async function persist(
     script: p.script,
     image_prompt: p.image_prompt,
     video_prompt: p.video_prompt,
+    content_type: p.content_type,
+    content_category: p.content_category,
     suggested_slot: [p.day, p.best_time].filter(Boolean).join(" ") || null,
     status: "draft",
     based_on: {
@@ -143,6 +174,9 @@ async function persist(
       cover_description: p.cover_description,
       video_brief: p.video_brief,
       audio_brief: p.audio_brief,
+      slides: p.slides,
+      music_brief: p.music_brief,
+      pieces: p.pieces,
       rationale: p.rationale,
       degraded: p.degraded,
     },
