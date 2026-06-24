@@ -1,7 +1,8 @@
-import { Plus, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { Button } from "@/components/ui/button";
+import { UploadContentButton } from "@/components/chat/upload-content-button";
 import type { PlatformKey } from "@/lib/ai/platforms";
 
 const PLATFORM_LABELS: Record<PlatformKey, string> = {
@@ -93,11 +94,7 @@ function RailRight({
       </div>
 
       <div className="mt-auto flex flex-col gap-2 pt-2">
-        <Button variant="outline" size="sm" disabled className="justify-start gap-2">
-          <Plus className="size-4" />
-          Subir contenido
-          <span className="text-muted-foreground ml-auto text-[10px]">pronto</span>
-        </Button>
+        <UploadContentButton />
         <Button variant="outline" size="sm" disabled className="justify-start gap-2">
           <Sparkles className="size-4" />
           Generar propuestas

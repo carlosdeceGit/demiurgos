@@ -121,10 +121,17 @@ y `grep "Carlos"` a 0 en `/lib` y `/app`.
   - **Tablas (8)**: `profiles, ecosystem_knowledge, signals, uploads, proposals,
     messages, ai_runs` (migr. 0001/0002) + `settings` (migr. 0003, singleton de modelos,
     RLS sin policies = solo service role). pgvector habilitado (`signals.embedding` nullable).
+  - **Migraciones nuevas (aplicadas vía MCP)**: `0004_orchestrator_models` y
+    `0005_trend_sources` (columnas en `settings`); `0006_user_model_preferences`
+    (`profiles.model_preferences` jsonb — IA por usuario, ver §14).
   - Sembrado: 6 redes (texto íntegro, md5-verificado), perfil de Carlos, usuario semilla
     `delgadocollantes@gmail.com` (id `e0d265c5-e9fb-493e-b5d4-0348e108f2f7`) + identidad email.
-  - `settings`: `director_model` y `demo_model` = `anthropic/claude-opus-4.7`;
+  - `settings` (modelos del CHAT/DEMO, globales): `director_model` y `demo_model` =
+    `anthropic/claude-sonnet-4.6` (cambiado desde opus-4.7 al depurar el chat);
     `critic_model` = `anthropic/claude-opus-4.8`; `analyst_model` = `google/gemini-3.1-pro`.
+    Los modelos del ORQUESTADOR ya NO se leen de `settings`: son por usuario (§14).
+  - `settings` (tendencias): `trends_enabled=true`, `trends_provider='trendsmcp'`,
+    `trends_sources='TikTok Trending Hashtags,YouTube Trending,Google Trends,Reddit Hot Posts'`.
   - Acceso por **MCP de Supabase** (conector apunta a este proyecto): `apply_migration`,
     `execute_sql`, `get_logs`, `get_advisors`. Es la única vía a la BD desde el entorno.
 - **Vercel**: proyecto `prj_jU4eCxCCwbCD1K9kog9kFENhWfkf` ("demiurgos"),
@@ -135,7 +142,9 @@ y `grep "Carlos"` a 0 en `/lib` y `/app`.
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
 `AI_GATEWAY_API_KEY`, `DIRECTOR_MODEL`/`CRITIC_MODEL`/`ANALYST_MODEL`/`DEMO_MODEL`
 (solo fallback; la tabla `settings` manda), `NEXT_PUBLIC_SITE_URL`, `SEED_USER_EMAIL`,
-`ADMIN_EMAILS`.
+`ADMIN_EMAILS`. **Nuevas (tendencias en tiempo real, ver §14)**: `TRENDS_API_KEY`
+(secreto del proveedor de tendencias) y opcional `TRENDS_API_URL`
+(default `https://api.trendsmcp.ai/api`).
 
 ### ⚠️ Acciones pendientes del usuario (en Vercel)
 1. **`ADMIN_EMAILS`**: añadir en Vercel `ADMIN_EMAILS=delgadocollantes@gmail.com` y
@@ -192,17 +201,22 @@ lib/
   auth/admin.ts
 prompts/director.md
 seed/ seed.ts · parse-conocimiento.ts · map-perfil.ts · parse-markdown.ts · motor.md
-supabase/migrations/ 0001_schema.sql · 0002_rls.sql · 0003_settings.sql
+supabase/migrations/ 0001_schema · 0002_rls · 0003_settings · 0004_orchestrator_models
+  · 0005_trend_sources · 0006_user_model_preferences
 demo/fixtures/ types.ts · profiles.ts · content.ts · metrics.ts · index.ts
 design/ index.html · app.html · onboarding.html · BRIEF.md · REPORT.md
 v1-proyecto-claude/ (4 .md fuente)
-tests/ compose-context.test.ts · seed.test.ts
-proxy.ts   # middleware de sesión + gating (/chat,/dashboard,/admin)
-PLAN_ADMIN_DEMO.md · HANDOFF.md · README.md
+tests/ compose-context · seed · orchestrator · trends · resolve-models
+proxy.ts   # middleware de sesión + gating (/chat,/calendar,/dashboard,/settings,/admin)
+PLAN_ADMIN_DEMO.md · HANDOFF.md · README.md · lib/ai/ARCHITECTURE.md
 ```
 
-Rutas en producción: `/`, `/login`, `/auth/*`, `/chat`, `/dashboard`, `/admin`, `/demo`,
-`/api/chat`, `/api/demo-chat`.
+> Nuevo desde §14: `app/calendar/` · `app/settings/` · `app/api/generate-calendar/` ·
+> `lib/ai/{orchestrator.ts,model-catalog.ts,resolve-models.ts}` · `lib/ai/agents/` ·
+> `lib/ai/trends/` · `lib/db/user-settings.ts` · `components/{calendar,settings}/`.
+
+Rutas en producción: `/`, `/login`, `/auth/*`, `/chat`, `/calendar`, `/dashboard`,
+`/settings`, `/admin`, `/demo`, `/api/chat`, `/api/demo-chat`, `/api/generate-calendar`.
 
 ---
 
@@ -551,7 +565,227 @@ en cambios futuros.
 
 ---
 
-## 14. Rediseño de producto — sesión 24 jun 2026 (rama `claude/awesome-mayer-s7lytd`)
+## 14. Orquestador de IA multi-agente + calendario semanal + tendencias + IA por usuario
+
+> Sesión 23 jun 2026 (rama `claude/determined-heisenberg-zelqe3`, fusionada a producción
+> vía PR #1 y PR #2). Mejora completa de la capa de IA. Doc técnico detallado en
+> **`lib/ai/ARCHITECTURE.md`**. Build/lint/typecheck en verde, 31 tests, `grep "Carlos"`=0.
+
+### 14.1 Qué se construyó
+- **Orquestador de verdad** (`lib/ai/orchestrator.ts`): a partir del contexto del usuario
+  (motor + perfil + conocimiento + señales) produce un **calendario semanal** de forma
+  automática. Es un *async generator* que **emite su razonamiento en streaming** por fases:
+  `Fase 0` tendencias reales (opcional) → `1` Trend Analyst → `2` Idea Generator →
+  `2b` filtrado (orquestador) → `3` Script Writer + Image Director **en paralelo por idea** →
+  `4` síntesis/agenda. Ensamblado final determinista en código (no lo reescribe un LLM).
+- **Agentes tipados** (`lib/ai/agents/`): `schemas.ts` (Zod), `prompts.ts`, `run-object.ts`
+  (`generateObject`), `trend-analyst.ts`, `idea-generator.ts`, `script-writer.ts`,
+  `image-director.ts`. Ningún agente devuelve texto libre.
+- **Degradación graceful**: si falla un agente periférico (tendencias, imagen, guión,
+  síntesis) se anota (`degraded[]`/`warning`) y el pipeline sigue. Solo aborta si caen las ideas.
+- **API SSE** `POST /api/generate-calendar`: emite los eventos y persiste `proposals`
+  (una fila por pieza) + `ai_runs` (rol/modelo/tokens), best-effort.
+- **UI** `/calendar` (`components/calendar/calendar-client.tsx`) con link **Calendario**
+  en el rail: botón "Generar calendario", razonamiento en vivo y calendario final.
+
+### 14.2 IA por GRUPO DE TAREA, elegible por cada usuario (decisión de producto)
+- **Opus 4.8 es el orquestador** (analiza, trocea, coordina). Los subagentes son modelos
+  más baratos. Catálogo en `lib/ai/model-catalog.ts` con 7 grupos y 3-5 opciones c/u + precio:
+  - Orquestador → `anthropic/claude-opus-4.8` (def) · sonnet 4.6 · gemini 3.1 pro · deepseek r1
+  - Texto (ideas+guiones) → `anthropic/claude-haiku-4.5` (def) · gemini 2.5 flash · deepseek v3 · sonnet 4.6 — **compite**
+  - Web/búsqueda (tendencias) → `google/gemini-3.1-pro` (def) · gemini flash · gpt-4.1 · sonnet 4.6
+  - Imágenes (dirección) → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash
+  - **Vídeo (dirección/montaje)** → `google/gemini-3.1-pro` (def) · sonnet 4.6 · gemini flash · *veo 3 / sora 2 (gen, futuro)* — **compite**
+  - **Audio (voz/locución/música)** → `anthropic/claude-haiku-4.5` (def) · gemini flash · sonnet 4.6 · *elevenlabs (TTS, futuro)*
+  - Código (reservado, sin uso aún) → sonnet 4.6 · deepseek v3 · gpt-4.1
+  - Cableados hoy en el pipeline: orquestador, texto, web, imagen. **Vídeo, audio y código**
+    ya están en catálogo y `/settings` (el orquestador puede repartirles), pero su ejecución
+    en el pipeline está **pendiente de cablear** (hoja de ruta).
+- **Por usuario**: `profiles.model_preferences` (jsonb). Resolución pura en
+  `lib/ai/resolve-models.ts` = preferencia del usuario → default del catálogo; mapea grupos
+  a roles del pipeline (idea y guión = texto; tendencias = web; etc.).
+- **UI** `/settings` (`components/settings/model-preferences-form.tsx`, acción
+  `app/settings/actions.ts`) con link **"Ajustes de IA"** en el rail. Lectura/escritura con
+  cliente de sesión (`lib/db/user-settings.ts`) → RLS por usuario. Campo libre con sugerencias.
+- **`/admin`** vuelve a gestionar SOLO chat/demo (globales); las columnas de orquestador en
+  `settings` quedan sin uso (legado, inofensivas).
+
+### 14.3 Tendencias en tiempo real (enchufable, opcional)
+- Capa `lib/ai/trends/` que alimenta al Trend Analyst con datos reales por red. Proveedor
+  por defecto **trendsmcp.ai** por su **API REST** (`POST /api`, Bearer): usamos
+  `get_top_trends` con los `type` exactos (sensibles a mayúsculas). Endpoint en
+  `TRENDS_API_URL`, secreto en `TRENDS_API_KEY` (env, no BD).
+- **Activada** en `settings`, pero **requiere que el usuario ponga `TRENDS_API_KEY` en
+  Vercel** para traer datos. Sin key → degrada a análisis solo-LLM (no rompe).
+- OJO: el repo del reel `ryoppippi/trend-finder-mcp` **no existe (404)**; se eligió
+  trendsmcp.ai. Demiurgos es webapp, no cliente MCP: se consulta la API desde el backend.
+
+### 14.4 Correcciones hechas
+- **Modelos al día**: el `AGENTS_ARCHITECTURE.md` adjunto pedía `claude-opus-4-6` por un
+  ranking de Arena; se usa **Opus 4.8** (sucesor directo, mismo precio). Idem ids actuales.
+- **Chat (`GatewayInternalServerError`)**: persistía con dos modelos válidos → es problema
+  de **cuenta del AI Gateway (saldo/clave)**, no de código. Se cambió el modelo del chat a
+  `claude-sonnet-4.6` (en caliente, vía `settings`). **Pendiente del usuario**: revisar
+  saldo del AI Gateway en Vercel y validez de `AI_GATEWAY_API_KEY`.
+- **Etiqueta engañosa "GPT-5.5"** del cabecero del chat → "Demiurgos".
+
+### 14.5 Acciones pendientes del usuario
+1. **AI Gateway**: revisar saldo/crédito y `AI_GATEWAY_API_KEY` (causa del fallo del chat).
+   El Gateway usa una sola key y enruta a todos los proveedores; BYOK opcional en su dashboard.
+2. **Tendencias reales**: añadir `TRENDS_API_KEY` en Vercel (Settings → Env Vars) y Redeploy.
+   (El usuario decidió no rotar la key que compartió en el chat; queda anotado el riesgo.)
+3. Probar el chat y `/calendar` end-to-end (no verificable desde el sandbox: sin red al LLM).
+
+### 14.6 Posible siguiente paso (no hecho)
+- Orquestación **dinámica**: que Opus invente las tareas/subprompts en cada petición en vez
+  del pipeline por fases fijo. Es un cambio mayor; el diseño actual ya coordina subagentes.
+- Generación de **imagen real** (hoy se produce el *brief* visual); enchufar un generador
+  (p. ej. gemini image) detrás del Image Director, con degradación graceful.
+- **Aviso de coste estimado en `/calendar`** antes de generar (idea del usuario, aplazada a
+  propósito jun 2026). Con competición activa son hasta 4 productores × 2 modelos + jueces por
+  pieza, así que conviene mostrar un estimado (nº de piezas × productores activos × modelos,
+  con precios orientativos del catálogo) y/o un desglose real post-generación a partir de
+  `ai_runs.tokens`. No implementado por petición expresa; queda como mejora futura.
+- **Calidad del output del orquestador — roadmap por impacto** (ver §14.9 y `ARCHITECTURE.md`
+  §"Taxonomía de contenido y calidad del enjambre"). Ya hechos: reparto por tipo
+  (`producersFor`), anti-repetición (`recentIdeas`) y red de seguridad del mix
+  (`balanceSelection`). Pendientes, en este orden:
+  1. **Trends reales**: añadir `TRENDS_API_KEY` en Vercel (Settings → Env Vars) + Redeploy.
+     Sin esto, la categoría `trending` y los `why_now` son conocimiento del modelo (genérico).
+  2. **Auto-crítica de hooks**: paso barato donde el orquestador puntúa cada hook 1-10 y manda
+     reescribir los < 7. El hook es ~80 % del rendimiento en social; es lo que más mueve la
+     aguja una vez activados los trends. (Recomendado como siguiente tarea.)
+  3. **Rúbrica de evaluación**: el orquestador-juez puntúa 5 ejes (gancho, especificidad, voz,
+     accionabilidad, encaje-tendencia) y se persiste el score en `proposals`/`ai_runs` para
+     medir evolución y comparar modelos objetivamente.
+  4. **Música/mixed reales**: poblar `music_brief` (tempo/letra) y `pieces` (mixed); hoy los
+     tipos existen pero esos dos campos quedan en null.
+
+### 14.7 Arquitectura ampliada: categorías nuevas + competición (esta sesión, jun 2026)
+> Doc fuente: `lib/ai/ARCHITECTURE.md` (nueva sección "El orquestador es la pieza clave",
+> tabla de grupos ampliada y sección "Competición de modelos"). Cambios:
+- **Refuerzo del orquestador como pieza central** en toda la arquitectura: el doc deja
+  explícito que el orquestador **descompone → reparte → supervisa/juzga/cierra**, y que toda
+  capacidad nueva entra como *grupo de tarea que él reparte*, nunca como agente autónomo.
+- **Categorías nuevas** en `lib/ai/model-catalog.ts` (y por tanto en `/settings`):
+  - **Vídeo** (dirección y montaje: plano, ritmo, formato Reel/Short/TikTok, b-roll, texto en
+    pantalla). Generación real (Veo/Sora/Runway) = motor enchufable a futuro.
+  - **Audio** (guion de voz/VO, tono, música/SFX). Síntesis TTS (ElevenLabs) = futuro.
+  - Estado: reservadas como `código` — visibles y elegibles, ejecución en el pipeline pendiente.
+- **Competición de modelos**: flag `competition` + `competeWith` en el catálogo. Lo declaran
+  **Texto** (Haiku 4.5 vs Gemini 2.5 Flash) y **Vídeo** (Gemini 3.1 Pro vs Sonnet 4.6): el
+  orquestador encarga la tarea a **dos modelos a la vez** y **hace de juez** (winner+why),
+  con traza A/B en `ai_runs` y degradación graceful si solo responde uno.
+- **Competición de TEXTO ya CABLEADA** (`orchestrator.ts`):
+  - `runScriptStage` corre el guión con A (`models.script`) y B (`models.scriptCompetitor`)
+    en `Promise.allSettled`; si responden los dos, el orquestador juzga con
+    `ORCHESTRATOR_JUDGE_PROMPT` + `JudgeVerdictSchema` (`{winner,why}`). Si solo uno responde,
+    gana por incomparecencia; si el juez falla, gana A. La imagen sigue en paralelo.
+  - `scriptCompetitor` se resuelve en `resolve-models.ts` (`competitorModel`): **siempre** un
+    2.º modelo distinto al elegido por el usuario (si coincide, cae al default; si también,
+    null = sin competición). `OrchestratorModels.scriptCompetitor?: string|null`.
+  - Trazas `ai_runs`: roles `script` (A), `script_b` (B) y `judge`. `role` es texto libre (sin
+    CHECK), así que entran sin migración.
+  - Tests nuevos en `tests/resolve-models.test.ts` (el rival nunca = elección del usuario).
+  - **Vídeo**: la competición queda declarada en catálogo pero su ejecución en el pipeline
+    sigue pendiente (como el propio grupo vídeo/audio/código).
+- **Verificado**: `npm run build && npm run lint && npm run typecheck` + `vitest` (todos verdes).
+
+### 14.8 Todas las categorías cableadas + competición elegible por el usuario (jun 2026)
+> Amplía 14.7. Doc fuente: `lib/ai/ARCHITECTURE.md`. Cambios:
+- **Vídeo y Audio EJECUTÁNDOSE en el pipeline**: nuevos agentes `video-director.ts`
+  (planos/ritmo/duración/b-roll/formato → `VideoBriefSchema`) y `audio-director.ts`
+  (locución/tono/música/SFX → `AudioBriefSchema`). Cada pieza del calendario lleva ahora
+  guion + brief visual + **dirección de vídeo** + **guion de audio**. Se muestran en
+  `/calendar` (desplegables) y se persisten en `proposals.based_on` (sin migración).
+- **Competición GENERALIZADA**: `runScriptStage` → helper genérico `runCompetitiveStage<T>`
+  que usan los 4 productores (texto/imagen/vídeo/audio). Mismo patrón: A vs B en paralelo,
+  el orquestador juzga (`JudgeVerdict`), 1→gana solo, juez caído→gana A. Trazas `ai_runs`
+  con roles `<grupo>`, `<grupo>_b`, `<grupo>_judge`. Compiten por defecto texto y vídeo;
+  imagen y audio traen rival recomendado pero apagados.
+- **El usuario elige modelo principal Y competidor por grupo, con CUALQUIER slug del gateway**
+  (no solo las 3-4 sugeridas). `/settings`: cada grupo competible tiene casilla "Competición"
+  + campo del 2.º modelo (vacío = recomendado). Preferencias ahora `{models, competitors}`
+  en `profiles.model_preferences`; `sanitizePreferences` mantiene compatibilidad con el
+  formato plano antiguo. Tokens del competidor: `off` / `auto` / `<slug>`.
+- `resolve-models.ts`: `competitorModel` (off/auto/slug + default del grupo; nunca = principal,
+  vía `recommendedCompetitor`). `OrchestratorModels` con `script/image/video/audio` + sus
+  `*Competitor`. `model-catalog.ts`: `COMPETITION_GROUPS`, `catalogCompetesByDefault`,
+  `catalogCompetitor` (rival recomendado), `getTaskGroup`.
+- **Código**: sigue reservado (no encaja en un calendario de contenido), pero seleccionable.
+- **Saldo del AI Gateway**: el usuario confirma que YA hay saldo. El camino real con LLM no se
+  puede probar desde el sandbox (sin `AI_GATEWAY_API_KEY` allí); se valida en producción.
+- **Verificado**: build + lint + typecheck + `vitest` (54 tests) en verde.
+
+### 14.9 Taxonomía de contenido + calidad del enjambre (jun 2026)
+> Doc fuente: `lib/ai/ARCHITECTURE.md` (§"Taxonomía de contenido y calidad del enjambre").
+- **Taxonomía**: `IdeaSchema` gana `content_type` (post_text/post_image/carousel/
+  video_script/video_live/music/mixed) y `content_category` (educational/informative/
+  entertainment/trending/awareness/promotional/curated). Nuevos enums en `schemas.ts`.
+- **Reparto por tipo** (`producersFor`): el orquestador activa SOLO los productores que el
+  tipo necesita (post_text→guión; carousel→guión+slides+imagen; video_*→los 4; music→
+  guión+imagen+audio). Lo omitido a propósito NO cuenta como `degraded`. Pura, testeada.
+- **Anti-repetición**: la API lee las últimas ~25 propuestas (`recentIdeaSummaries`) y pasa
+  `recentIdeas` al pipeline → se inyectan en el prompt del Idea Generator con regla de no
+  repetir. Cierra el hueco de que el contexto no incluía lo ya propuesto.
+- **Mix**: prompts de IdeaGenerator (reparto ~30 % educational, máx 2 promotional…) y
+  Orchestrator Select (verifica el mix); + red de seguridad en código `balanceSelection`
+  (recorta promotional > 2). Pura, testeada.
+- **Carrusel**: `ScriptSchema` gana `slides` (title/body/visual_brief, null si no aplica);
+  el ScriptWriter recibe el `content_type` y los rellena. Se muestran en `/calendar`.
+- **CalendarPost** += content_type, content_category, slides, music_brief, pieces (estos dos
+  reservados, tipos listos, hoy null).
+- **BD**: migración **`0008_proposals_taxonomy.sql`** (¡el brief decía 0004, que ya existía!).
+  Columnas content_type/content_category/expires_at/feedback_reason + 2 índices.
+  **APLICADA en Supabase** (proyecto Demiurgos Web). content_type/category se persisten como
+  columnas; slides/briefs en `based_on`.
+- **Pendiente de calidad** (no hecho, por impacto): (1) activar trends reales
+  (`TRENDS_API_KEY`), (2) auto-crítica de hooks (puntuar 1-10 y reescribir <7), (3) rúbrica
+  de evaluación persistida para medir/compara modelos. Documentado en ARCHITECTURE.
+- **Verificado**: build + lint + typecheck + `vitest` (61 tests) en verde.
+
+---
+
+## 15. Biblioteca de contenidos (`/library`)
+
+> Sesión jun 2026. Rama `claude/beautiful-galileo-voqn1l`. Doc completo:
+> **`docs/CONTENT_LIBRARY.md`** (decisiones, flujos, configuración, pruebas).
+
+Nueva sección donde el usuario sube/sincroniza contenido y Demiurgos lo convierte
+a **Markdown limpio** (fuente principal para la IA). El item "Biblioteca" del riel
+ya apunta a `/library` (antes "pronto"); el middleware protege la ruta.
+
+- **BD (migr. `0007_content_library.sql`, YA aplicada vía MCP)**: 3 tablas con RLS
+  por usuario — `content_library` (markdown_content + metadata + estado + dedupe por
+  hash/`provider_file_id`), `content_sources` (carpetas Drive, sin tokens en claro)
+  y `content_sync_logs` (trazas de sync). No se tocó `uploads` (Hito 2) ni nada más.
+- **Conversión** (`lib/library/convert.ts`, pura y testeada): `.md` valida, `.txt`
+  normaliza, `.html` → MD (conversor propio ligero), imágenes → **OCR vía modelo de
+  visión** del AI Gateway existente (`lib/library/ocr.ts`, `LIBRARY_OCR_MODEL`).
+  `.pdf/.docx/.rtf/.odt` quedan `needs_review` con punto de integración claro.
+- **Google Drive — OAuth POR USUARIO** (`lib/library/drive.ts` + `crypto.ts`):
+  flujo completo implementado. Cada usuario conecta su cuenta (`/api/library/oauth/
+  start`→`callback`, refresh token **cifrado AES-256-GCM** con `LIBRARY_TOKEN_SECRET`,
+  CSRF por state-cookie), elige su carpeta (`sources/[id]/folders` + PATCH) y
+  sincroniza (dedupe id+modifiedTime, logs). Solo faltan credenciales:
+  `GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI` + `LIBRARY_TOKEN_SECRET`. Sin ellas la UI
+  avisa con claridad y no rompe nada. Pasos exactos en el doc §5.
+- **Rutas** `app/api/library/`: `upload`, `[id]` (GET/PATCH/DELETE), `[id]/reprocess`,
+  `sources` (POST/DELETE), `sources/[id]` (PATCH) + `sources/[id]/folders` (GET),
+  `oauth/start` + `oauth/callback`, `sync` (POST). **UI**: `/library`
+  (`library-view`: drag&drop, buscador, filtros, estados vacíos; `content-detail`,
+  `status-badge`) y **`/profile`** (`components/profile/profile-view` — cabecera de
+  cuenta + **conexión de Drive por usuario**, reutiliza `library/drive-panel`).
+  El item "Perfil" del riel ya apunta a `/profile`. Marca dark esmeralda + tokens.
+- **Estados**: pending/processing/completed/failed/needs_review/synced. Validación de
+  formato y tamaño (10 MB), errores legibles que no rompen la app.
+- **Verde**: build + lint + typecheck + tests (40, incl. `tests/library-convert.test.ts`).
+- **Pendiente del usuario**: (opcional) bucket privado `library-originals` si se activa
+  conservar originales; credenciales OAuth de Google para activar la sync real.
+
+---
+
+## 15. Rediseño de producto — sesión 24 jun 2026 (rama `claude/awesome-mayer-s7lytd`)
 
 Esta sesión implementó el rediseño completo de producto acordado en el briefing del usuario.
 **Rama pendiente de merge a main.** Todos los cambios están en `claude/awesome-mayer-s7lytd`.

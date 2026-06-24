@@ -38,6 +38,32 @@ export const angleEnum = z.enum([
 
 export const aspectRatioEnum = z.enum(["1:1", "9:16", "16:9", "4:5"]);
 
+// Taxonomía de contenido. El TIPO define qué productores activa el orquestador
+// (post_text → solo guión; carousel → guión+slides+imagen; video_* → +vídeo+audio;
+// music → +audio; mixed → todo). La CATEGORÍA define la intención editorial y se
+// usa para equilibrar el mix de la semana.
+export const contentTypeEnum = z.enum([
+  "post_text", // Post sin imagen
+  "post_image", // Post con imagen
+  "carousel", // Carrusel de slides
+  "video_script", // Guión de vídeo grabado
+  "video_live", // Vídeo directo / live
+  "music", // Contenido con audio protagonista
+  "mixed", // Mezcla de varios formatos
+]);
+export type ContentType = z.infer<typeof contentTypeEnum>;
+
+export const contentCategoryEnum = z.enum([
+  "informative", // Informativo
+  "educational", // Educativo
+  "promotional", // Publicitario
+  "awareness", // De concientización
+  "entertainment", // Entretenimiento
+  "trending", // Actualidad
+  "curated", // De terceros
+]);
+export type ContentCategory = z.infer<typeof contentCategoryEnum>;
+
 // ── Fase 1 · Trend Analyst ────────────────────────────────────
 export const TrendReportSchema = z.object({
   trending_topics: z
@@ -73,6 +99,12 @@ export const IdeaSchema = z.object({
     .string()
     .describe("Qué pilar del perfil sirve esta idea (cita uno real)"),
   why_now: z.string().describe("Por qué funciona esta semana concreta"),
+  content_type: contentTypeEnum.describe(
+    "Tipo de pieza: define qué producción necesita (texto/imagen/carrusel/vídeo/audio/mixto)"
+  ),
+  content_category: contentCategoryEnum.describe(
+    "Intención editorial de la pieza (para equilibrar el mix de la semana)"
+  ),
 });
 export type Idea = z.infer<typeof IdeaSchema>;
 
@@ -111,8 +143,20 @@ export const ScriptSchema = z.object({
   cta: z.string(),
   best_time: z.string().describe("Mejor franja para la plataforma, HH:MM"),
   format_notes: z.string(),
+  // Solo si la idea es un CARRUSEL: el texto de cada slide en orden. null si no.
+  slides: z
+    .array(
+      z.object({
+        title: z.string(),
+        body: z.string(),
+        visual_brief: z.string().nullable(),
+      })
+    )
+    .nullable()
+    .describe("Slides del carrusel en orden, o null si no es carrusel"),
 });
 export type Script = z.infer<typeof ScriptSchema>;
+export type Slide = NonNullable<Script["slides"]>[number];
 
 // ── Fase 3 · Image Director ───────────────────────────────────
 export const ImageBriefSchema = z.object({
@@ -123,6 +167,56 @@ export const ImageBriefSchema = z.object({
   style_notes: z.string(),
 });
 export type ImageBrief = z.infer<typeof ImageBriefSchema>;
+
+// ── Fase 3 · Video Director ───────────────────────────────────
+// Dirección de vídeo plano a plano. La generación real (Veo/Sora/Runway) es un
+// motor enchufable a futuro; aquí se produce el brief (siempre útil, barato).
+export const VideoBriefSchema = z.object({
+  shots: z
+    .array(
+      z.object({
+        scene: z.string().describe("Qué pasa en este plano"),
+        visual: z.string().describe("Encuadre, movimiento de cámara, acción"),
+        on_screen_text: z.string().nullable().describe("Texto en pantalla o null"),
+        seconds: z.number().describe("Duración aproximada del plano"),
+      })
+    )
+    .min(1),
+  pacing: z.string().describe("Ritmo general (rápido/medio) y por qué"),
+  total_seconds: z.number().describe("Duración total objetivo"),
+  broll: z.array(z.string()).describe("Recursos / b-roll sugeridos"),
+  format_notes: z.string().describe("Formato (Reel/Short/TikTok), notas de montaje"),
+});
+export type VideoBrief = z.infer<typeof VideoBriefSchema>;
+
+// ── Fase 3 · Audio Director ───────────────────────────────────
+export const AudioBriefSchema = z.object({
+  voiceover: z.string().describe("Guion de locución (VO) listo para grabar"),
+  voice_tone: z.string().describe("Tono/voz: género, energía, acento, ritmo"),
+  music: z.string().describe("Estilo/mood de la música de fondo"),
+  sfx: z.array(z.string()).describe("Efectos de sonido sugeridos por momento"),
+});
+export type AudioBrief = z.infer<typeof AudioBriefSchema>;
+
+// ── Fase 3 · Music Brief (solo content_type === "music") ──────
+export const MusicBriefSchema = z.object({
+  mood: z.string().describe("Atmósfera/emoción de la pieza musical"),
+  tempo: z.string().describe("Tempo o energía (lento/medio/rápido, BPM si aplica)"),
+  reference: z.string().nullable().describe("Referencia de estilo (sin copyright)"),
+  lyrics: z.string().nullable().describe("Letra o estribillo si aplica, o null"),
+});
+export type MusicBrief = z.infer<typeof MusicBriefSchema>;
+
+// ── Fase 3 · Orchestrator (juez de competición) ───────────────
+// Cuando un grupo compite (dos modelos hacen la MISMA tarea), el orquestador
+// hace de juez y elige el mejor. No reescribe: solo dictamina.
+export const JudgeVerdictSchema = z.object({
+  winner: z
+    .enum(["A", "B"])
+    .describe("Qué candidato gana: 'A' (preferido del usuario) o 'B' (rival)"),
+  why: z.string().describe("Una frase: por qué gana ese, según los criterios"),
+});
+export type JudgeVerdict = z.infer<typeof JudgeVerdictSchema>;
 
 // ── Fase 4 · Orchestrator (síntesis / ensamblado) ─────────────
 // El orquestador NO reescribe los guiones: solo agenda, da coherencia y
@@ -164,6 +258,9 @@ export type CalendarPost = {
   pillar: string;
   topic: string;
   hook: string;
+  // Taxonomía: tipo de pieza (qué se produjo) e intención editorial.
+  content_type: string;
+  content_category: string;
   script: string;
   caption: string;
   hashtags: string[];
@@ -172,6 +269,17 @@ export type CalendarPost = {
   video_prompt: string | null;
   aspect_ratio: string | null;
   cover_description: string | null;
+  // Dirección de vídeo y de audio (null si el grupo no produjo o falló).
+  video_brief: VideoBrief | null;
+  audio_brief: AudioBrief | null;
+  // Slides del carrusel (content_type "carousel"); null en otros tipos.
+  slides: Slide[] | null;
+  // Brief musical (content_type "music"); null en otros tipos.
+  music_brief: MusicBrief | null;
+  // Resumen de piezas (content_type "mixed"); null en otros tipos.
+  pieces:
+    | Array<{ type: string; platform: string; summary: string }>
+    | null;
   best_time: string | null;
   why_now: string;
   rationale: string | null;

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Paperclip, SendHorizontal } from "lucide-react";
+import { Loader2, Paperclip, SendHorizontal } from "lucide-react";
 
 import { Logo } from "@/components/landing/logo";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,11 @@ const SUGGESTIONS = [
   "Vamos a afinar mi perfil",
 ];
 
+// Mismos formatos que la Biblioteca.
+const ACCEPT = ".md,.markdown,.txt,.html,.htm,.jpg,.jpeg,.png,.webp,.pdf,.docx,.rtf,.odt";
+// Tope de texto que inyectamos en el mensaje para no inflar el contexto.
+const MAX_INLINE_CHARS = 8000;
+
 function messageText(message: UIMessage): string {
   return message.parts
     .filter((p): p is { type: "text"; text: string } => p.type === "text")
@@ -24,6 +29,9 @@ function messageText(message: UIMessage): string {
 
 export function ChatClient() {
   const [input, setInput] = useState("");
+  const [attaching, setAttaching] = useState<string | null>(null);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const { messages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
@@ -35,6 +43,54 @@ export function ChatClient() {
     if (!trimmed || busy) return;
     sendMessage({ text: trimmed });
     setInput("");
+  }
+
+  // Sube el archivo a la Biblioteca y mete su contenido en la conversación.
+  async function attachFiles(files: FileList | File[]) {
+    setAttachError(null);
+    for (const file of Array.from(files)) {
+      setAttaching(file.name);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/library/upload", { method: "POST", body: fd });
+        if (!res.ok) throw new Error(await res.text());
+        const { item } = await res.json();
+
+        // Recupera el Markdown convertido para dárselo al Director.
+        let md = "";
+        try {
+          const detail = await fetch(`/api/library/${item.id}`);
+          if (detail.ok) md = (await detail.json()).item?.markdown_content ?? "";
+        } catch {
+          /* si falla, mandamos solo el aviso de subida */
+        }
+
+        if (item.status === "completed" && md) {
+          const clipped =
+            md.length > MAX_INLINE_CHARS
+              ? `${md.slice(0, MAX_INLINE_CHARS)}\n\n…(recortado; el contenido completo está en tu Biblioteca)`
+              : md;
+          sendMessage({
+            text: `He subido «${item.title}» a mi biblioteca. Este es su contenido:\n\n${clipped}`,
+          });
+        } else if (item.status === "needs_review") {
+          sendMessage({
+            text: `He subido «${file.name}» a mi biblioteca, pero la conversión a texto necesita revisión (${item.conversionError ?? "formato no extraído"}). Lo tengo guardado para revisarlo.`,
+          });
+        } else {
+          setAttachError(
+            `«${file.name}»: ${item.conversionError ?? "no se pudo convertir."}`
+          );
+        }
+      } catch (e) {
+        setAttachError(
+          `«${file.name}»: ${e instanceof Error ? e.message : String(e)}`
+        );
+      } finally {
+        setAttaching(null);
+      }
+    }
   }
 
   const empty = messages.length === 0;
@@ -62,8 +118,9 @@ export function ChatClient() {
                 Soy tu <span className="text-primary italic">director creativo</span>.
               </h1>
               <p className="mt-3 text-sm">
-                Cuéntame qué traes entre manos esta semana, o pégame un post que te
-                haya llamado. Empieza por una de estas:
+                Cuéntame qué traes entre manos esta semana, pégame un post que te
+                haya llamado o <span className="text-foreground">adjunta un archivo</span>{" "}
+                (se guarda en tu biblioteca). Empieza por una de estas:
               </p>
             </div>
           )}
@@ -111,16 +168,45 @@ export function ChatClient() {
             ))}
           </div>
 
+          {/* Aviso de adjunto en curso / error */}
+          {attaching && (
+            <p className="text-muted-foreground mb-2 flex items-center gap-2 text-xs">
+              <Loader2 className="size-3.5 animate-spin" />
+              Subiendo y convirtiendo «{attaching}»…
+            </p>
+          )}
+          {attachError && (
+            <p className="text-destructive bg-destructive/10 mb-2 rounded-lg px-3 py-1.5 text-xs">
+              {attachError}
+            </p>
+          )}
+
           <div className="bg-card focus-within:ring-ring/50 flex items-end gap-2 rounded-2xl border p-2 focus-within:ring-[3px]">
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept={ACCEPT}
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) attachFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              disabled
-              title="Subir contenido — próximamente (Hito 2)"
-              className="text-muted-foreground shrink-0"
+              disabled={busy || Boolean(attaching)}
+              onClick={() => fileRef.current?.click()}
+              title="Adjuntar archivo (se guarda en tu biblioteca)"
+              className="text-muted-foreground hover:text-foreground shrink-0"
             >
-              <Paperclip className="size-4" />
+              {attaching ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Paperclip className="size-4" />
+              )}
             </Button>
             <Textarea
               value={input}

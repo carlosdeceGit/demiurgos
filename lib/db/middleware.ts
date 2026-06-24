@@ -46,7 +46,10 @@ export async function updateSession(request: NextRequest) {
   const needsAuth =
     path.startsWith("/chat") ||
     path.startsWith("/calendar") ||
+    path.startsWith("/library") ||
+    path.startsWith("/profile") ||
     path.startsWith("/dashboard") ||
+    path.startsWith("/settings") ||
     path.startsWith("/admin");
 
   // Rutas privadas: sin sesión, a /login.

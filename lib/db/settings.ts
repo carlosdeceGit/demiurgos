@@ -74,7 +74,8 @@ function fallbackTrends(): TrendSettings {
   return {
     enabled: false,
     provider: "trendsmcp",
-    sources: "tiktok,youtube,google search,reddit",
+    sources:
+      "TikTok Trending Hashtags,YouTube Trending,Google Trends,Reddit Hot Posts",
   };
 }
 

@@ -22,16 +22,13 @@ const MODEL_SUGGESTIONS = [
   "xai/grok-4",
 ];
 
+// Modelos del chat/demo (globales). Los modelos del ORQUESTADOR del calendario
+// los elige cada usuario por grupo de tarea en /settings (no aquí).
 const FIELDS: { name: keyof ModelSettings; label: string; hint: string }[] = [
   { name: "directorModel", label: "Director creativo", hint: "Genera las propuestas. Es el que usa el chat." },
   { name: "criticModel", label: "Crítico", hint: "Verifica y filtra (Hito 4)." },
   { name: "analystModel", label: "Analista", hint: "Analiza uploads (Hito 2)." },
   { name: "demoModel", label: "Chat de la demo", hint: "Modelo del /demo público." },
-  { name: "orchestratorModel", label: "Orquestador", hint: "Coordina, filtra y sintetiza el calendario semanal." },
-  { name: "trendModel", label: "Analista de tendencias", hint: "Lee la semana del nicho (fase 1)." },
-  { name: "ideaModel", label: "Generador de ideas", hint: "Volumen de ideas rápidas (fase 2)." },
-  { name: "scriptModel", label: "Redactor", hint: "Guiones y copy por pieza (fase 3)." },
-  { name: "imageDirectorModel", label: "Director visual", hint: "Prompts de imagen/vídeo por pieza (fase 3)." },
 ];
 
 export function ModelSettingsForm({ current }: { current: ModelSettings }) {

@@ -30,11 +30,6 @@ export async function saveModelSettings(formData: FormData) {
     criticModel: str("criticModel"),
     analystModel: str("analystModel"),
     demoModel: str("demoModel"),
-    orchestratorModel: str("orchestratorModel"),
-    trendModel: str("trendModel"),
-    ideaModel: str("ideaModel"),
-    scriptModel: str("scriptModel"),
-    imageDirectorModel: str("imageDirectorModel"),
   });
 
   revalidatePath("/admin");

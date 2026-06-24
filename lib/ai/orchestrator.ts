@@ -1,4 +1,5 @@
 import {
+  ORCHESTRATOR_JUDGE_PROMPT,
   ORCHESTRATOR_SELECT_PROMPT,
   ORCHESTRATOR_SYNTH_PROMPT,
 } from "@/lib/ai/agents/prompts";
@@ -7,11 +8,15 @@ import { runTrendAnalyst } from "@/lib/ai/agents/trend-analyst";
 import { runIdeaGenerator } from "@/lib/ai/agents/idea-generator";
 import { runScriptWriter } from "@/lib/ai/agents/script-writer";
 import { runImageDirector } from "@/lib/ai/agents/image-director";
+import { runVideoDirector } from "@/lib/ai/agents/video-director";
+import { runAudioDirector } from "@/lib/ai/agents/audio-director";
 import { getTrendGrounding } from "@/lib/ai/trends";
 import type { TrendSourceConfig } from "@/lib/ai/trends";
 import {
+  JudgeVerdictSchema,
   SelectionSchema,
   SchedulePlanSchema,
+  type AudioBrief,
   type CalendarPost,
   type Idea,
   type ImageBrief,
@@ -19,6 +24,7 @@ import {
   type SchedulePlan,
   type Selection,
   type TrendReport,
+  type VideoBrief,
   type WeeklyCalendar,
 } from "@/lib/ai/agents/schemas";
 
@@ -35,8 +41,16 @@ export type OrchestratorModels = {
   orchestrator: string;
   trend: string;
   idea: string;
+  // Productores por pieza. Cada uno con su 2.º modelo de COMPETICIÓN opcional
+  // (null = sin competición). Se resuelven en resolve-models.ts por usuario.
   script: string;
+  scriptCompetitor?: string | null;
   imageDirector: string;
+  imageCompetitor?: string | null;
+  video: string;
+  videoCompetitor?: string | null;
+  audio: string;
+  audioCompetitor?: string | null;
 };
 
 export type PipelineInput = {
@@ -47,7 +61,48 @@ export type PipelineInput = {
   trendSources?: TrendSourceConfig;
   dateISO?: string;
   maxPosts?: number;
+  // Temas/ángulos de semanas anteriores (anti-repetición). Opcional.
+  recentIdeas?: string[];
 };
+
+// Qué productores activa el orquestador según el TIPO de la pieza. El orquestador
+// reparte solo lo que cada tipo necesita (no malgasta vídeo en un post de texto).
+export function producersFor(contentType: string): {
+  script: boolean;
+  image: boolean;
+  video: boolean;
+  audio: boolean;
+} {
+  switch (contentType) {
+    case "post_text":
+      return { script: true, image: false, video: false, audio: false };
+    case "post_image":
+    case "carousel":
+      return { script: true, image: true, video: false, audio: false };
+    case "video_script":
+    case "video_live":
+      return { script: true, image: true, video: true, audio: true };
+    case "music":
+      return { script: true, image: true, video: false, audio: true };
+    case "mixed":
+      return { script: true, image: true, video: true, audio: true };
+    default:
+      // Tipo desconocido: produce todo (degradación segura).
+      return { script: true, image: true, video: true, audio: true };
+  }
+}
+
+// Red de seguridad del MIX: aunque el prompt lo pida, recorta el exceso de piezas
+// promocionales (máx 2). No fabrica categorías que falten: eso es trabajo del
+// selector; aquí solo evitamos el fallo más dañino (lote demasiado comercial).
+export function balanceSelection(ideas: Idea[], maxPromotional = 2): Idea[] {
+  let promo = 0;
+  return ideas.filter((idea) => {
+    if (idea.content_category !== "promotional") return true;
+    promo += 1;
+    return promo <= maxPromotional;
+  });
+}
 
 export type RunRecord = { role: string; model: string; tokens: number | null };
 
@@ -105,6 +160,8 @@ type Enriched = {
   idea: Idea;
   script: Script | null;
   brief: ImageBrief | null;
+  video: VideoBrief | null;
+  audio: AudioBrief | null;
   degraded: string[];
 };
 
@@ -131,6 +188,8 @@ export function assembleCalendar(
       pillar: e.idea.pillar,
       topic: e.idea.topic,
       hook: e.idea.hook,
+      content_type: e.idea.content_type,
+      content_category: e.idea.content_category,
       script: e.script?.script ?? "",
       caption: e.script?.caption ?? "",
       hashtags: e.script?.hashtags ?? [],
@@ -139,6 +198,12 @@ export function assembleCalendar(
       video_prompt: e.brief?.video_prompt ?? null,
       aspect_ratio: e.brief?.aspect_ratio ?? null,
       cover_description: e.brief?.cover_description ?? null,
+      video_brief: e.video,
+      audio_brief: e.audio,
+      slides: e.script?.slides ?? null,
+      // music_brief y pieces: reservados para "music"/"mixed" (futuro), hoy null.
+      music_brief: null,
+      pieces: null,
       best_time: slot?.best_time ?? e.script?.best_time ?? null,
       why_now: e.idea.why_now,
       rationale: slot?.rationale ?? null,
@@ -162,6 +227,89 @@ function emptyTrends(): TrendReport {
     weekly_context: "Sin informe de tendencias (el analista no respondió).",
     avoid_this_week: [],
   };
+}
+
+// ── Etapa de productor con COMPETICIÓN (genérica) ─────────────
+// Encarga el MISMO entregable (guión, imagen, vídeo, audio) a uno o dos modelos.
+// Con 2.º contendiente, el ORQUESTADOR hace de juez. Nunca lanza: degrada.
+//  - 0 responden → null (degradado, se añade `role` a degraded[] fuera).
+//  - 1 responde  → gana por incomparecencia (sin juez).
+//  - 2 responden → el orquestador juzga; si el juez falla, gana A (el del usuario).
+type StageRun<T> = { value: T; tokens: number | null; model: string };
+
+async function runCompetitiveStage<T>(args: {
+  orchestratorModel: string;
+  systemContext: string;
+  idea: Idea;
+  role: string; // "script" | "image_director" | "video" | "audio"
+  kind: string; // etiqueta legible del entregable para el juez
+  primary: string;
+  competitor?: string | null;
+  run: (modelId: string) => Promise<StageRun<T>>;
+}): Promise<{ value: T | null; runs: RunRecord[] }> {
+  const { orchestratorModel, systemContext, idea, role, kind, primary } = args;
+  const runs: RunRecord[] = [];
+
+  // Sin competición: una sola llamada.
+  if (!args.competitor) {
+    try {
+      const r = await args.run(primary);
+      runs.push({ role, model: r.model, tokens: r.tokens });
+      return { value: r.value, runs };
+    } catch {
+      return { value: null, runs };
+    }
+  }
+
+  // Competición: los dos a la vez.
+  const [a, b] = await Promise.allSettled([
+    args.run(primary),
+    args.run(args.competitor),
+  ]);
+  const candA = a.status === "fulfilled" ? a.value : null;
+  const candB = b.status === "fulfilled" ? b.value : null;
+  if (candA) runs.push({ role, model: candA.model, tokens: candA.tokens });
+  if (candB) runs.push({ role: `${role}_b`, model: candB.model, tokens: candB.tokens });
+
+  // 0 o 1 respuestas: sin juicio.
+  if (!candA && !candB) return { value: null, runs };
+  if (!candA || !candB) return { value: (candA ?? candB)!.value, runs };
+
+  // 2 respuestas: el orquestador juzga.
+  try {
+    const { object, tokens } = await runObjectAgent({
+      modelId: orchestratorModel,
+      systemContext,
+      rolePrompt: ORCHESTRATOR_JUDGE_PROMPT,
+      prompt: buildJudgePrompt(kind, idea, candA.value, candB.value),
+      schema: JudgeVerdictSchema,
+      schemaName: "JudgeVerdict",
+    });
+    runs.push({ role: `${role}_judge`, model: orchestratorModel, tokens });
+    return { value: object.winner === "B" ? candB.value : candA.value, runs };
+  } catch {
+    // El juez falló: nos quedamos con el preferido del usuario (A).
+    return { value: candA.value, runs };
+  }
+}
+
+function buildJudgePrompt(kind: string, idea: Idea, a: unknown, b: unknown): string {
+  return [
+    `Entregable juzgado: ${kind}.`,
+    "Idea de partida:",
+    "```json",
+    JSON.stringify(idea, null, 2),
+    "```",
+    "Candidato A (preferido del usuario):",
+    "```json",
+    JSON.stringify(a, null, 2),
+    "```",
+    "Candidato B (rival):",
+    "```json",
+    JSON.stringify(b, null, 2),
+    "```",
+    "Elige el mejor para publicar (winner 'A' o 'B') y una frase de porqué.",
+  ].join("\n");
 }
 
 // ── Pipeline ──────────────────────────────────────────────────
@@ -222,6 +370,7 @@ export async function* runCalendarPipeline(
       modelId: models.idea,
       systemContext,
       trends,
+      recentIdeas: input.recentIdeas,
     });
     ideas = r.list.ideas;
     runs.push({ role: "idea", model: r.model, tokens: r.tokens });
@@ -250,7 +399,8 @@ export async function* runCalendarPipeline(
     yield { type: "warning", scope: "selection", message: errMessage(err) };
   }
 
-  const chosen = pickSelectedIdeas(ideas, selection, maxPosts);
+  // Selección del orquestador + red de seguridad del mix (recorta promo > 2).
+  const chosen = balanceSelection(pickSelectedIdeas(ideas, selection, maxPosts));
   const weeklyTheme =
     selection?.weekly_theme ?? "Selección de la semana";
   const editorialNote = selection?.editorial_note ?? "";
@@ -263,43 +413,110 @@ export async function* runCalendarPipeline(
 
   // ── Fase 3 · Enriquecido en paralelo (script + image director por idea) ──
   yield { type: "phase", phase: "enrich", status: "start" };
+  const skip = <T>(): { value: T | null; runs: RunRecord[] } => ({
+    value: null,
+    runs: [],
+  });
+
   const enriched: Enriched[] = await Promise.all(
     chosen.map(async (idea) => {
       const degraded: string[] = [];
-      const [scriptRes, briefRes] = await Promise.allSettled([
-        runScriptWriter({ modelId: models.script, systemContext, idea }),
-        runImageDirector({
-          modelId: models.imageDirector,
-          systemContext,
-          idea,
-        }),
-      ]);
+      // El orquestador reparte SOLO los productores que pide este tipo de pieza
+      // (un post de texto no gasta vídeo/audio). Cada uno puede COMPETIR
+      // (dos modelos + el orquestador de juez) y ninguno lanza: degrada solo.
+      const need = producersFor(idea.content_type);
+      const [scriptStage, imageStage, videoStage, audioStage] =
+        await Promise.all([
+          need.script
+            ? runCompetitiveStage<Script>({
+                orchestratorModel: models.orchestrator,
+                systemContext,
+                idea,
+                role: "script",
+                kind: "guión y copy",
+                primary: models.script,
+                competitor: models.scriptCompetitor,
+                run: (modelId) =>
+                  runScriptWriter({ modelId, systemContext, idea }).then((r) => ({
+                    value: r.script,
+                    tokens: r.tokens,
+                    model: r.model,
+                  })),
+              })
+            : skip<Script>(),
+          need.image
+            ? runCompetitiveStage<ImageBrief>({
+                orchestratorModel: models.orchestrator,
+                systemContext,
+                idea,
+                role: "image_director",
+                kind: "brief visual",
+                primary: models.imageDirector,
+                competitor: models.imageCompetitor,
+                run: (modelId) =>
+                  runImageDirector({ modelId, systemContext, idea }).then((r) => ({
+                    value: r.brief,
+                    tokens: r.tokens,
+                    model: r.model,
+                  })),
+              })
+            : skip<ImageBrief>(),
+          need.video
+            ? runCompetitiveStage<VideoBrief>({
+                orchestratorModel: models.orchestrator,
+                systemContext,
+                idea,
+                role: "video",
+                kind: "dirección de vídeo",
+                primary: models.video,
+                competitor: models.videoCompetitor,
+                run: (modelId) =>
+                  runVideoDirector({ modelId, systemContext, idea }).then((r) => ({
+                    value: r.brief,
+                    tokens: r.tokens,
+                    model: r.model,
+                  })),
+              })
+            : skip<VideoBrief>(),
+          need.audio
+            ? runCompetitiveStage<AudioBrief>({
+                orchestratorModel: models.orchestrator,
+                systemContext,
+                idea,
+                role: "audio",
+                kind: "guion de audio",
+                primary: models.audio,
+                competitor: models.audioCompetitor,
+                run: (modelId) =>
+                  runAudioDirector({ modelId, systemContext, idea }).then((r) => ({
+                    value: r.brief,
+                    tokens: r.tokens,
+                    model: r.model,
+                  })),
+              })
+            : skip<AudioBrief>(),
+        ]);
 
-      let script: Script | null = null;
-      if (scriptRes.status === "fulfilled") {
-        script = scriptRes.value.script;
-        runs.push({
-          role: "script",
-          model: scriptRes.value.model,
-          tokens: scriptRes.value.tokens,
-        });
-      } else {
-        degraded.push("script");
-      }
+      runs.push(
+        ...scriptStage.runs,
+        ...imageStage.runs,
+        ...videoStage.runs,
+        ...audioStage.runs
+      );
+      // Solo es "degradado" si el tipo lo pedía y falló (no si se omitió a propósito).
+      if (need.script && !scriptStage.value) degraded.push("script");
+      if (need.image && !imageStage.value) degraded.push("image_director");
+      if (need.video && !videoStage.value) degraded.push("video");
+      if (need.audio && !audioStage.value) degraded.push("audio");
 
-      let brief: ImageBrief | null = null;
-      if (briefRes.status === "fulfilled") {
-        brief = briefRes.value.brief;
-        runs.push({
-          role: "image_director",
-          model: briefRes.value.model,
-          tokens: briefRes.value.tokens,
-        });
-      } else {
-        degraded.push("image_director");
-      }
-
-      return { idea, script, brief, degraded } satisfies Enriched;
+      return {
+        idea,
+        script: scriptStage.value,
+        brief: imageStage.value,
+        video: videoStage.value,
+        audio: audioStage.value,
+        degraded,
+      } satisfies Enriched;
     })
   );
 

@@ -24,15 +24,18 @@ export type TrendGrounding = {
 
 const MAX_SOURCES = 4;
 
-// Parser puro (testeable): "tiktok, YouTube ,reddit" -> ['tiktok','youtube','reddit']
+// Parser puro (testeable): separa por comas, recorta y dedupe (sin distinguir
+// mayúsculas para el dedupe) PERO preserva el texto original — los `type` de
+// trendsmcp son sensibles a mayúsculas ('TikTok Trending Hashtags').
 export function parseSources(csv: string | null | undefined): string[] {
   if (!csv) return [];
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of csv.split(",")) {
-    const s = raw.trim().toLowerCase();
-    if (s && !seen.has(s)) {
-      seen.add(s);
+    const s = raw.trim();
+    const key = s.toLowerCase();
+    if (s && !seen.has(key)) {
+      seen.add(key);
       out.push(s);
     }
     if (out.length >= MAX_SOURCES) break;
@@ -72,6 +75,6 @@ export function resolveTrendConfig(args: {
     provider: args.provider,
     sources: parseSources(args.sourcesCsv),
     apiKey: process.env.TRENDS_API_KEY,
-    url: process.env.TRENDS_MCP_URL ?? "https://api.trendsmcp.ai/mcp",
+    url: process.env.TRENDS_API_URL ?? "https://api.trendsmcp.ai/api",
   };
 }
