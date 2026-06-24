@@ -641,6 +641,11 @@ en cambios futuros.
   del pipeline por fases fijo. Es un cambio mayor; el diseño actual ya coordina subagentes.
 - Generación de **imagen real** (hoy se produce el *brief* visual); enchufar un generador
   (p. ej. gemini image) detrás del Image Director, con degradación graceful.
+- **Aviso de coste estimado en `/calendar`** antes de generar (idea del usuario, aplazada a
+  propósito jun 2026). Con competición activa son hasta 4 productores × 2 modelos + jueces por
+  pieza, así que conviene mostrar un estimado (nº de piezas × productores activos × modelos,
+  con precios orientativos del catálogo) y/o un desglose real post-generación a partir de
+  `ai_runs.tokens`. No implementado por petición expresa; queda como mejora futura.
 
 ### 14.7 Arquitectura ampliada: categorías nuevas + competición (esta sesión, jun 2026)
 > Doc fuente: `lib/ai/ARCHITECTURE.md` (nueva sección "El orquestador es la pieza clave",
