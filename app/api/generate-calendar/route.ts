@@ -131,7 +131,8 @@ async function persist(
     image_prompt: p.image_prompt,
     video_prompt: p.video_prompt,
     suggested_slot: [p.day, p.best_time].filter(Boolean).join(" ") || null,
-    status: "draft",
+    status: "nueva",
+    expires_at: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
     based_on: {
       weekly_theme: calendar.weekly_theme,
       hook: p.hook,
