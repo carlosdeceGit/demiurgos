@@ -6,6 +6,7 @@ import {
   DashboardView,
   type DashboardProposal,
 } from "@/components/dashboard/dashboard-view";
+import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { activePlatformKeys, type ProfilePlatform } from "@/lib/ai/platforms";
 import { isAdminEmail } from "@/lib/auth/admin";
 
@@ -32,7 +33,12 @@ function completenessOf(profile: Record<string, unknown> | null): number {
   return Math.min(100, base + (profile.onboarding_completed ? 10 : 0));
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
+  const { welcome } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,6 +52,11 @@ export default async function DashboardPage() {
     )
     .eq("user_id", user.id)
     .maybeSingle();
+
+  // Usuarios nuevos o sin onboarding → al wizard.
+  if (!profile || !profile.onboarding_completed) {
+    redirect("/onboarding");
+  }
 
   const { data: proposalsRaw } = await supabase
     .from("proposals")
@@ -84,6 +95,9 @@ export default async function DashboardPage() {
         isAdmin={isAdminEmail(user.email)}
       />
       <main className="flex-1 overflow-y-auto">
+        {welcome === "1" && (
+          <WelcomeBanner name={profile?.display_name ?? user.email ?? "Tú"} />
+        )}
         <DashboardView
           data={{
             displayName: profile?.display_name ?? user.email ?? "Tú",
