@@ -9,7 +9,10 @@ import {
   Sparkles,
   Clock,
   ChevronDown,
+  Expand,
 } from "lucide-react";
+
+import { ProposalDrawer } from "@/components/propuestas/proposal-drawer";
 
 // ── Tipos ──────────────────────────────────────────────────────
 
@@ -82,9 +85,10 @@ const DISLIKE_REASONS = ["El tema", "El tono", "El formato", "El canal", "El mom
 
 // ── Card individual ────────────────────────────────────────────
 
-function ProposalCard({ proposal, onUpdate }: {
+function ProposalCard({ proposal, onUpdate, onOpen }: {
   proposal: ProposalRow;
   onUpdate: (id: string, status: string, reason?: string) => void;
+  onOpen: (p: ProposalRow) => void;
 }) {
   const [showReasons, setShowReasons] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -157,6 +161,16 @@ function ProposalCard({ proposal, onUpdate }: {
             Expira en {days}d
           </span>
         )}
+
+        {/* Abrir drawer */}
+        <button
+          type="button"
+          onClick={() => onOpen(proposal)}
+          aria-label="Ver detalle"
+          className="ml-auto rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Expand className="size-3.5" aria-hidden />
+        </button>
       </div>
 
       {/* Título */}
@@ -327,6 +341,7 @@ export function ProposalsGrid({ proposals: initial }: { proposals: ProposalRow[]
   const [proposals, setProposals] = useState(initial);
   const [filter, setFilter] = useState<FilterId>("todas");
   const [platformFilter, setPlatformFilter] = useState<string>("todas");
+  const [drawerProposal, setDrawerProposal] = useState<ProposalRow | null>(null);
 
   // Plataformas únicas presentes
   const platforms = Array.from(
@@ -437,10 +452,15 @@ export function ProposalsGrid({ proposals: initial }: { proposals: ProposalRow[]
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((p) => (
-            <ProposalCard key={p.id} proposal={p} onUpdate={handleUpdate} />
+            <ProposalCard key={p.id} proposal={p} onUpdate={handleUpdate} onOpen={setDrawerProposal} />
           ))}
         </div>
       )}
+
+      <ProposalDrawer
+        proposal={drawerProposal}
+        onClose={() => setDrawerProposal(null)}
+      />
     </div>
   );
 }
