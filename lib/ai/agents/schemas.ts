@@ -165,6 +165,13 @@ export const ImageBriefSchema = z.object({
   cover_description: z.string(),
   aspect_ratio: aspectRatioEnum,
   style_notes: z.string(),
+  // Solo para carruseles: un image_prompt por slide, en el mismo orden que slides[].
+  slide_image_prompts: z
+    .array(z.string())
+    .nullable()
+    .describe(
+      "Un image_prompt por slide (carrusel), en orden. null si no es carrusel."
+    ),
 });
 export type ImageBrief = z.infer<typeof ImageBriefSchema>;
 
@@ -176,15 +183,62 @@ export const VideoBriefSchema = z.object({
     .array(
       z.object({
         scene: z.string().describe("Qué pasa en este plano"),
+        shot_type: z
+          .enum(["talking_head", "voiceover_broll", "broll_only"])
+          .describe(
+            "talking_head = creador a cámara hablando; " +
+            "voiceover_broll = voz en off sobre imágenes/broll; " +
+            "broll_only = broll sin voz (ambiente, transición)"
+          ),
         visual: z.string().describe("Encuadre, movimiento de cámara, acción"),
-        on_screen_text: z.string().nullable().describe("Texto en pantalla o null"),
+        on_screen_text: z
+          .string()
+          .nullable()
+          .describe("Texto en pantalla (contenido literal) o null"),
+        on_screen_text_style: z
+          .string()
+          .nullable()
+          .describe(
+            "Posición, animación y estilo del texto en pantalla (p.ej. 'centrado, aparece en fade 0.3s, Geist Bold blanco con sombra'). null si no hay texto."
+          ),
+        broll_ai_prompt: z
+          .string()
+          .nullable()
+          .describe(
+            "Prompt listo para generar este plano con IA (Veo/Sora/Runway). " +
+            "Solo para shot_type voiceover_broll o broll_only que sean generables con IA. " +
+            "null si es talking_head o si el broll debe grabarse en real."
+          ),
         seconds: z.number().describe("Duración aproximada del plano"),
       })
     )
     .min(1),
   pacing: z.string().describe("Ritmo general (rápido/medio) y por qué"),
   total_seconds: z.number().describe("Duración total objetivo"),
-  broll: z.array(z.string()).describe("Recursos / b-roll sugeridos"),
+  broll: z.array(z.string()).describe("Recursos / b-roll sugeridos (descripción humana)"),
+  lut: z
+    .string()
+    .describe(
+      "LUT / grade de color para todo el vídeo (ej. 'teal & orange, contraste alto, sombras frías'). Coherente con el feed del usuario."
+    ),
+  graphics: z
+    .array(
+      z.object({
+        type: z
+          .enum(["lower_third", "title_card", "overlay_text", "cta_badge"])
+          .describe("Tipo de gráfico"),
+        content: z.string().describe("Texto o descripción del gráfico"),
+        timing: z
+          .string()
+          .describe("Cuándo aparece y cuánto dura (ej. 's5–s9, 4s')"),
+        style: z
+          .string()
+          .describe("Color, fuente, animación (ej. 'fondo #3FE0A2, texto negro, slide-in desde abajo')"),
+      })
+    )
+    .describe(
+      "Lower thirds, title cards, badges CTA y overlays de texto con timing y estilo. Array vacío si no hay gráficos."
+    ),
   format_notes: z.string().describe("Formato (Reel/Short/TikTok), notas de montaje"),
 });
 export type VideoBrief = z.infer<typeof VideoBriefSchema>;
@@ -269,6 +323,8 @@ export type CalendarPost = {
   video_prompt: string | null;
   aspect_ratio: string | null;
   cover_description: string | null;
+  // Para carruseles: un image_prompt por slide (mismo orden que slides[]).
+  slide_image_prompts: string[] | null;
   // Dirección de vídeo y de audio (null si el grupo no produjo o falló).
   video_brief: VideoBrief | null;
   audio_brief: AudioBrief | null;

@@ -198,6 +198,7 @@ export function assembleCalendar(
       video_prompt: e.brief?.video_prompt ?? null,
       aspect_ratio: e.brief?.aspect_ratio ?? null,
       cover_description: e.brief?.cover_description ?? null,
+      slide_image_prompts: e.brief?.slide_image_prompts ?? null,
       video_brief: e.video,
       audio_brief: e.audio,
       slides: e.script?.slides ?? null,
