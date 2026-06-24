@@ -42,7 +42,8 @@ const PHASE_LABEL: Record<string, string> = {
   trends: "Analizando tendencias de la semana…",
   ideas: "Generando ideas para tu perfil…",
   selection: "El Director elige las mejores ideas…",
-  enrich: "Redactando guiones e imágenes…",
+  hooks: "Revisando y afinando los ganchos…",
+  enrich: "Redactando guiones, imágenes, vídeo y audio…",
   synthesis: "Construyendo la agenda semanal…",
 };
 
@@ -316,6 +317,8 @@ export function CalendarClient({ proposals: initial }: { proposals: CalendarProp
       case "phase":
         if (ev.status === "start") {
           pushLog({ text: `▸ ${PHASE_LABEL[ev.phase] ?? ev.phase}`, tone: "info" });
+        } else if (ev.status === "done" && ev.detail) {
+          pushLog({ text: `  ${ev.detail}`, tone: "ok" });
         }
         break;
       case "trends":
@@ -460,7 +463,7 @@ export function CalendarClient({ proposals: initial }: { proposals: CalendarProp
             <div>
               <p className="font-serif text-xl text-muted-foreground">Esta semana está vacía</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pulsa "Generar semana" y el Director montará el calendario.
+                Pulsa «Generar semana» y el Director montará el calendario.
               </p>
             </div>
             <Button
