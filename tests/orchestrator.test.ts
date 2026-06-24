@@ -94,7 +94,14 @@ describe("assembleCalendar", () => {
 
   it("cruza posts enriquecidos con el plan de agenda", () => {
     const enriched = [
-      { idea: idea({ topic: "uno" }), script, brief, degraded: [] },
+      {
+        idea: idea({ topic: "uno" }),
+        script,
+        brief,
+        video: null,
+        audio: null,
+        degraded: [],
+      },
     ];
     const plan: SchedulePlan = {
       weekly_theme: "Tema final",
@@ -121,15 +128,24 @@ describe("assembleCalendar", () => {
         idea: idea({ topic: "roto" }),
         script: null,
         brief: null,
-        degraded: ["script", "image_director"],
+        video: null,
+        audio: null,
+        degraded: ["script", "image_director", "video", "audio"],
       },
     ];
     const cal = assembleCalendar("2026-W26", "tema", "nota", enriched, null);
     const post = cal.posts[0];
     expect(post.script).toBe("");
     expect(post.image_prompt).toBe("");
+    expect(post.video_brief).toBeNull();
+    expect(post.audio_brief).toBeNull();
     expect(post.best_time).toBeNull();
-    expect(post.degraded).toEqual(["script", "image_director"]);
+    expect(post.degraded).toEqual([
+      "script",
+      "image_director",
+      "video",
+      "audio",
+    ]);
     // sin plan, cae al weekly_theme provisional y a la nota editorial
     expect(cal.weekly_theme).toBe("tema");
     expect(cal.notes).toBe("nota");

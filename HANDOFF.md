@@ -672,6 +672,32 @@ en cambios futuros.
     sigue pendiente (como el propio grupo vídeo/audio/código).
 - **Verificado**: `npm run build && npm run lint && npm run typecheck` + `vitest` (todos verdes).
 
+### 14.8 Todas las categorías cableadas + competición elegible por el usuario (jun 2026)
+> Amplía 14.7. Doc fuente: `lib/ai/ARCHITECTURE.md`. Cambios:
+- **Vídeo y Audio EJECUTÁNDOSE en el pipeline**: nuevos agentes `video-director.ts`
+  (planos/ritmo/duración/b-roll/formato → `VideoBriefSchema`) y `audio-director.ts`
+  (locución/tono/música/SFX → `AudioBriefSchema`). Cada pieza del calendario lleva ahora
+  guion + brief visual + **dirección de vídeo** + **guion de audio**. Se muestran en
+  `/calendar` (desplegables) y se persisten en `proposals.based_on` (sin migración).
+- **Competición GENERALIZADA**: `runScriptStage` → helper genérico `runCompetitiveStage<T>`
+  que usan los 4 productores (texto/imagen/vídeo/audio). Mismo patrón: A vs B en paralelo,
+  el orquestador juzga (`JudgeVerdict`), 1→gana solo, juez caído→gana A. Trazas `ai_runs`
+  con roles `<grupo>`, `<grupo>_b`, `<grupo>_judge`. Compiten por defecto texto y vídeo;
+  imagen y audio traen rival recomendado pero apagados.
+- **El usuario elige modelo principal Y competidor por grupo, con CUALQUIER slug del gateway**
+  (no solo las 3-4 sugeridas). `/settings`: cada grupo competible tiene casilla "Competición"
+  + campo del 2.º modelo (vacío = recomendado). Preferencias ahora `{models, competitors}`
+  en `profiles.model_preferences`; `sanitizePreferences` mantiene compatibilidad con el
+  formato plano antiguo. Tokens del competidor: `off` / `auto` / `<slug>`.
+- `resolve-models.ts`: `competitorModel` (off/auto/slug + default del grupo; nunca = principal,
+  vía `recommendedCompetitor`). `OrchestratorModels` con `script/image/video/audio` + sus
+  `*Competitor`. `model-catalog.ts`: `COMPETITION_GROUPS`, `catalogCompetesByDefault`,
+  `catalogCompetitor` (rival recomendado), `getTaskGroup`.
+- **Código**: sigue reservado (no encaja en un calendario de contenido), pero seleccionable.
+- **Saldo del AI Gateway**: el usuario confirma que YA hay saldo. El camino real con LLM no se
+  puede probar desde el sandbox (sin `AI_GATEWAY_API_KEY` allí); se valida en producción.
+- **Verificado**: build + lint + typecheck + `vitest` (54 tests) en verde.
+
 ---
 
 ## 15. Biblioteca de contenidos (`/library`)

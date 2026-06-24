@@ -141,6 +141,8 @@ async function persist(
       pillar: p.pillar,
       aspect_ratio: p.aspect_ratio,
       cover_description: p.cover_description,
+      video_brief: p.video_brief,
+      audio_brief: p.audio_brief,
       rationale: p.rationale,
       degraded: p.degraded,
     },

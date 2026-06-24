@@ -13,7 +13,7 @@ const PHASE_LABEL: Record<string, string> = {
   trends: "Análisis de tendencias",
   ideas: "Generación de ideas",
   selection: "Selección del orquestador",
-  enrich: "Guiones e imágenes (en paralelo)",
+  enrich: "Guion, imagen, vídeo y audio (en paralelo)",
   synthesis: "Síntesis y agenda",
 };
 
@@ -255,6 +255,39 @@ export function CalendarClient({ hasProfile }: { hasProfile: boolean }) {
                       {p.image_prompt}
                       {p.aspect_ratio ? `\n(ratio ${p.aspect_ratio})` : ""}
                     </p>
+                  </details>
+                )}
+                {p.video_brief && (
+                  <details className="mt-2">
+                    <summary className="text-muted-foreground cursor-pointer text-xs">
+                      Dirección de vídeo · {p.video_brief.total_seconds}s
+                    </summary>
+                    <div className="text-muted-foreground mt-1 space-y-1 text-xs">
+                      {p.video_brief.shots.map((s, j) => (
+                        <p key={j} className="whitespace-pre-wrap">
+                          <span className="font-mono">{s.seconds}s</span> ·{" "}
+                          {s.visual}
+                          {s.on_screen_text ? ` — “${s.on_screen_text}”` : ""}
+                        </p>
+                      ))}
+                      <p className="italic">{p.video_brief.format_notes}</p>
+                    </div>
+                  </details>
+                )}
+                {p.audio_brief && (
+                  <details className="mt-2">
+                    <summary className="text-muted-foreground cursor-pointer text-xs">
+                      Guion de audio
+                    </summary>
+                    <div className="text-muted-foreground mt-1 space-y-1 text-xs">
+                      <p className="whitespace-pre-wrap">
+                        {p.audio_brief.voiceover}
+                      </p>
+                      <p className="italic">
+                        Voz: {p.audio_brief.voice_tone} · Música:{" "}
+                        {p.audio_brief.music}
+                      </p>
+                    </div>
                   </details>
                 )}
               </article>

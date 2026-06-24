@@ -124,6 +124,36 @@ export const ImageBriefSchema = z.object({
 });
 export type ImageBrief = z.infer<typeof ImageBriefSchema>;
 
+// ── Fase 3 · Video Director ───────────────────────────────────
+// Dirección de vídeo plano a plano. La generación real (Veo/Sora/Runway) es un
+// motor enchufable a futuro; aquí se produce el brief (siempre útil, barato).
+export const VideoBriefSchema = z.object({
+  shots: z
+    .array(
+      z.object({
+        scene: z.string().describe("Qué pasa en este plano"),
+        visual: z.string().describe("Encuadre, movimiento de cámara, acción"),
+        on_screen_text: z.string().nullable().describe("Texto en pantalla o null"),
+        seconds: z.number().describe("Duración aproximada del plano"),
+      })
+    )
+    .min(1),
+  pacing: z.string().describe("Ritmo general (rápido/medio) y por qué"),
+  total_seconds: z.number().describe("Duración total objetivo"),
+  broll: z.array(z.string()).describe("Recursos / b-roll sugeridos"),
+  format_notes: z.string().describe("Formato (Reel/Short/TikTok), notas de montaje"),
+});
+export type VideoBrief = z.infer<typeof VideoBriefSchema>;
+
+// ── Fase 3 · Audio Director ───────────────────────────────────
+export const AudioBriefSchema = z.object({
+  voiceover: z.string().describe("Guion de locución (VO) listo para grabar"),
+  voice_tone: z.string().describe("Tono/voz: género, energía, acento, ritmo"),
+  music: z.string().describe("Estilo/mood de la música de fondo"),
+  sfx: z.array(z.string()).describe("Efectos de sonido sugeridos por momento"),
+});
+export type AudioBrief = z.infer<typeof AudioBriefSchema>;
+
 // ── Fase 3 · Orchestrator (juez de competición) ───────────────
 // Cuando un grupo compite (dos modelos hacen la MISMA tarea), el orquestador
 // hace de juez y elige el mejor. No reescribe: solo dictamina.
@@ -183,6 +213,9 @@ export type CalendarPost = {
   video_prompt: string | null;
   aspect_ratio: string | null;
   cover_description: string | null;
+  // Dirección de vídeo y de audio (null si el grupo no produjo o falló).
+  video_brief: VideoBrief | null;
+  audio_brief: AudioBrief | null;
   best_time: string | null;
   why_now: string;
   rationale: string | null;
