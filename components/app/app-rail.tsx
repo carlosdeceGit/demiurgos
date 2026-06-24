@@ -39,7 +39,7 @@ const NAV: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: Gauge, href: "/dashboard" },
   { id: "propuestas", label: "Propuestas", icon: LayoutGrid, href: "/propuestas" },
   { id: "biblioteca", label: "Biblioteca", icon: FolderOpen },
-  { id: "ideas", label: "Banco de ideas", icon: Lightbulb },
+  { id: "ideas", label: "Banco de ideas", icon: Lightbulb, href: "/ideas" },
   { id: "perfil", label: "Perfil", icon: User },
 ];
 
