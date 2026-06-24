@@ -42,7 +42,7 @@ const NAV: NavItem[] = [
   { id: "biblioteca", label: "Biblioteca", icon: FolderOpen, href: "/library" },
   { id: "ideas", label: "Banco de ideas", icon: Lightbulb },
   { id: "propuestas", label: "Propuestas", icon: LayoutGrid },
-  { id: "perfil", label: "Perfil", icon: User },
+  { id: "perfil", label: "Perfil", icon: User, href: "/profile" },
   { id: "ajustes", label: "Ajustes de IA", icon: SlidersHorizontal, href: "/settings" },
 ];
 

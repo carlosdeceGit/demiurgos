@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   FileText,
@@ -12,17 +13,14 @@ import {
 } from "lucide-react";
 
 import { ContentDetail } from "./content-detail";
-import { DrivePanel } from "./drive-panel";
 import { StatusBadge } from "./status-badge";
 import {
   SOURCE_LABELS,
   STATUS_LABELS,
   isImageExtension,
   type ContentItem,
-  type ContentSource,
   type ContentStatus,
   type ContentSourceType,
-  type SyncLog,
 } from "@/lib/library/types";
 
 const ACCEPT = ".md,.markdown,.txt,.html,.htm,.jpg,.jpeg,.png,.webp,.pdf,.docx,.rtf,.odt";
@@ -46,19 +44,11 @@ type UploadState = { name: string; status: "uploading" | "ok" | "error"; error?:
 
 export function LibraryView({
   initialItems,
-  initialSources,
-  initialLogs,
-  driveConfigured,
 }: {
   initialItems: ContentItem[];
-  initialSources: ContentSource[];
-  initialLogs: SyncLog[];
-  driveConfigured: boolean;
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
-  const [sources, setSources] = useState(initialSources);
-  const [logs, setLogs] = useState(initialLogs);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">("all");
   const [sourceFilter, setSourceFilter] = useState<ContentSourceType | "all">("all");
@@ -69,8 +59,6 @@ export function LibraryView({
 
   // Reconciliar con el servidor tras router.refresh().
   useEffect(() => setItems(initialItems), [initialItems]);
-  useEffect(() => setSources(initialSources), [initialSources]);
-  useEffect(() => setLogs(initialLogs), [initialLogs]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -185,13 +173,15 @@ export function LibraryView({
         </ul>
       )}
 
-      {/* Google Drive */}
-      <DrivePanel
-        sources={sources}
-        logs={logs}
-        driveConfigured={driveConfigured}
-        onRefresh={() => router.refresh()}
-      />
+      {/* Acceso a Google Drive (la conexión vive en el Perfil) */}
+      <p className="text-muted-foreground text-xs">
+        ¿Tu contenido está en Google Drive? Conecta tu cuenta y elige una carpeta
+        en tu{" "}
+        <Link href="/profile" className="text-brand-accent hover:underline">
+          Perfil
+        </Link>
+        ; lo sincronizado aparecerá aquí.
+      </p>
 
       {/* Buscador + filtros */}
       <div className="flex flex-wrap items-center gap-2">
