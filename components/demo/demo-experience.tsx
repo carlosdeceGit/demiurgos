@@ -33,7 +33,6 @@ type Section =
   | "chat"
   | "ideas"
   | "propuestas"
-  | "calendario"
   | "biblioteca"
   | "perfil"
   | "admin";
@@ -49,7 +48,6 @@ const NAV: NavItem[] = [
   { id: "chat", label: "Director", icon: MessageSquare },
   { id: "ideas", label: "Ideas", icon: Lightbulb },
   { id: "propuestas", label: "Propuestas", icon: LayoutGrid },
-  { id: "calendario", label: "Calendario", icon: CalendarDays },
   { id: "biblioteca", label: "Biblioteca", icon: FolderOpen },
   { id: "perfil", label: "Perfil", icon: User },
   { id: "admin", label: "Admin", icon: Shield },
@@ -58,6 +56,7 @@ const NAV: NavItem[] = [
 export function DemoExperience() {
   const [profileId, setProfileId] = useState(DEFAULT_DEMO_PROFILE_ID);
   const [section, setSection] = useState<Section>("chat");
+  const [propuestasTab, setPropuestasTab] = useState<"grid" | "calendario">("grid");
   const conversation = conversationFor(profileId);
 
   const profile = DEMO_PROFILES.find((p) => p.id === profileId);
@@ -165,7 +164,7 @@ export function DemoExperience() {
         {/* Contenido principal */}
         <main
           className={`flex-1 ${
-            section === "calendario" || section === "chat"
+            section === "chat" || (section === "propuestas" && propuestasTab === "calendario")
               ? "overflow-hidden"
               : "overflow-y-auto"
           }`}
@@ -186,11 +185,46 @@ export function DemoExperience() {
             <DemoIdeas key={profileId} profileId={profileId} />
           )}
           {section === "propuestas" && (
-            <DemoPropuestas key={profileId} profileId={profileId} />
-          )}
-          {section === "calendario" && (
-            <div className="h-full">
-              <DemoCalendar key={profileId} profileId={profileId} />
+            <div className="flex h-full flex-col overflow-hidden">
+              {/* Tab switcher — igual que la app real */}
+              <div className="flex shrink-0 items-center gap-1 border-b px-6 pt-4 pb-0">
+                <button
+                  type="button"
+                  onClick={() => setPropuestasTab("grid")}
+                  className={`flex items-center gap-2 border-b-2 px-3 pb-3 text-sm font-medium transition-colors ${
+                    propuestasTab === "grid"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="size-3.5" aria-hidden />
+                  Propuestas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPropuestasTab("calendario")}
+                  className={`flex items-center gap-2 border-b-2 px-3 pb-3 text-sm font-medium transition-colors ${
+                    propuestasTab === "calendario"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <CalendarDays className="size-3.5" aria-hidden />
+                  Calendario
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                {propuestasTab === "grid" && (
+                  <div className="h-full overflow-y-auto">
+                    <DemoPropuestas key={profileId} profileId={profileId} />
+                  </div>
+                )}
+                {propuestasTab === "calendario" && (
+                  <div className="h-full">
+                    <DemoCalendar key={profileId} profileId={profileId} />
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {section === "biblioteca" && (
