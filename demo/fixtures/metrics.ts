@@ -7,7 +7,7 @@ const COUNCIL: { role: DemoAiRun["role"]; model: string; pricePerKTok: number }[
   [
     { role: "director", model: "openai/gpt-5.5", pricePerKTok: 0.01 },
     { role: "critico", model: "anthropic/claude-opus-4.8", pricePerKTok: 0.015 },
-    { role: "analista", model: "google/gemini-3.1-pro", pricePerKTok: 0.004 },
+    { role: "analista", model: "google/gemini-3.1-pro-preview", pricePerKTok: 0.004 },
   ];
 
 const BASE_DAY = Date.UTC(2026, 5, 22); // 2026-06-22

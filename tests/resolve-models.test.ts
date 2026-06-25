@@ -50,8 +50,8 @@ describe("sanitizePreferences", () => {
 describe("effectiveModel", () => {
   it("usa la preferencia del usuario si existe", () => {
     expect(
-      effectiveModel("text", prefs({ models: { text: "deepseek/deepseek-v3" } }))
-    ).toBe("deepseek/deepseek-v3");
+      effectiveModel("text", prefs({ models: { text: "deepseek/deepseek-v4-flash" } }))
+    ).toBe("deepseek/deepseek-v4-flash");
   });
 
   it("cae al default del catálogo si no hay preferencia", () => {
@@ -115,9 +115,9 @@ describe("resolvePipelineModels", () => {
         models: {
           orchestrator: "anthropic/claude-opus-4.8",
           text: "anthropic/claude-haiku-4.5",
-          web: "google/gemini-3.1-pro",
-          image: "google/gemini-3.1-pro",
-          video: "google/gemini-3.1-pro",
+          web: "google/gemini-3.1-pro-preview",
+          image: "google/gemini-3.1-pro-preview",
+          video: "google/gemini-3.1-pro-preview",
           audio: "anthropic/claude-haiku-4.5",
         },
       })
@@ -126,7 +126,7 @@ describe("resolvePipelineModels", () => {
     expect(m.script).toBe("anthropic/claude-haiku-4.5");
     expect(m.scriptCompetitor).not.toBe(m.script); // texto compite por defecto
     expect(m.imageCompetitor).toBeNull(); // imagen no, salvo que se active
-    expect(m.video).toBe("google/gemini-3.1-pro");
+    expect(m.video).toBe("google/gemini-3.1-pro-preview");
     expect(m.videoCompetitor).not.toBe(m.video); // vídeo compite por defecto
     expect(m.audioCompetitor).toBeNull();
   });

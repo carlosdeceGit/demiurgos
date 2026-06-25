@@ -16,7 +16,7 @@ const MODEL_SUGGESTIONS = [
   "openai/gpt-5.5",
   "openai/gpt-5",
   "openai/gpt-4.1",
-  "google/gemini-3.1-pro",
+  "google/gemini-3.1-pro-preview",
   "google/gemini-2.5-pro",
   "google/gemini-2.5-flash",
   "xai/grok-4",

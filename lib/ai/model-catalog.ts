@@ -50,8 +50,19 @@ export const TASK_GROUPS: TaskGroup[] = [
     options: [
       { id: "anthropic/claude-opus-4.8", label: "Claude Opus 4.8", pricing: "$5 / $25" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6", pricing: "$3 / $15" },
-      { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro", pricing: "≈$1.25 / $5" },
+      { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5 (rápido)", pricing: "$1 / $5" },
+      { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview", pricing: "≈$1.25 / $5" },
+      { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", pricing: "≈$1.25 / $10" },
+      { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (económico)", pricing: "≈$0.30 / $2.5" },
+      { id: "openai/o3", label: "OpenAI o3 (razonamiento)", pricing: "≈$10 / $40" },
+      { id: "openai/o4-mini", label: "OpenAI o4-mini (razonamiento rápido)", pricing: "≈$1.1 / $4.4" },
+      { id: "openai/gpt-4.1", label: "GPT-4.1", pricing: "≈$2 / $8" },
       { id: "deepseek/deepseek-r1", label: "DeepSeek R1 (razonamiento)", pricing: "≈$0.55 / $2.2" },
+      { id: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash (económico)", pricing: "≈$0.30 / $1.2" },
+      { id: "meta/llama-4-maverick", label: "Llama 4 Maverick (Meta)", pricing: "≈$0.20 / $0.60" },
+      { id: "zai/glm-5.2", label: "GLM-5.2 / Z.ai (razonamiento)", pricing: "≈$0.14 / $0.14" },
+      { id: "zai/glm-4.7", label: "GLM-4.7 / Z.ai", pricing: "≈$0.05 / $0.05" },
+      { id: "zai/glm-5", label: "GLM-5 / Z.ai", pricing: "≈$0.14 / $0.14" },
     ],
   },
   {
@@ -65,7 +76,7 @@ export const TASK_GROUPS: TaskGroup[] = [
     options: [
       { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5", pricing: "$1 / $5" },
       { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
-      { id: "deepseek/deepseek-v3", label: "DeepSeek V3", pricing: "≈$0.30 / $1.2" },
+      { id: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash", pricing: "≈$0.30 / $1.2" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6 (más calidad)", pricing: "$3 / $15" },
     ],
   },
@@ -74,9 +85,9 @@ export const TASK_GROUPS: TaskGroup[] = [
     label: "Web / búsqueda (tendencias)",
     description:
       "Analiza la semana del nicho y las tendencias. Gemini va bien con búsqueda.",
-    defaultModel: "google/gemini-3.1-pro",
+    defaultModel: "google/gemini-3.1-pro-preview",
     options: [
-      { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro", pricing: "≈$1.25 / $5" },
+      { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", pricing: "≈$1.25 / $5" },
       { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
       { id: "openai/gpt-4.1", label: "GPT-4.1", pricing: "≈$2 / $8" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6", pricing: "$3 / $15" },
@@ -87,10 +98,10 @@ export const TASK_GROUPS: TaskGroup[] = [
     label: "Imágenes (dirección visual)",
     description:
       "Define el estilo y el prompt de imagen de cada pieza. Gemini recomendado. Puedes activar COMPETICIÓN (dos modelos + el orquestador de juez).",
-    defaultModel: "google/gemini-3.1-pro",
+    defaultModel: "google/gemini-3.1-pro-preview",
     competeWith: "anthropic/claude-sonnet-4.6",
     options: [
-      { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro (visión)", pricing: "≈$1.25 / $5" },
+      { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (visión)", pricing: "≈$1.25 / $5" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6 (visión)", pricing: "$3 / $15" },
       { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
     ],
@@ -100,11 +111,11 @@ export const TASK_GROUPS: TaskGroup[] = [
     label: "Vídeo (dirección y montaje)",
     description:
       "Convierte cada guion en un brief de vídeo: plano a plano, ritmo, duración, formato (Reel/Short/TikTok), b-roll y texto en pantalla. La generación del vídeo en sí (Veo/Sora/Runway) es un motor enchufable a futuro; hoy se produce la dirección. Admite COMPETICIÓN.",
-    defaultModel: "google/gemini-3.1-pro",
+    defaultModel: "google/gemini-3.1-pro-preview",
     competition: true,
     competeWith: "anthropic/claude-sonnet-4.6",
     options: [
-      { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro (visión/vídeo)", pricing: "≈$1.25 / $5" },
+      { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (visión/vídeo)", pricing: "≈$1.25 / $5" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6 (visión)", pricing: "$3 / $15" },
       { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", pricing: "≈$0.30 / $2.5" },
       { id: "google/veo-3", label: "Veo 3 (generación, futuro)", pricing: "por segundo" },
@@ -133,7 +144,7 @@ export const TASK_GROUPS: TaskGroup[] = [
     defaultModel: "anthropic/claude-sonnet-4.6",
     options: [
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6", pricing: "$3 / $15" },
-      { id: "deepseek/deepseek-v3", label: "DeepSeek V3", pricing: "≈$0.30 / $1.2" },
+      { id: "deepseek/deepseek-v4-flash", label: "DeepSeek V3", pricing: "≈$0.30 / $1.2" },
       { id: "openai/gpt-4.1", label: "GPT-4.1", pricing: "≈$2 / $8" },
     ],
   },

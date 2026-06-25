@@ -20,13 +20,13 @@ export const MODELS = {
   // Chat (Director) y demo — ya existían.
   director: process.env.DIRECTOR_MODEL ?? "anthropic/claude-opus-4.8",
   critic: process.env.CRITIC_MODEL ?? "anthropic/claude-opus-4.8",
-  analyst: process.env.ANALYST_MODEL ?? "google/gemini-3.1-pro",
+  analyst: process.env.ANALYST_MODEL ?? "google/gemini-3.1-pro-preview",
   demo: process.env.DEMO_MODEL ?? "anthropic/claude-opus-4.8",
 
   // Orquestador multi-agente (calendario semanal).
   orchestrator:
     process.env.ORCHESTRATOR_MODEL ?? "anthropic/claude-opus-4.8",
-  trend: process.env.TREND_MODEL ?? "google/gemini-3.1-pro",
+  trend: process.env.TREND_MODEL ?? "google/gemini-3.1-pro-preview",
   idea: process.env.IDEA_MODEL ?? "anthropic/claude-haiku-4.5",
   script: process.env.SCRIPT_MODEL ?? "anthropic/claude-sonnet-4.6",
   imageDirector:
