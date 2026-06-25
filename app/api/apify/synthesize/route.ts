@@ -147,7 +147,6 @@ export async function POST(req: Request) {
       model: gatewayModel(modelId),
       system: SYNTHESIS_PROMPT,
       prompt: analysisPrompt,
-      maxTokens: 1200,
     });
     contentDna = text.trim();
   } catch (e) {
