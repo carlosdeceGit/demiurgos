@@ -1,11 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Save, CheckCircle2 } from "lucide-react";
+import { Save, CheckCircle2, Link, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PLATFORM_KEYS, type PlatformKey } from "@/lib/ai/platforms";
 
 // ── Tipos ──────────────────────────────────────────────────────
+
+type PlatformEntry = {
+  key: PlatformKey;
+  status: "activo" | "inactivo";
+  url: string;
+  reference_accounts: string; // newline-separated handles or URLs
+  role?: string;
+  format?: string;
+};
 
 type ProfileData = {
   display_name: string;
@@ -16,7 +25,15 @@ type ProfileData = {
   voice: unknown;
   tacit: unknown;
   goals: unknown;
-  platforms: Array<{ key: PlatformKey; status?: string; role?: string }>;
+  platforms: Array<{
+    key?: PlatformKey;
+    platform?: PlatformKey;
+    status?: string;
+    role?: string;
+    format?: string;
+    url?: string;
+    reference_accounts?: string | string[];
+  }>;
   referents: unknown;
 };
 
@@ -27,9 +44,9 @@ function toText(val: unknown): string {
   if (typeof val === "string") return val;
   if (typeof val === "object" && !Array.isArray(val)) {
     const v = val as Record<string, unknown>;
-    return typeof v.text === "string" ? v.text : JSON.stringify(val, null, 2);
+    return typeof v.text === "string" ? v.text : "";
   }
-  return JSON.stringify(val, null, 2);
+  return "";
 }
 
 function toLines(val: unknown): string {
@@ -40,13 +57,20 @@ function toLines(val: unknown): string {
         if (typeof item === "string") return item;
         if (typeof item === "object" && item !== null) {
           const o = item as Record<string, unknown>;
-          return typeof o.text === "string" ? o.text : JSON.stringify(o);
+          return typeof o.text === "string" ? o.text : typeof o.name === "string" ? o.name : "";
         }
-        return String(item);
+        return "";
       })
+      .filter(Boolean)
       .join("\n");
   }
   return toText(val);
+}
+
+function refAccountsToString(val: string | string[] | undefined): string {
+  if (!val) return "";
+  if (Array.isArray(val)) return val.join("\n");
+  return val;
 }
 
 const PLATFORM_LABEL: Record<PlatformKey, string> = {
@@ -57,6 +81,42 @@ const PLATFORM_LABEL: Record<PlatformKey, string> = {
   x: "X / Twitter",
   substack: "Substack",
 };
+
+const PLATFORM_PLACEHOLDER: Record<PlatformKey, string> = {
+  linkedin: "https://linkedin.com/in/tu-perfil",
+  youtube: "https://youtube.com/@tucanal",
+  tiktok: "https://tiktok.com/@tuusuario",
+  instagram: "https://instagram.com/tuusuario",
+  x: "https://x.com/tuusuario",
+  substack: "https://tusubstack.substack.com",
+};
+
+const REFERENTS_PLACEHOLDER: Record<PlatformKey, string> = {
+  linkedin: "https://linkedin.com/in/referente1\nhttps://linkedin.com/in/referente2",
+  youtube: "https://youtube.com/@canal1\nhttps://youtube.com/@canal2",
+  tiktok: "https://tiktok.com/@cuenta1\nhttps://tiktok.com/@cuenta2",
+  instagram: "https://instagram.com/cuenta1\nhttps://instagram.com/cuenta2",
+  x: "https://x.com/cuenta1\nhttps://x.com/cuenta2",
+  substack: "https://autor1.substack.com\nhttps://autor2.substack.com",
+};
+
+function initPlatforms(raw: ProfileData["platforms"]): PlatformEntry[] {
+  return PLATFORM_KEYS.map((key) => {
+    const found = raw?.find((p) => (p.key ?? p.platform) === key);
+    const isActive =
+      found?.status === "activo" ||
+      found?.status === "active" ||
+      found?.status === "pending_analysis";
+    return {
+      key,
+      status: isActive ? "activo" : "inactivo",
+      url: found?.url ?? "",
+      reference_accounts: refAccountsToString(found?.reference_accounts),
+      role: found?.role,
+      format: found?.format,
+    };
+  });
+}
 
 // ── Sección UI ─────────────────────────────────────────────────
 
@@ -70,10 +130,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-2">
+    <section className="space-y-3">
       <div>
         <h2 className="font-serif text-base">{title}</h2>
-        {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+        {hint && <p className="text-muted-foreground text-xs mt-0.5">{hint}</p>}
       </div>
       {children}
     </section>
@@ -98,7 +158,85 @@ function Field({
 }
 
 const inputCls =
-  "w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary";
+  "w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary";
+
+// ── Bloque de plataforma ───────────────────────────────────────
+
+function PlatformBlock({
+  entry,
+  onChange,
+}: {
+  entry: PlatformEntry;
+  onChange: (updated: Partial<PlatformEntry>) => void;
+}) {
+  const active = entry.status === "activo";
+
+  return (
+    <div
+      className={`rounded-xl border transition-all ${
+        active ? "border-primary/30 bg-card" : "border-border bg-background/50"
+      }`}
+    >
+      {/* Cabecera / toggle */}
+      <button
+        type="button"
+        onClick={() => onChange({ status: active ? "inactivo" : "activo" })}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <span
+          className={`text-sm font-medium transition-colors ${
+            active ? "text-foreground" : "text-muted-foreground"
+          }`}
+        >
+          {PLATFORM_LABEL[entry.key]}
+        </span>
+        <span
+          className={`size-2 rounded-full transition-all ${
+            active ? "bg-primary shadow-[0_0_6px_var(--color-primary)]" : "bg-border"
+          }`}
+          aria-hidden
+        />
+      </button>
+
+      {/* Campos expandibles */}
+      {active && (
+        <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3">
+          {/* URL propia */}
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <Link className="size-3" aria-hidden />
+              Tu perfil
+            </label>
+            <input
+              type="url"
+              className={inputCls}
+              placeholder={PLATFORM_PLACEHOLDER[entry.key]}
+              value={entry.url}
+              onChange={(e) => onChange({ url: e.target.value })}
+            />
+          </div>
+
+          {/* Referentes en esta red */}
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <Users className="size-3" aria-hidden />
+              Perfiles que te inspiran en esta red
+            </label>
+            <textarea
+              className={`${inputCls} min-h-[72px] resize-none`}
+              placeholder={REFERENTS_PLACEHOLDER[entry.key]}
+              value={entry.reference_accounts}
+              onChange={(e) => onChange({ reference_accounts: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground/60">
+              Un perfil por línea. Los analizamos en segundo plano para aprender de su estilo.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Componente principal ───────────────────────────────────────
 
@@ -117,24 +255,17 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
   const [goals, setGoals] = useState(toText(initial.goals));
   const [referents, setReferents] = useState(toLines(initial.referents));
 
-  // Platforms as a set of active keys
-  const initialActive = new Set(
-    (initial.platforms ?? [])
-      .filter((p) => p.status === "activo" || p.status === "active")
-      .map((p) => p.key)
+  const [platforms, setPlatforms] = useState<PlatformEntry[]>(() =>
+    initPlatforms(initial.platforms ?? [])
   );
-  const [activePlatforms, setActivePlatforms] = useState<Set<PlatformKey>>(initialActive);
 
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  function togglePlatform(key: PlatformKey) {
-    setActivePlatforms((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  function updatePlatform(key: PlatformKey, patch: Partial<PlatformEntry>) {
+    setPlatforms((prev) =>
+      prev.map((p) => (p.key === key ? { ...p, ...patch } : p))
+    );
     setSaved(false);
   }
 
@@ -143,9 +274,16 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
   }
 
   async function handleSave() {
-    const platforms = PLATFORM_KEYS.map((key) => ({
-      key,
-      status: activePlatforms.has(key) ? "activo" : "inactivo",
+    const platformsPayload = platforms.map((p) => ({
+      key: p.key,
+      status: p.status,
+      url: p.url.trim(),
+      role: p.role ?? "principal",
+      format: p.format ?? "",
+      reference_accounts: p.reference_accounts
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean),
     }));
 
     const patch = {
@@ -160,7 +298,7 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
       voice: voice.trim() ? { text: voice.trim() } : {},
       tacit: tacit.trim() ? { text: tacit.trim() } : {},
       goals: goals.trim() ? { text: goals.trim() } : {},
-      platforms,
+      platforms: platformsPayload,
       referents: referents
         .split("\n")
         .map((l) => l.trim())
@@ -180,10 +318,7 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
   return (
     <div className="space-y-8">
       {/* Sobre ti */}
-      <Section
-        title="Sobre ti"
-        hint="Tu nombre y qué ofreces al mundo."
-      >
+      <Section title="Sobre ti" hint="Tu nombre y qué ofreces al mundo.">
         <Field label="Nombre">
           <input
             className={inputCls}
@@ -191,10 +326,10 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
             onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
           />
         </Field>
-        <Field label="Qué ofreces / vendes">
+        <Field label="Qué ofreces">
           <textarea
             className={`${inputCls} min-h-[80px] resize-none`}
-            placeholder="Ej: Consultoría de marketing para startups B2B en fase de crecimiento."
+            placeholder="Consultoría de marketing para startups B2B en fase de crecimiento. Ayudo a los fundadores a construir sistemas de captación que no dependen de su tiempo."
             value={offerText}
             onChange={(e) => { setOfferText(e.target.value); handleChange(); }}
           />
@@ -204,11 +339,11 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
       {/* Posicionamiento */}
       <Section
         title="Posicionamiento"
-        hint="Tu diferenciador, propuesta de valor, categoría en la que juegas."
+        hint="Tu diferenciador, propuesta de valor, la categoría en la que juegas."
       >
         <textarea
           className={`${inputCls} min-h-[100px] resize-none`}
-          placeholder="Ej: El único consultor de IA que combina psicología del comportamiento con automatización. Mi misión es..."
+          placeholder="Soy el único consultor de IA que combina psicología del comportamiento con automatización real. No vendo promesas: vendo sistemas que ya funcionan en más de veinte empresas."
           value={positioning}
           onChange={(e) => { setPositioning(e.target.value); handleChange(); }}
         />
@@ -217,7 +352,7 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
       {/* Pilares */}
       <Section
         title="Pilares de contenido"
-        hint="Un pilar por línea. Son los grandes temas sobre los que siempre hablas."
+        hint="Los grandes temas sobre los que siempre hablas. Uno por línea."
       >
         <textarea
           className={`${inputCls} min-h-[100px] resize-none`}
@@ -234,7 +369,7 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
       >
         <textarea
           className={`${inputCls} min-h-[100px] resize-none`}
-          placeholder="Ej: Fundadores de startups de 25-40 años que quieren crecer sin perder la cabeza. Su principal miedo es..."
+          placeholder="Fundadores de startups de 25 a 40 años que quieren crecer sin perder la cabeza. Su principal miedo es escalar y perder el control de la calidad."
           value={audience}
           onChange={(e) => { setAudience(e.target.value); handleChange(); }}
         />
@@ -243,24 +378,24 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
       {/* Voz y tono */}
       <Section
         title="Voz y tono"
-        hint="Cómo hablas: directx, irónicx, formal, cercano, analítico... y qué evitas."
+        hint="Cómo hablas: directo, irónico, formal, cercano, analítico... y qué evitas."
       >
         <textarea
           className={`${inputCls} min-h-[100px] resize-none`}
-          placeholder="Ej: Directo y sin filtros. Uso el humor negro ocasionalmente. Nunca hablo de éxito fácil ni términos tipo 'mindset'. Evito emojis en LinkedIn..."
+          placeholder="Directo y sin filtros. Uso el humor negro ocasionalmente. Nunca hablo de éxito fácil ni de términos tipo mindset. Evito emojis en LinkedIn y los posts que empiezan con una pregunta retórica."
           value={voice}
           onChange={(e) => { setVoice(e.target.value); handleChange(); }}
         />
       </Section>
 
-      {/* Guía de estilo / Tácito */}
+      {/* Guía de estilo */}
       <Section
         title="Guía de estilo"
-        hint="Reglas específicas, palabras prohibidas, formatos favoritos, detalles que el Director debe recordar siempre."
+        hint="Reglas específicas, palabras prohibidas, formatos favoritos."
       >
         <textarea
           className={`${inputCls} min-h-[120px] resize-none`}
-          placeholder={"Ej:\n- Nunca empezar un post con 'Hoy'\n- Siempre incluir datos concretos\n- Máximo 3 puntos en un carrusel\n- Prohibido: 'disruptivo', 'ecosistema', 'sinergia'"}
+          placeholder={"Nunca empezar un post con Hoy\nSiempre incluir datos concretos\nMáximo 3 puntos en un carrusel\nProhibido: disruptivo, ecosistema, sinergia"}
           value={tacit}
           onChange={(e) => { setTacit(e.target.value); handleChange(); }}
         />
@@ -268,38 +403,28 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
 
       {/* Plataformas */}
       <Section
-        title="Plataformas activas"
-        hint="Dónde publicas de verdad. El Director solo generará contenido para estas redes."
+        title="Redes sociales"
+        hint="Activa las redes donde publicas, añade el enlace a tu perfil y los creadores que te inspiran en cada una."
       >
-        <div className="flex flex-wrap gap-2">
-          {PLATFORM_KEYS.map((key) => {
-            const active = activePlatforms.has(key);
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => togglePlatform(key)}
-                className={`rounded-full border px-3 py-1.5 text-sm transition-all ${
-                  active
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
-                }`}
-              >
-                {PLATFORM_LABEL[key]}
-              </button>
-            );
-          })}
+        <div className="space-y-2">
+          {platforms.map((entry) => (
+            <PlatformBlock
+              key={entry.key}
+              entry={entry}
+              onChange={(patch) => updatePlatform(entry.key, patch)}
+            />
+          ))}
         </div>
       </Section>
 
-      {/* Referentes */}
+      {/* Referentes generales */}
       <Section
-        title="Referentes"
-        hint="Cuentas o creadores que admiras. Uno por línea."
+        title="Referentes generales"
+        hint="Creadores o cuentas que admiras más allá de una red concreta. Uno por línea."
       >
         <textarea
           className={`${inputCls} min-h-[80px] resize-none`}
-          placeholder={"@paulgraham\nMorgan Housel\nAli Abdaal"}
+          placeholder={"Paul Graham\nMorgan Housel\nAli Abdaal"}
           value={referents}
           onChange={(e) => { setReferents(e.target.value); handleChange(); }}
         />
@@ -308,11 +433,11 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
       {/* Objetivos */}
       <Section
         title="Objetivos"
-        hint="Qué quieres conseguir con tu presencia en redes. A 3-6 meses vista."
+        hint="Qué quieres conseguir con tu presencia en redes. A 3 o 6 meses vista."
       >
         <textarea
           className={`${inputCls} min-h-[100px] resize-none`}
-          placeholder="Ej: Llegar a 5.000 seguidores en LinkedIn, generar 3 leads cualificados al mes desde contenido, posicionarme como referente en IA aplicada a negocios físicos..."
+          placeholder="Llegar a 5.000 seguidores en LinkedIn, generar 3 leads cualificados al mes desde contenido y posicionarme como referente en IA aplicada a negocios físicos."
           value={goals}
           onChange={(e) => { setGoals(e.target.value); handleChange(); }}
         />
