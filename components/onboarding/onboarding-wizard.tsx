@@ -359,7 +359,7 @@ function StepNetworks({
 
 const TOTAL_STEPS = 4;
 
-export function OnboardingWizard() {
+export function OnboardingWizard({ demoMode = false }: { demoMode?: boolean }) {
   const router = useRouter();
 
   // Step 1
@@ -412,6 +412,13 @@ export function OnboardingWizard() {
   }
 
   async function handleSubmit() {
+    if (demoMode) {
+      setSaving(true);
+      await new Promise((r) => setTimeout(r, 800));
+      setSaving(false);
+      setStep(TOTAL_STEPS); // estado "completado" en demo
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -455,6 +462,28 @@ export function OnboardingWizard() {
     center: { x: 0, opacity: 1 },
     exit: (dir: number) => ({ x: dir > 0 ? -48 : 48, opacity: 0 }),
   };
+
+  if (demoMode && step === TOTAL_STEPS) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center px-6 py-12 text-center">
+        <Logo size={36} />
+        <div className="mt-10 flex size-14 items-center justify-center rounded-full bg-primary/15">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        </div>
+        <h2 className="dmg-serif mt-6 text-2xl font-semibold">¡Perfil creado!</h2>
+        <p className="mt-3 max-w-xs text-sm text-muted-foreground">
+          Así terminaría el onboarding real. En producción el usuario aterrizaría en el dashboard con su sesión activa.
+        </p>
+        <button
+          type="button"
+          onClick={() => { setStep(0); setDisplayName(""); setPositioningDesc(""); setCreatorType(""); setPillars([{ topic: "", why_you: "" }, { topic: "", why_you: "" }, { topic: "", why_you: "" }]); setToneChips([]); setNeverDo(""); setNetworkUrls(["", ""]); setFrequency(""); }}
+          className="mt-8 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline transition-colors"
+        >
+          ← Volver a empezar la demo
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6 py-12">
