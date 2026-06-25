@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 import { fullProposalsFor, type DemoFullProposal } from "@/demo/fixtures";
+import { ProposalDrawer } from "@/components/propuestas/proposal-drawer";
+import type { ProposalRow } from "@/components/propuestas/proposals-grid";
 
 const STATUS_LABEL: Record<string, string> = {
   nueva: "Nueva",
@@ -60,9 +62,11 @@ type FilterId = (typeof FILTERS)[number]["id"];
 function ProposalCard({
   proposal,
   onUpdate,
+  onOpen,
 }: {
   proposal: DemoFullProposal;
   onUpdate: (id: string, status: string) => void;
+  onOpen: (p: DemoFullProposal) => void;
 }) {
   const [showReasons, setShowReasons] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -104,9 +108,8 @@ function ProposalCard({
         <button
           type="button"
           aria-label="Ver detalle"
-          disabled
-          title="No disponible en modo demo"
-          className="ml-1 cursor-not-allowed rounded-full p-1 text-muted-foreground opacity-40"
+          onClick={() => onOpen(proposal)}
+          className="ml-1 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
         >
           <Expand className="size-3.5" aria-hidden />
         </button>
@@ -231,6 +234,7 @@ function ProposalCard({
 export function DemoPropuestas({ profileId }: { profileId: string }) {
   const [proposals, setProposals] = useState(fullProposalsFor(profileId));
   const [filter, setFilter] = useState<FilterId>("todas");
+  const [drawerProposal, setDrawerProposal] = useState<DemoFullProposal | null>(null);
 
   const platforms = Array.from(new Set(proposals.map((p) => p.platform)));
   const [platformFilter, setPlatformFilter] = useState("todas");
@@ -322,10 +326,15 @@ export function DemoPropuestas({ profileId }: { profileId: string }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((p) => (
-            <ProposalCard key={p.id} proposal={p} onUpdate={handleUpdate} />
+            <ProposalCard key={p.id} proposal={p} onUpdate={handleUpdate} onOpen={setDrawerProposal} />
           ))}
         </div>
       )}
+
+      <ProposalDrawer
+        proposal={drawerProposal as ProposalRow | null}
+        onClose={() => setDrawerProposal(null)}
+      />
     </div>
   );
 }
