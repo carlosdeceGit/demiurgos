@@ -116,6 +116,7 @@ export async function POST(req: Request) {
       motor,
       profile,
       knowledge: (knowledge as KnowledgeRow[]) ?? [],
+      socialPosts: [],
       signals: signalsFor(profileId).map((s) => ({
         content: s.content,
         type: null,

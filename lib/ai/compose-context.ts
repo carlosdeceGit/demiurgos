@@ -28,6 +28,14 @@ export type SignalRow = {
   source: string | null;
 };
 export type MessageRow = { role: string; content: string };
+export type SocialPostRow = {
+  platform: string;
+  account_url: string | null;
+  target: string;
+  post_text: string;
+  post_date: string | null;
+  engagement: Record<string, number> | null;
+};
 
 // Historial de feedback del usuario sobre propuestas anteriores.
 export type LearningRow = {
@@ -42,6 +50,7 @@ export type ComposeInput = {
   motor: string; // capa 1: el motor (INSTRUCCIONES.md)
   profile: ProfileRow | null; // capa 3: instancia del usuario
   knowledge: KnowledgeRow[]; // capa 4: conocimiento del ecosistema
+  socialPosts: SocialPostRow[]; // posts reales scrapeados con Apify
   signals: SignalRow[]; // señales frescas (últimas 20)
   messages: MessageRow[]; // memoria de conversación (últimas 20)
   learning: LearningRow[]; // aprendizaje acumulado de feedback
@@ -49,6 +58,8 @@ export type ComposeInput = {
 
 const SIGNALS_LIMIT = 20;
 const MESSAGES_LIMIT = 20;
+const OWN_POSTS_PER_PLATFORM = 10;
+const REFERENT_POSTS_PER_ACCOUNT = 5;
 
 function section(title: string, body: string): string {
   return `\n\n# ${title}\n${body}`;
@@ -123,6 +134,77 @@ function renderLearning(rows: LearningRow[]): string {
   );
 }
 
+// Agrupa y renderiza los posts sociales scrapeados.
+// Posts propios primero (aprende la voz), luego referentes (aprende patrones externos).
+function renderSocialPosts(posts: SocialPostRow[]): string {
+  if (posts.length === 0) return "";
+
+  const own = posts.filter((p) => p.target === "own");
+  const referents = posts.filter((p) => p.target === "referent");
+
+  const parts: string[] = [];
+
+  if (own.length > 0) {
+    // Agrupa por plataforma
+    const byPlatform = new Map<string, SocialPostRow[]>();
+    for (const p of own) {
+      const list = byPlatform.get(p.platform) ?? [];
+      list.push(p);
+      byPlatform.set(p.platform, list);
+    }
+
+    const lines: string[] = [
+      "## Contenido propio (publicaciones reales del usuario — aprende su voz y formatos)",
+    ];
+    for (const [platform, items] of byPlatform) {
+      lines.push(`\n### ${platform.toUpperCase()}`);
+      for (const item of items.slice(0, OWN_POSTS_PER_PLATFORM)) {
+        const eng = item.engagement
+          ? Object.entries(item.engagement)
+              .filter(([, v]) => v > 0)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ")
+          : "";
+        const meta = [item.post_date, eng].filter(Boolean).join(" · ");
+        lines.push(`---\n${meta ? `(${meta})\n` : ""}${item.post_text.trim()}`);
+      }
+    }
+    parts.push(lines.join("\n"));
+  }
+
+  if (referents.length > 0) {
+    // Agrupa por cuenta de referente
+    const byAccount = new Map<string, SocialPostRow[]>();
+    for (const p of referents) {
+      const key = `${p.platform}:${p.account_url ?? ""}`;
+      const list = byAccount.get(key) ?? [];
+      list.push(p);
+      byAccount.set(key, list);
+    }
+
+    const lines: string[] = [
+      "## Referentes (posts de cuentas que el usuario admira — extrae patrones, no copies)",
+    ];
+    for (const [key, items] of byAccount) {
+      const [platform, url] = key.split(":");
+      lines.push(`\n### ${platform.toUpperCase()} — ${url}`);
+      for (const item of items.slice(0, REFERENT_POSTS_PER_ACCOUNT)) {
+        const eng = item.engagement
+          ? Object.entries(item.engagement)
+              .filter(([, v]) => v > 0)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ")
+          : "";
+        const meta = [item.post_date, eng].filter(Boolean).join(" · ");
+        lines.push(`---\n${meta ? `(${meta})\n` : ""}${item.post_text.trim()}`);
+      }
+    }
+    parts.push(lines.join("\n"));
+  }
+
+  return parts.join("\n\n");
+}
+
 // ─────────────────────────────────────────────────────────────
 // Ensamblado puro: motor + perfil + conocimiento + señales + aprendizaje + memoria.
 // Sin acceso a red ni a disco → fácil de testear.
@@ -154,6 +236,16 @@ export function composeSystemPrompt(input: ComposeInput): string {
       section(
         "CONOCIMIENTO DEL ECOSISTEMA (plataformas activas del usuario)",
         body
+      )
+    );
+  }
+
+  const socialBody = renderSocialPosts(input.socialPosts);
+  if (socialBody) {
+    parts.push(
+      section(
+        "CONTENIDO SOCIAL (posts reales scrapeados — úsalos para entender la voz del usuario y aprender de sus referentes)",
+        socialBody
       )
     );
   }
@@ -231,6 +323,28 @@ export async function gatherContext(
     knowledge = data ?? [];
   }
 
+  // Posts sociales scrapeados: propios (últimos 10 por plataforma) + referentes (últimos 5 por cuenta)
+  const { data: ownPosts } = await supabase
+    .from("social_posts")
+    .select("platform, account_url, target, post_text, post_date, engagement")
+    .eq("user_id", userId)
+    .eq("target", "own")
+    .order("scraped_at", { ascending: false })
+    .limit(OWN_POSTS_PER_PLATFORM * platformKeys.length || OWN_POSTS_PER_PLATFORM * 6);
+
+  const { data: referentPosts } = await supabase
+    .from("social_posts")
+    .select("platform, account_url, target, post_text, post_date, engagement")
+    .eq("user_id", userId)
+    .eq("target", "referent")
+    .order("scraped_at", { ascending: false })
+    .limit(REFERENT_POSTS_PER_ACCOUNT * 10); // máx 10 cuentas referentes
+
+  const socialPosts = [
+    ...(ownPosts ?? []),
+    ...(referentPosts ?? []),
+  ] as SocialPostRow[];
+
   const { data: signalsDesc } = await supabase
     .from("signals")
     .select("content, type, source")
@@ -258,6 +372,7 @@ export async function gatherContext(
     motor,
     profile: (profile as ProfileRow | null) ?? null,
     knowledge,
+    socialPosts,
     // Se piden en desc (los más recientes) y se invierten a orden cronológico.
     signals: (signalsDesc ?? []).reverse(),
     messages: (messagesDesc ?? []).reverse(),

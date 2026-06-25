@@ -1,11 +1,11 @@
 // POST /api/apify/webhook
 // Apify llama aquí cuando un run termina (éxito o fallo).
-// Descarga los posts del dataset y los inserta como signals en Supabase.
+// Descarga los posts del dataset y los inserta individualmente en social_posts.
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/db/server";
+import { createServiceClient } from "@/lib/db/server";
 import { fetchDataset } from "@/lib/apify/client";
-import { formatPosts, type PlatformKey } from "@/lib/apify/actors";
+import { extractPost, type PlatformKey } from "@/lib/apify/actors";
 import { PLATFORM_KEYS } from "@/lib/ai/platforms";
 
 type WebhookPayload = {
@@ -28,12 +28,11 @@ export async function POST(req: Request) {
 
   const { userId, platform, target, refUrl, status, datasetId } = body;
 
-  // Solo procesamos runs exitosos con datos válidos
   if (status !== "ACTOR.RUN.SUCCEEDED") {
     return NextResponse.json({ skipped: true, status });
   }
 
-  if (!userId || !platform || !datasetId) {
+  if (!userId || !platform || !datasetId || !target) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
@@ -43,7 +42,6 @@ export async function POST(req: Request) {
 
   const platformKey = platform as PlatformKey;
 
-  // Descarga los posts desde el dataset de Apify
   let items: Record<string, unknown>[];
   try {
     items = await fetchDataset(datasetId);
@@ -56,21 +54,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ inserted: 0 });
   }
 
-  const formatted = formatPosts(platformKey, items);
-
-  // Construye el content del signal
-  const label =
-    target === "own"
-      ? `Tu perfil de ${platform}`
-      : `Referente en ${platform}: ${refUrl ?? ""}`;
-
-  const content = `${label}\n\n${formatted}`;
-
-  // Usamos el service-role client para escribir desde webhook (no hay sesión)
-  const { createClient: createServiceClient } = await import("@/lib/db/server");
+  // Usamos service-role para escribir sin sesión de usuario
   const supabase = await createServiceClient();
 
-  // Verificar que el userId existe (seguridad básica)
+  // Verificar que el userId existe
   const { data: profileCheck } = await supabase
     .from("profiles")
     .select("user_id")
@@ -81,19 +68,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { error } = await supabase.from("signals").insert({
-    user_id: userId,
-    content,
-    type: target === "own" ? "social_own" : "social_referent",
-    source: "apify",
-  });
+  // Borrar posts anteriores del mismo perfil para mantener datos frescos
+  await supabase
+    .from("social_posts")
+    .delete()
+    .eq("user_id", userId)
+    .eq("platform", platform)
+    .eq("target", target)
+    .eq("account_url", target === "own" ? "" : (refUrl ?? ""));
+
+  // Insertar posts individualmente
+  const rows = items
+    .map((item) => extractPost(platformKey, item))
+    .filter((p) => p.post_text.trim().length > 0)
+    .map((p) => ({
+      user_id: userId,
+      platform,
+      account_url: target === "referent" ? (refUrl ?? "") : "",
+      target,
+      post_text: p.post_text,
+      post_date: p.post_date,
+      engagement: p.engagement,
+      raw: p.raw,
+    }));
+
+  const { error } = await supabase.from("social_posts").insert(rows);
 
   if (error) {
     console.error("[apify/webhook] insert error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Marca sync_status como "synced" si es perfil propio
+  // Actualizar sync_status en profiles.platforms si es perfil propio
   if (target === "own") {
     const { data: profileData } = await supabase
       .from("profiles")
@@ -102,20 +108,15 @@ export async function POST(req: Request) {
       .single();
 
     if (profileData?.platforms && Array.isArray(profileData.platforms)) {
-      const updated = (
-        profileData.platforms as Array<Record<string, unknown>>
-      ).map((p) => {
+      const updated = (profileData.platforms as Array<Record<string, unknown>>).map((p) => {
         if ((p.key ?? p.platform) === platform) {
           return { ...p, sync_status: "synced", last_synced_at: new Date().toISOString() };
         }
         return p;
       });
-      await supabase
-        .from("profiles")
-        .update({ platforms: updated })
-        .eq("user_id", userId);
+      await supabase.from("profiles").update({ platforms: updated }).eq("user_id", userId);
     }
   }
 
-  return NextResponse.json({ inserted: 1, platform, target });
+  return NextResponse.json({ inserted: rows.length, platform, target });
 }

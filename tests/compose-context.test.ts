@@ -21,6 +21,7 @@ const base: ComposeInput = {
     referents: ["Babbage"],
   },
   knowledge: [{ platform: "linkedin", content: "En LinkedIn rinden los carruseles." }],
+  socialPosts: [],
   signals: [{ content: "esta semana se habla de IA", type: "tendencia", source: "chat" }],
   messages: [
     { role: "user", content: "hola" },
