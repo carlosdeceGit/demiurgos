@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock } from "lucide-react";
 import type { PlatformKey } from "@/lib/ai/platforms";
+import { FeatureDiscovery } from "@/components/dashboard/feature-discovery";
 
 const PLATFORM_LABELS: Record<PlatformKey, string> = {
   linkedin: "LinkedIn",
@@ -88,6 +89,9 @@ function MetricCard({ label, value }: { label: string; value: number }) {
 export function DashboardView({ data }: { data: DashboardData }) {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8 p-6 pb-24 md:pb-6">
+      {/* Feature discovery — dismissible, guardado en localStorage */}
+      <FeatureDiscovery />
+
       {/* Métricas */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <MetricCard label="Propuestas totales" value={data.metrics.totalProposals} />
