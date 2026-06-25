@@ -1,104 +1,78 @@
-import { Sparkles } from "lucide-react";
+"use client";
+
+import { useState, useCallback } from "react";
+import Link from "next/link";
+import { BookOpen, Sparkles } from "lucide-react";
+import type { UIMessage } from "ai";
 
 import { AppRail } from "@/components/app/app-rail";
 import { Button } from "@/components/ui/button";
-import { UploadContentButton } from "@/components/chat/upload-content-button";
+import { ChatClient } from "@/components/chat/chat-client";
 import type { PlatformKey } from "@/lib/ai/platforms";
 
-const PLATFORM_LABELS: Record<PlatformKey, string> = {
-  linkedin: "LinkedIn",
-  youtube: "YouTube",
-  tiktok: "TikTok",
-  instagram: "Instagram",
-  x: "X",
-  substack: "Substack",
-};
+function extractContextPoints(messages: UIMessage[]): string[] {
+  const userMessages = messages
+    .filter((m) => m.role === "user")
+    .map((m) =>
+      m.parts
+        .filter((p): p is { type: "text"; text: string } => p.type === "text")
+        .map((p) => p.text)
+        .join("")
+        .trim()
+    )
+    .filter(Boolean);
 
-type SignalItem = { content: string; source: string | null };
+  return userMessages.slice(-4).map((t) =>
+    t.length > 80 ? t.slice(0, 80).trimEnd() + "…" : t
+  );
+}
 
-function RailRight({
-  displayName,
-  positioning,
-  platforms,
-  signals,
-}: {
-  displayName: string;
-  positioning: string | null;
-  platforms: PlatformKey[];
-  signals: SignalItem[];
-}) {
+function RailRight({ messages }: { messages: UIMessage[] }) {
+  const points = extractContextPoints(messages);
+  const hasContext = points.length > 0;
+
   return (
-    <aside className="hidden w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l p-5 xl:flex">
+    <aside className="hidden w-72 shrink-0 flex-col gap-5 overflow-y-auto border-l p-5 xl:flex">
       <div>
         <h2 className="text-muted-foreground mb-3 font-mono text-xs tracking-wider uppercase">
-          Contexto
+          Esta conversación
         </h2>
 
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-muted-foreground text-xs">Perfil activo</p>
-          <p className="mt-0.5 font-medium">{displayName}</p>
-          {positioning && (
-            <p className="text-muted-foreground mt-2 line-clamp-4 text-sm">
-              {positioning}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
-          Plataformas activas
-        </h3>
-        {platforms.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {platforms.map((p) => (
-              <span
-                key={p}
-                className="bg-secondary inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-              >
-                <span className="bg-brand-accent size-1.5 rounded-full" />
-                {PLATFORM_LABELS[p]}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Sin plataformas marcadas todavía.
-          </p>
-        )}
-      </div>
-
-      <div>
-        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
-          Señales recientes
-        </h3>
-        {signals.length > 0 ? (
+        {hasContext ? (
           <ul className="flex flex-col gap-2">
-            {signals.map((s, i) => (
-              <li key={i} className="bg-card rounded-lg border p-3 text-sm">
-                <p className="line-clamp-2">{s.content}</p>
-                {s.source && (
-                  <span className="text-muted-foreground mt-1 inline-block font-mono text-[10px] tracking-wide uppercase">
-                    {s.source}
-                  </span>
-                )}
+            {points.map((pt, i) => (
+              <li
+                key={i}
+                className="bg-card flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
+              >
+                <span className="bg-brand-accent mt-1.5 size-1.5 shrink-0 rounded-full" />
+                <span>{pt}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-muted-foreground text-sm">
-            Aún no hay señales. Comparte un artículo o una idea en el chat y
-            Demiurgos la recordará.
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Los temas que traigas aparecerán aquí para que el Director los tenga
+            siempre a la vista.
           </p>
         )}
       </div>
 
       <div className="mt-auto flex flex-col gap-2 pt-2">
-        <UploadContentButton />
-        <Button variant="outline" size="sm" disabled className="justify-start gap-2">
-          <Sparkles className="size-4" />
-          Generar propuestas
-          <span className="text-muted-foreground ml-auto text-[10px]">pronto</span>
+        <h3 className="text-muted-foreground mb-1 font-mono text-xs tracking-wider uppercase">
+          Acciones rápidas
+        </h3>
+        <Button variant="outline" size="sm" asChild className="justify-start gap-2">
+          <Link href="/library">
+            <BookOpen className="size-4" />
+            Ir a Biblioteca
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild className="justify-start gap-2">
+          <Link href="/propuestas">
+            <Sparkles className="size-4" />
+            Ver propuestas
+          </Link>
         </Button>
       </div>
     </aside>
@@ -108,20 +82,18 @@ function RailRight({
 export function ChatShell({
   email,
   displayName,
-  positioning,
-  platforms,
-  signals,
   isAdmin = false,
-  children,
 }: {
   email: string;
   displayName: string;
-  positioning: string | null;
-  platforms: PlatformKey[];
-  signals: SignalItem[];
+  positioning?: string | null;
+  platforms?: PlatformKey[];
+  signals?: { content: string; source: string | null }[];
   isAdmin?: boolean;
-  children: React.ReactNode;
 }) {
+  const [messages, setMessages] = useState<UIMessage[]>([]);
+  const handleMessages = useCallback((msgs: UIMessage[]) => setMessages(msgs), []);
+
   return (
     <div className="flex h-dvh">
       <AppRail
@@ -130,13 +102,10 @@ export function ChatShell({
         email={email}
         isAdmin={isAdmin}
       />
-      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
-      <RailRight
-        displayName={displayName}
-        positioning={positioning}
-        platforms={platforms}
-        signals={signals}
-      />
+      <main className="flex min-w-0 flex-1 flex-col">
+        <ChatClient onMessagesChange={handleMessages} />
+      </main>
+      <RailRight messages={messages} />
     </div>
   );
 }
