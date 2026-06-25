@@ -19,6 +19,10 @@ function textOf(message: UIMessage | undefined): string {
     .trim();
 }
 
+function titleFrom(text: string): string {
+  return text.slice(0, 60).replace(/\n/g, " ").trim();
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const {
@@ -29,21 +33,48 @@ export async function POST(req: Request) {
     return new Response("No autenticado", { status: 401 });
   }
 
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  const {
+    messages,
+    conversationId: incomingConvId,
+  }: { messages: UIMessage[]; conversationId?: string } = await req.json();
 
-  // 1. Componer el contexto a partir de lo ya persistido (sin el turno actual).
+  // 1. Resolver conversación: recuperar existente o crear nueva.
+  let conversationId = incomingConvId ?? null;
+  const userText = textOf(messages[messages.length - 1]);
+
+  if (!conversationId) {
+    const { data: conv } = await supabase
+      .from("conversations")
+      .insert({
+        user_id: user.id,
+        title: userText ? titleFrom(userText) : "Nueva conversación",
+      })
+      .select("id")
+      .single();
+    conversationId = conv?.id ?? null;
+  } else {
+    await supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", conversationId)
+      .eq("user_id", user.id);
+  }
+
+  // 2. Componer el contexto.
   const context = await gatherContext(supabase, user.id);
   const systemContext = composeSystemPrompt(context);
 
-  // 2. Persistir el mensaje nuevo del usuario.
-  const userText = textOf(messages[messages.length - 1]);
+  // 3. Persistir el mensaje del usuario.
   if (userText) {
-    await supabase
-      .from("messages")
-      .insert({ user_id: user.id, role: "user", content: userText });
+    await supabase.from("messages").insert({
+      user_id: user.id,
+      role: "user",
+      content: userText,
+      conversation_id: conversationId,
+    });
   }
 
-  // 3. Llamar al Director (modelo elegido en el admin) y persistir al terminar.
+  // 4. Llamar al Director y persistir la respuesta.
   const { directorModel } = await getModelSettings();
   const result = await runDirector({
     systemContext,
@@ -51,12 +82,19 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(messages),
     onFinish: async (text) => {
       if (text) {
-        await supabase
-          .from("messages")
-          .insert({ user_id: user.id, role: "assistant", content: text });
+        await supabase.from("messages").insert({
+          user_id: user.id,
+          role: "assistant",
+          content: text,
+          conversation_id: conversationId,
+        });
       }
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    headers: conversationId
+      ? { "X-Conversation-Id": conversationId }
+      : undefined,
+  });
 }

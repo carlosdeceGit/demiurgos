@@ -5,6 +5,7 @@ import { AppRail } from "@/components/app/app-rail";
 import {
   DashboardView,
   type DashboardProposal,
+  type DashboardConversation,
 } from "@/components/dashboard/dashboard-view";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { activePlatformKeys, type ProfilePlatform } from "@/lib/ai/platforms";
@@ -72,6 +73,14 @@ export default async function DashboardPage({
     .order("created_at", { ascending: false })
     .limit(10);
 
+  const { data: conversationsRaw } = await supabase
+    .from("conversations")
+    .select("id, title, updated_at")
+    .eq("user_id", user.id)
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(5);
+
   const proposals: DashboardProposal[] = (proposalsRaw ?? []).map((p) => ({
     id: p.id as string,
     platform: p.platform as string | null,
@@ -85,6 +94,12 @@ export default async function DashboardPage({
   const platforms = activePlatformKeys(
     (profile?.platforms as ProfilePlatform[] | null) ?? null
   );
+
+  const conversations: DashboardConversation[] = (conversationsRaw ?? []).map((c) => ({
+    id: c.id as string,
+    title: c.title as string | null,
+    updatedAt: c.updated_at as string,
+  }));
 
   return (
     <div className="flex h-dvh">
@@ -106,6 +121,7 @@ export default async function DashboardPage({
             platforms,
             proposals,
             signals: signals ?? [],
+            conversations,
           }}
         />
       </main>

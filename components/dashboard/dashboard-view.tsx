@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { MessageSquare } from "lucide-react";
+
 import type { PlatformKey } from "@/lib/ai/platforms";
 
 const PLATFORM_LABELS: Record<PlatformKey, string> = {
@@ -21,6 +24,12 @@ export type DashboardProposal = {
 
 export type DashboardSignal = { content: string; source: string | null };
 
+export type DashboardConversation = {
+  id: string;
+  title: string | null;
+  updatedAt: string;
+};
+
 export type DashboardData = {
   displayName: string;
   sector?: string | null;
@@ -28,6 +37,7 @@ export type DashboardData = {
   platforms: PlatformKey[];
   proposals: DashboardProposal[];
   signals: DashboardSignal[];
+  conversations: DashboardConversation[];
 };
 
 function ProposalCard({ p }: { p: DashboardProposal }) {
@@ -116,6 +126,41 @@ export function DashboardView({ data }: { data: DashboardData }) {
           </div>
         )}
       </section>
+
+      {data.conversations.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Conversaciones recientes</h2>
+            <Link
+              href="/chat"
+              className="text-muted-foreground hover:text-foreground text-xs transition-colors"
+            >
+              Nueva →
+            </Link>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {data.conversations.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href="/chat"
+                  className="bg-card hover:border-border/80 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors"
+                >
+                  <MessageSquare className="text-muted-foreground size-4 shrink-0" />
+                  <span className="flex-1 truncate">
+                    {c.title ?? "Conversación sin título"}
+                  </span>
+                  <span className="text-muted-foreground font-mono text-[10px]">
+                    {new Date(c.updatedAt).toLocaleDateString("es", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 text-sm font-semibold">Señales recientes</h2>

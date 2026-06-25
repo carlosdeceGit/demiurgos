@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
-import { Loader2, Paperclip, SendHorizontal } from "lucide-react";
+import type { UIMessage } from "ai";
+import { Loader2, Paperclip, Plus, SendHorizontal } from "lucide-react";
 
 import { Logo } from "@/components/landing/logo";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,7 @@ const SUGGESTIONS = [
   "Vamos a afinar mi perfil",
 ];
 
-// Mismos formatos que la Biblioteca.
 const ACCEPT = ".md,.markdown,.txt,.html,.htm,.jpg,.jpeg,.png,.webp,.pdf,.docx,.rtf,.odt";
-// Tope de texto que inyectamos en el mensaje para no inflar el contexto.
 const MAX_INLINE_CHARS = 8000;
 
 function messageText(message: UIMessage): string {
@@ -27,14 +25,51 @@ function messageText(message: UIMessage): string {
     .join("");
 }
 
-export function ChatClient() {
+type Props = {
+  onMessagesChange?: (messages: UIMessage[]) => void;
+};
+
+export function ChatClient({ onMessagesChange }: Props) {
   const [input, setInput] = useState("");
   const [attaching, setAttaching] = useState<string | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
+  const convIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+
+  // Transport custom que siempre lee el conversationId de la ref.
+  const transport = useMemo(
+    () => ({
+      async sendMessages({
+        messages,
+        abortSignal,
+      }: {
+        messages: unknown[];
+        abortSignal?: AbortSignal;
+      }): Promise<Response> {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages,
+            conversationId: convIdRef.current,
+          }),
+          signal: abortSignal,
+        });
+        const newId = res.headers.get("X-Conversation-Id");
+        if (newId && !convIdRef.current) convIdRef.current = newId;
+        return res;
+      },
+    }),
+    []
+  );
+
+  const { messages, sendMessage, status, error, setMessages } = useChat({
+    transport,
   });
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   const busy = status === "submitted" || status === "streaming";
 
@@ -45,7 +80,12 @@ export function ChatClient() {
     setInput("");
   }
 
-  // Sube el archivo a la Biblioteca y mete su contenido en la conversación.
+  function newConversation() {
+    setMessages([]);
+    convIdRef.current = null;
+    onMessagesChange?.([]);
+  }
+
   async function attachFiles(files: FileList | File[]) {
     setAttachError(null);
     for (const file of Array.from(files)) {
@@ -57,7 +97,6 @@ export function ChatClient() {
         if (!res.ok) throw new Error(await res.text());
         const { item } = await res.json();
 
-        // Recupera el Markdown convertido para dárselo al Director.
         let md = "";
         try {
           const detail = await fetch(`/api/library/${item.id}`);
@@ -97,15 +136,28 @@ export function ChatClient() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Cabecera del chat */}
+      {/* Cabecera */}
       <header className="flex items-center justify-between border-b px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="bg-brand-accent size-2 rounded-full" />
           <span className="font-medium">Director creativo</span>
         </div>
-        <span className="text-brand-violet bg-brand-violet/10 rounded-full px-2.5 py-1 font-mono text-xs">
-          Demiurgos
-        </span>
+        <div className="flex items-center gap-2">
+          {!empty && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={newConversation}
+              className="text-muted-foreground gap-1.5 text-xs"
+            >
+              <Plus className="size-3.5" />
+              Nueva
+            </Button>
+          )}
+          <span className="text-brand-accent bg-brand-accent/10 rounded-full px-2.5 py-1 font-mono text-xs">
+            Demiurgos
+          </span>
+        </div>
       </header>
 
       {/* Mensajes */}
@@ -168,7 +220,6 @@ export function ChatClient() {
             ))}
           </div>
 
-          {/* Aviso de adjunto en curso / error */}
           {attaching && (
             <p className="text-muted-foreground mb-2 flex items-center gap-2 text-xs">
               <Loader2 className="size-3.5 animate-spin" />
