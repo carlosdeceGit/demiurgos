@@ -355,7 +355,7 @@ function S07a() {
       >
         La primera impresión — <span className="text-primary">sin login</span>
       </h2>
-      <BrowserWindow src="/home-demo" label="Landing" className="w-full h-[460px]" />
+      <BrowserWindow src="/home-demo" label="Landing" className="w-full h-[520px]" />
     </div>
   );
 }
@@ -373,7 +373,7 @@ function S07b() {
       >
         Tu perfil, tu voz, tu sector — <span className="text-primary">una sola vez</span>
       </h2>
-      <BrowserWindow src="/onboarding-demo" label="Onboarding" className="w-full h-[460px]" />
+      <BrowserWindow src="/onboarding-demo" label="Onboarding" className="w-full h-[520px]" />
     </div>
   );
 }
@@ -391,25 +391,30 @@ function S07c() {
       >
         El director creativo en acción — <span className="text-primary">pruébalo</span>
       </h2>
-      <BrowserWindow src="/demo" label="Panel demo" className="w-full h-[460px]" />
+      <BrowserWindow src="/demo" label="Panel demo" className="w-full h-[520px]" />
     </div>
   );
 }
 
-/* ── Demo en grande (S08/S09) ───────────────────────────────────────────── */
+/* ── Demo con texto lateral (S08/S09) ──────────────────────────────────── */
 function S08() {
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      <div className="flex w-full items-center justify-between">
-        <h2
-          className="font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.035em]"
-          style={{ fontFamily: "var(--font-bricolage, var(--font-display))" }}
-        >
-          ¿Qué puedes <span className="text-primary">hacer?</span>
-        </h2>
-        <Pill dim>Chat · propuestas · archivos · ideas</Pill>
+      <h2
+        className="w-full font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.035em]"
+        style={{ fontFamily: "var(--font-bricolage, var(--font-display))" }}
+      >
+        ¿Qué puedes <span className="text-primary">hacer?</span>
+      </h2>
+      <div className="grid w-full grid-cols-[1fr_2.6fr] gap-4 items-stretch">
+        <ul className="flex flex-col justify-center gap-3 text-left">
+          <Feat><strong>Chat con el Director Creativo</strong> — conversación contextualizada con tu perfil e historial.</Feat>
+          <Feat><strong>Generación de propuestas</strong> — idea + por qué ahora + guion, listos para publicar.</Feat>
+          <Feat><strong>Subida de archivos</strong> — Google Drive, PDFs, notas como fuente de inspiración.</Feat>
+          <Feat><strong>Ideas frontera</strong> — contenido en la frontera del conocimiento de tu sector.</Feat>
+        </ul>
+        <BrowserWindow src="/demo" label="Demo — qué puedes hacer" className="h-[480px]" />
       </div>
-      <BrowserWindow src="/demo" label="Demo — qué puedes hacer" className="w-full h-[480px]" />
     </div>
   );
 }
@@ -417,16 +422,21 @@ function S08() {
 function S09() {
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      <div className="flex w-full items-center justify-between">
-        <h2
-          className="font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.035em]"
-          style={{ fontFamily: "var(--font-bricolage, var(--font-display))" }}
-        >
-          Y también <span className="text-primary">esto.</span>
-        </h2>
-        <Pill dim>Perfil · redes · tendencias · costes</Pill>
+      <h2
+        className="w-full font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.035em]"
+        style={{ fontFamily: "var(--font-bricolage, var(--font-display))" }}
+      >
+        Y también <span className="text-primary">esto.</span>
+      </h2>
+      <div className="grid w-full grid-cols-[2.6fr_1fr] gap-4 items-stretch">
+        <BrowserWindow src="/demo" label="Demo — más funciones" className="h-[480px]" />
+        <ul className="flex flex-col justify-center gap-3 text-left">
+          <Feat><strong>Perfil contextual</strong> — tu tono, sector y audiencia en cada generación.</Feat>
+          <Feat><strong>Scraping de redes</strong> — conecta LinkedIn o X y analiza lo que ya publicaste.</Feat>
+          <Feat><strong>Tendencias en tiempo real</strong> — lo que pasa en tu sector, integrado como contexto.</Feat>
+          <Feat><strong>Ajustes de coste</strong> — elige qué modelo IA usa para cada tarea y cuánto gastas.</Feat>
+        </ul>
       </div>
-      <BrowserWindow src="/demo" label="Demo — más funciones" className="w-full h-[480px]" />
     </div>
   );
 }
@@ -601,6 +611,39 @@ function S14() {
   );
 }
 
+/* ── SPrompt: alerta — esta presentación también fue prompteada ─────────── */
+function SPrompt() {
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <div className="flex w-full items-center gap-3">
+        <Pill>⚠️ Alerta</Pill>
+        <span
+          className="font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.035em]"
+          style={{ fontFamily: "var(--font-bricolage, var(--font-display))" }}
+        >
+          Esta presentación también ha sido{" "}
+          <span className="text-primary">prompteada.</span>
+        </span>
+      </div>
+      <div
+        className="w-full max-w-[860px] overflow-hidden rounded-[16px] border border-border"
+        style={{ boxShadow: "0 0 60px rgba(34,214,122,.08), 0 24px 48px rgba(0,0,0,.6)" }}
+      >
+        <Image
+          src="/presentacion/slideprompt.png"
+          alt="El prompt de esta presentación"
+          width={1680}
+          height={1050}
+          className="h-auto w-full object-cover"
+          style={{ maxHeight: "68vh" }}
+          priority
+          unoptimized
+        />
+      </div>
+    </div>
+  );
+}
+
 /* ── S15: solo la imagen ────────────────────────────────────────────────── */
 function S15() {
   return (
@@ -651,8 +694,9 @@ const SLIDES: { component: React.FC; note: string }[] = [
   { component: S12b, note: "Decisiones en caliente. Con el reloj corriendo." },
   { component: S12c, note: "Cada prompt cuesta. Aprende cuándo merece la pena." },
   { component: S13,  note: "'Nada de esto sabía antes de empezar.'" },
-  { component: S14,  note: "Pausa larga. Deja que respire." },
-  { component: S15,  note: "La imagen real. Reír. Gracias. Preguntas." },
+  { component: S14,     note: "Pausa larga. Deja que respire." },
+  { component: SPrompt, note: "Sorpresa: esta propia presentación fue generada con Claude Code. Señala el prompt." },
+  { component: S15,     note: "La imagen real. Reír. Gracias. Preguntas." },
 ];
 
 /* ════════════════════════════════════════════════════════════
