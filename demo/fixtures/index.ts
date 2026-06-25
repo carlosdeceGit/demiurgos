@@ -12,9 +12,17 @@ export {
   DEMO_PROPOSALS,
   DEMO_SIGNALS,
   DEMO_CONVERSATIONS,
+  DEMO_FULL_PROPOSALS,
+  DEMO_IDEAS,
+  DEMO_LIBRARY,
+  DEMO_CALENDAR,
   proposalsFor,
   signalsFor,
   conversationFor,
+  fullProposalsFor,
+  ideasFor,
+  libraryFor,
+  calendarFor,
 } from "./content";
 export {
   DEMO_AI_RUNS,
