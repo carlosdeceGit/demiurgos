@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import { Logo } from "@/components/landing/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export type RailSection =
@@ -133,7 +132,6 @@ export function AppRail({
             <p className="truncate text-sm font-medium">{displayName}</p>
             <p className="text-muted-foreground truncate text-xs">{email}</p>
           </div>
-          <ThemeToggle />
         </div>
         <form action="/auth/signout" method="post" className="mt-2">
           <Button
