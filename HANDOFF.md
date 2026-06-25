@@ -912,3 +912,55 @@ tests/
 supabase/migrations/
   0006_ideas_table                    (aplicada vía MCP)
 ```
+## 16. Catálogo de modelos: ampliación y corrección de slugs (25 jun 2026)
+
+**Rama:** `claude/upbeat-knuth-6uil82`
+
+### 16.1 Qué se hizo
+
+1. **Ampliación del orquestador** — el selector de modelo del orquestador pasó de 4 opciones a **15 opciones**, cubriendo todos los grandes proveedores disponibles en el Vercel AI Gateway.
+
+2. **Corrección de slugs** — se verificaron todos los IDs contra la API pública de Vercel AI Gateway y se corrigieron los siguientes errores:
+
+| Slug incorrecto | Slug correcto | Motivo |
+|---|---|---|
+| `google/gemini-3.1-pro` | `google/gemini-3.1-pro-preview` | Solo existe la variante preview en el gateway |
+| `zhipu/glm-4` | `zai/glm-4.7` | El proveedor en Vercel es `zai/`, no `zhipu/` |
+| `zhipu/glm-z1` | `zai/glm-5.2` | glm-z1 no existe; glm-5.2 es el último con razonamiento |
+| `zhipu/glm-4-flash` | `zai/glm-5` | No hay variante "flash" de GLM en el gateway |
+| `deepseek/deepseek-v3` | `deepseek/deepseek-v4-flash` | V3 retirado; V4 Flash es el tier económico actual |
+
+3. **Modelos GLM (Z.ai) añadidos** al orquestador:
+   - `zai/glm-5.2` — GLM-5.2, modelo con razonamiento avanzado (jun 2026)
+   - `zai/glm-4.7` — GLM-4.7, uso general, muy económico
+   - `zai/glm-5` — GLM-5, generación anterior a 5.2
+
+### 16.2 Opciones del orquestador (estado actual)
+
+| Slug | Label | Precio aprox. |
+|---|---|---|
+| `anthropic/claude-opus-4.8` | Claude Opus 4.8 *(default)* | $5 / $25 |
+| `anthropic/claude-sonnet-4.6` | Claude Sonnet 4.6 | $3 / $15 |
+| `anthropic/claude-haiku-4.5` | Claude Haiku 4.5 | $1 / $5 |
+| `google/gemini-3.1-pro-preview` | Gemini 3.1 Pro Preview | ≈$1.25 / $5 |
+| `google/gemini-2.5-pro` | Gemini 2.5 Pro | ≈$1.25 / $10 |
+| `google/gemini-2.5-flash` | Gemini 2.5 Flash | ≈$0.30 / $2.5 |
+| `openai/o3` | OpenAI o3 (razonamiento) | ≈$10 / $40 |
+| `openai/o4-mini` | OpenAI o4-mini | ≈$1.1 / $4.4 |
+| `openai/gpt-4.1` | GPT-4.1 | ≈$2 / $8 |
+| `deepseek/deepseek-r1` | DeepSeek R1 (razonamiento) | ≈$0.55 / $2.2 |
+| `deepseek/deepseek-v4-flash` | DeepSeek V4 Flash | ≈$0.30 / $1.2 |
+| `meta/llama-4-maverick` | Llama 4 Maverick | ≈$0.20 / $0.60 |
+| `zai/glm-5.2` | GLM-5.2 / Z.ai (razonamiento) | ≈$0.14 / $0.14 |
+| `zai/glm-4.7` | GLM-4.7 / Z.ai | ≈$0.05 / $0.05 |
+| `zai/glm-5` | GLM-5 / Z.ai | ≈$0.14 / $0.14 |
+
+### 16.3 Archivos modificados
+
+```
+lib/ai/model-catalog.ts          — opciones del orquestador + slugs corregidos en todos los grupos
+lib/ai/gateway.ts                — MODELS.analyst y MODELS.trend corregidos
+components/admin/model-settings-form.tsx  — sugerencias actualizadas
+demo/fixtures/metrics.ts         — slug del analista corregido
+tests/resolve-models.test.ts     — slugs de tests actualizados
+```
