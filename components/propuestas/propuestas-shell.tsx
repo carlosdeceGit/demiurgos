@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LayoutGrid, CalendarDays } from "lucide-react";
 
 import { ProposalsGrid, type ProposalRow } from "@/components/propuestas/proposals-grid";
@@ -18,6 +19,13 @@ export function PropuestasShell({
   defaultTab?: Tab;
 }) {
   const [tab, setTab] = useState<Tab>(defaultTab);
+  const router = useRouter();
+
+  function switchTab(next: Tab) {
+    setTab(next);
+    const url = next === "calendario" ? "/propuestas?vista=calendario" : "/propuestas";
+    router.replace(url);
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -25,7 +33,7 @@ export function PropuestasShell({
       <div className="flex shrink-0 items-center gap-1 border-b px-6 pt-4 pb-0">
         <button
           type="button"
-          onClick={() => setTab("grid")}
+          onClick={() => switchTab("grid")}
           aria-pressed={tab === "grid"}
           className={`flex items-center gap-2 border-b-2 px-3 pb-3 text-sm font-medium transition-colors ${
             tab === "grid"
@@ -38,7 +46,7 @@ export function PropuestasShell({
         </button>
         <button
           type="button"
-          onClick={() => setTab("calendario")}
+          onClick={() => switchTab("calendario")}
           aria-pressed={tab === "calendario"}
           className={`flex items-center gap-2 border-b-2 px-3 pb-3 text-sm font-medium transition-colors ${
             tab === "calendario"
