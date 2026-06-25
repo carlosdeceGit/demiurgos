@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía del presentador · Demiurgos Bootcamp IA</title>
+  <style>
+    :root {
+      --bg: #07100a;
+      --card: #0d1a10;
+      --border: #1a2e1e;
+      --primary: #22D67A;
+      --primary-dim: rgba(34,214,122,.12);
+      --amber: #f59e0b;
+      --text: #e8f5ed;
+      --muted: #7a9e85;
+      --font-mono: 'Courier New', monospace;
+      --font-sans: system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.04em;
+    }
+    header p { color: var(--muted); font-family: var(--font-mono); font-size: .8rem; margin-top: .4rem; }
+    .how-to {
+      background: var(--primary-dim);
+      border: 1px solid rgba(34,214,122,.2);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2.5rem;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      color: var(--primary);
+    }
+    .how-to strong { display: block; margin-bottom: .4rem; font-size: .85rem; }
+    .how-to kbd {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 1.3em; min-width: 1.3em; padding: 0 .3em;
+      border: 1px solid var(--primary); border-radius: 4px;
+      font-size: .85em; font-family: var(--font-mono);
+    }
+    .slide-block {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      background: var(--card);
+      position: relative;
+    }
+    .slide-block:hover { border-color: rgba(34,214,122,.25); }
+    .slide-block.highlight { border-color: rgba(34,214,122,.3); background: var(--primary-dim); }
+    .slide-num {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: var(--muted);
+      margin-bottom: .35rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+    .slide-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: .6rem;
+      letter-spacing: -0.02em;
+    }
+    .slide-title .accent { color: var(--primary); }
+    .notes { font-size: .9rem; color: var(--muted); margin-bottom: .75rem; }
+    .tips { list-style: none; display: flex; flex-direction: column; gap: .3rem; }
+    .tips li { display: flex; align-items: flex-start; gap: .5rem; font-size: .85rem; }
+    .tips li::before { content: "▸"; color: var(--primary); shrink: 0; margin-top: .05em; }
+    .tip-warn { color: var(--amber); }
+    .tip-key { color: var(--primary); font-family: var(--font-mono); font-size: .78rem; }
+    .badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-family: var(--font-mono); font-size: .68rem;
+      border: 1px solid rgba(34,214,122,.2); border-radius: 999px;
+      padding: .2em .7em; color: var(--primary); background: var(--primary-dim);
+      margin-top: .5rem;
+    }
+    .badge::before { content: "⏱"; }
+    .divider {
+      height: 1px; background: var(--border); margin: 1.5rem 0;
+      display: flex; align-items: center; gap: .75rem;
+    }
+    .divider span {
+      font-family: var(--font-mono); font-size: .7rem; color: var(--muted);
+      white-space: nowrap;
+    }
+    .sub-steps { margin-top: .6rem; display: flex; flex-direction: column; gap: .25rem; }
+    .sub-step {
+      display: flex; align-items: flex-start; gap: .5rem;
+      font-size: .82rem; color: var(--text);
+      background: rgba(0,0,0,.2); border-radius: 8px; padding: .4rem .6rem;
+    }
+    .sub-step-n {
+      font-family: var(--font-mono); font-size: .7rem; color: var(--primary);
+      min-width: 1.2rem; shrink: 0; font-weight: bold;
+    }
+    footer {
+      margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem;
+      font-family: var(--font-mono); font-size: .75rem; color: var(--muted);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Guía del presentador · Demiurgos</h1>
+  <p>Bootcamp IA 2026 · 17 slides · Abre /presentacion en paralelo</p>
+</header>
+
+<div class="how-to">
+  <strong>Cómo usar esta guía</strong>
+  Abre <code>/presentacion</code> en una ventana y esta guía en otra (o en el móvil).
+  Navega con <kbd>←</kbd> <kbd>→</kbd> o <kbd>Espacio</kbd>.
+  <kbd>F</kbd> = pantalla completa.
+  Las slides S11 y S12 tienen sub-pasos internos: cada → avanza la imagen, no la slide.
+</div>
+
+<!-- S01 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 1 · Apertura</p>
+  <p class="slide-title">Bienvenidos a la era de <span class="accent">TU</span> marca personal.</p>
+  <p class="notes">Entra sin presentarte. La frase lo hace por ti. Deja 3–4 segundos en silencio antes de hablar.</p>
+  <ul class="tips">
+    <li>Nada de "hola soy Carlos y voy a hablar de…". Entra directo.</li>
+    <li>Si alguien ya sabe quién eres, este silencio crea expectativa.</li>
+    <li class="tip-warn">No expliques qué es Demiurgos todavía — la tensión funciona.</li>
+  </ul>
+  <span class="badge">~30 seg</span>
+</div>
+
+<!-- S02 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 2 · El dolor</p>
+  <p class="slide-title">Crear contenido <span class="accent">no es fácil.</span></p>
+  <p class="notes">Señala cada tarjeta y pregunta al público: "¿Quién ha sentido esto?". El último bloque — "Todo a la vez" — es el gancho.</p>
+  <ul class="tips">
+    <li>No leas las tarjetas. Solo señálalas y deja que el público las lea.</li>
+    <li>Haz pausa en "Todo a la vez. El verdadero problema." — deja que cale.</li>
+    <li class="tip-warn">Si el grupo es pequeño, puedes preguntar directamente: "¿A quién le pasa?"</li>
+  </ul>
+  <span class="badge">~1 min</span>
+</div>
+
+<!-- S03 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 3 · El bloqueo real</p>
+  <p class="slide-title">No nos falta talento. Nos falta <span class="accent">tiempo, método y consistencia.</span></p>
+  <p class="notes">Pausa de 3 segundos antes de entrar. Lee la cita lentamente. La última línea — "Y eso tiene solución" — es el pivot.</p>
+  <ul class="tips">
+    <li>Voz baja, pausa. Este es el momento de empatía, no de energía.</li>
+    <li>La última frase la dices con confianza, no como pregunta.</li>
+  </ul>
+  <span class="badge">~45 seg</span>
+</div>
+
+<!-- S04 -->
+<div class="slide-block highlight">
+  <p class="slide-num">Slide 4 · El producto · ⭐ Primer wow</p>
+  <p class="slide-title"><span class="accent">Demiurgos</span> — No es un GPT. Es TU voz.</p>
+  <p class="notes">Primer momento de impacto. Nombra el producto. Lee el tagline en voz alta: "No es una skill. No es un GPT. Es TU voz. TU marca. Eres TÚ haciendo contenido."</p>
+  <ul class="tips">
+    <li>Enfatiza "TU" cada vez que aparezca — hay tres en la slide.</li>
+    <li>Deja que el logo y el nombre respiren. No expliques aún cómo funciona.</li>
+    <li class="tip-warn">Si hay silencio de expectación, es buena señal. No lo rompas rápido.</li>
+  </ul>
+  <span class="badge">~1 min</span>
+</div>
+
+<!-- S05 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 5 · Cómo funciona</p>
+  <p class="slide-title">Las 4 partes internas de <span class="accent">Demiurgos</span></p>
+  <p class="notes">Ahora ya puedes explicar el motor. Recorre las 4 tarjetas: Perfil → Contexto → Generación → Ciclo.</p>
+  <ul class="tips">
+    <li><strong>Perfil</strong>: "Defines quién eres una sola vez. A partir de ahí, todo está calibrado para ti."</li>
+    <li><strong>Contexto</strong>: "No inventa. Analiza tendencias reales, tus redes, tus archivos."</li>
+    <li><strong>Generación</strong>: "No es 'dame una idea'. Es idea + por qué ahora + guion completo."</li>
+    <li><strong>Ciclo</strong>: "Cada semana que lo usas, mejora. Aprende de lo que publicas."</li>
+  </ul>
+  <span class="badge">~1.5 min</span>
+</div>
+
+<!-- S06 -->
+<div class="slide-block highlight">
+  <p class="slide-num">Slide 6 · Demo de output · ⭐ Momento concreto</p>
+  <p class="slide-title">Chat falseado: propuesta de <span class="accent">carrusel LinkedIn</span></p>
+  <p class="notes">Lee el chat en voz alta, como si lo estuvieras usando ahora mismo. La pregunta del usuario → la respuesta del director creativo con el carrusel de 4 slides.</p>
+  <ul class="tips">
+    <li>Lee la pregunta con naturalidad: "Oye, ¿qué me recomiendas publicar esta semana?"</li>
+    <li>Para la propuesta: "Mira lo que genera. No una idea vaga. Un carrusel de 4 slides, con título, contenido y CTA."</li>
+    <li>Señala las 4 tarjetas del mini-carrusel mientras las describes.</li>
+    <li class="tip-warn">No leas cada tarjeta entera — da el titular y di "esto es lo que genera para ti, no para nadie más".</li>
+  </ul>
+  <span class="badge">~2 min</span>
+</div>
+
+<div class="divider"><span>FASES DEL PRODUCTO (3 slides)</span></div>
+
+<!-- S07a -->
+<div class="slide-block">
+  <p class="slide-num">Slide 7a · Fase 1</p>
+  <p class="slide-title">Landing — la primera impresión</p>
+  <p class="notes">Muestra la home real de Demiurgos. Sin login. Cualquiera puede verla.</p>
+  <ul class="tips">
+    <li>"Esto es lo que ve alguien que llega por primera vez. Sin registro, sin login."</li>
+    <li>Señala el CTA principal si se ve en el iframe.</li>
+    <li class="tip-warn">Si el iframe tarda en cargar, no esperes — habla mientras carga.</li>
+  </ul>
+  <span class="badge">~30 seg</span>
+</div>
+
+<!-- S07b -->
+<div class="slide-block">
+  <p class="slide-num">Slide 7b · Fase 2</p>
+  <p class="slide-title">Onboarding — calibrar la voz</p>
+  <p class="notes">El onboarding real. Donde el usuario define quién es. Esto pasa solo una vez.</p>
+  <ul class="tips">
+    <li>"Aquí es donde Demiurgos aprende quién eres. Sector, tono, audiencia, referentes."</li>
+    <li>"Una vez que lo rellenas, ya no tienes que explicarte. Sabe cómo hablarte."</li>
+  </ul>
+  <span class="badge">~45 seg</span>
+</div>
+
+<!-- S07c -->
+<div class="slide-block highlight">
+  <p class="slide-num">Slide 7c · Fase 3</p>
+  <p class="slide-title">Panel demo — el producto en acción · <span class="accent">⭐ Úsalo en vivo</span></p>
+  <p class="notes">El panel real en modo demo, sin login. Aquí puedes hacer una demo en vivo si tienes conexión.</p>
+  <ul class="tips">
+    <li>"Esto es el producto. Sin login. Probadlo después en /demo."</li>
+    <li class="tip-warn">Si haces demo en vivo: prepara una pregunta corta. No improvises el prompt aquí.</li>
+    <li>Pregunta sugerida para demo en vivo: "Dame 3 ideas de contenido para LinkedIn sobre IA y startups."</li>
+  </ul>
+  <span class="badge">~1–2 min</span>
+</div>
+
+<div class="divider"><span>QUÉ SE PUEDE HACER (2 slides)</span></div>
+
+<!-- S08 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 8 · ¿Qué puedes hacer?</p>
+  <p class="slide-title">Chat, propuestas, archivos, ideas frontera</p>
+  <p class="notes">Señala cada punto mientras el iframe del demo está visible. No leas la lista — señala.</p>
+  <ul class="tips">
+    <li>Chat → "Hablas con él como con un colega creativo que te conoce."</li>
+    <li>Propuestas → "No te da ideas. Te da propuestas completas: idea + por qué + guion."</li>
+    <li>Archivos → "Súbele tu presentación, tu informe, tu PDF. Lo usa como contexto."</li>
+    <li>Ideas frontera → "Lo que aún nadie ha dicho. El contenido diferenciador."</li>
+  </ul>
+  <span class="badge">~1.5 min</span>
+</div>
+
+<!-- S09 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 9 · Y también esto</p>
+  <p class="slide-title">Perfil, redes, tendencias, control de costes</p>
+  <p class="notes">La contraparte técnica. Termina siempre con "ajustes de coste" — despierta curiosidad en el público técnico.</p>
+  <ul class="tips">
+    <li>Perfil → "Cada respuesta sabe para quién es."</li>
+    <li>Redes → "Conectas LinkedIn o X y analiza tu historial publicado."</li>
+    <li>Tendencias → "No inventa lo que está de moda. Lo consulta en tiempo real."</li>
+    <li class="tip-warn">Ajustes de coste → pausa aquí. "Puedes elegir qué modelo IA usa para cada tarea. Eso cambia el precio radicalmente." → genera preguntas.</li>
+  </ul>
+  <span class="badge">~1.5 min</span>
+</div>
+
+<div class="divider"><span>STACK Y CONSTRUCCIÓN</span></div>
+
+<!-- S10 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 10 · El stack</p>
+  <p class="slide-title"><span class="accent">Claude Code, Vercel, GitHub, Supabase</span> + ecosistema</p>
+  <p class="notes">Los 4 pilares en verde, el resto como contexto. No entres en detalle técnico — solo nombralos.</p>
+  <ul class="tips">
+    <li>"Estos cuatro son los pilares: Claude Code para construir, Vercel para desplegar, GitHub para versionar, Supabase para la base de datos."</li>
+    <li>"El resto — TrendMCP, Apify, Google Cloud — son las piezas que fui añadiendo según las necesitaba."</li>
+    <li class="tip-warn">Si alguien pregunta por qué no X herramienta, responde: "Porque con estas llegué al producto. No necesité más."</li>
+  </ul>
+  <span class="badge">~1 min</span>
+</div>
+
+<!-- S11 -->
+<div class="slide-block highlight">
+  <p class="slide-num">Slide 11 · Cómo se construyó · 4 sub-pasos con imágenes</p>
+  <p class="slide-title">Prompt → Levantar → Levantar (cont.) → <span class="accent">Iterar</span></p>
+  <p class="notes">Cada → avanza un sub-paso (imagen + bullet). Cuando terminas los 4, el siguiente → te lleva a S12.</p>
+  <div class="sub-steps">
+    <div class="sub-step"><span class="sub-step-n">1→</span><span><strong>Construir el prompt</strong> — "Antes de escribir código, construí el prompt. El prompt es la arquitectura invisible de todo." Imagen: slide11a.png</span></div>
+    <div class="sub-step"><span class="sub-step-n">2→</span><span><strong>Levantar el proyecto</strong> — "Claude Code, Next.js, Supabase, auth, gateway." Imagen: slide11b.png</span></div>
+    <div class="sub-step"><span class="sub-step-n">3→</span><span><strong>Levantar (cont.)</strong> — "Vercel, GitHub, variables de entorno, migraciones." Imagen: slide11c.png</span></div>
+    <div class="sub-step"><span class="sub-step-n">4→</span><span><strong>Iterar</strong> — "Aquí es donde nace el producto real. Debugging constante." Imagen: slide11d.png</span></div>
+  </div>
+  <span class="badge">~2 min</span>
+</div>
+
+<!-- S12 -->
+<div class="slide-block highlight">
+  <p class="slide-num">Slide 12 · La pelea con la IA · 3 sub-pasos con imágenes</p>
+  <p class="slide-title">Bloqueos → Decisiones → <span class="accent">Costes</span></p>
+  <p class="notes">La parte honesta. Cada → avanza un bloqueo con su imagen real. Momento de conexión humana con el público.</p>
+  <div class="sub-steps">
+    <div class="sub-step"><span class="sub-step-n">1→</span><span><strong>Bloqueos técnicos</strong> — "Merges rotos, builds que fallan. Esto pasa. No es fracaso, es el proceso." Imagen: slide12a.png</span></div>
+    <div class="sub-step"><span class="sub-step-n">2→</span><span><strong>Decisiones en caliente</strong> — "¿Cambio la arquitectura ahora o sigo? Con el reloj corriendo." Imagen: slide12b.png</span></div>
+    <div class="sub-step"><span class="sub-step-n">3→</span><span><strong>Control de costes</strong> — "Cada prompt cuesta. Aprendes cuándo vale la pena y cuándo estás quemando dinero." Imagen: slide12c.png</span></div>
+  </div>
+  <ul class="tips" style="margin-top:.6rem">
+    <li class="tip-warn">Este es el momento de honestidad. No lo suavices. El público lo valora.</li>
+    <li>"Si alguien de aquí va a construir algo con IA, va a pasar por esto. Es bueno saberlo antes."</li>
+  </ul>
+  <span class="badge">~2 min</span>
+</div>
+
+<!-- S13 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 13 · Aprendizajes reales</p>
+  <p class="slide-title">Todo lo que <span class="accent">no sabías</span> que ibas a necesitar</p>
+  <p class="notes">Las etiquetas son los temas que aprendiste durante el build. Sin saber que los ibas a necesitar.</p>
+  <ul class="tips">
+    <li>"Ninguna de estas cosas estaba en el plan inicial. Las fui aprendiendo según las necesitaba."</li>
+    <li>"Eso es lo que hace la IA diferente: te permite aprender en contexto, no antes de empezar."</li>
+    <li class="tip-warn">No leas todas las etiquetas — señala dos o tres y di "y muchas más".</li>
+  </ul>
+  <span class="badge">~1 min</span>
+</div>
+
+<!-- S14 -->
+<div class="slide-block">
+  <p class="slide-num">Slide 14 · Cierre</p>
+  <p class="slide-title">Demiurgos no es solo una herramienta.</p>
+  <p class="notes">Pausa larga. Di la primera línea. Para. Di la segunda. Deja que respire.</p>
+  <ul class="tips">
+    <li>Voz tranquila, sin urgencia. Este es el cierre emocional.</li>
+    <li>"Es aprender a construir con IA mientras construyes." — lo dices despacio.</li>
+    <li>"El proceso es el producto." — pausa final antes de la última slide.</li>
+  </ul>
+  <span class="badge">~45 seg</span>
+</div>
+
+<!-- S15 -->
+<div class="slide-block highlight">
+  <p class="slide-num">Slide 15 · Final</p>
+  <p class="slide-title">Terminal con el <span class="accent">límite real alcanzado</span> durante el build</p>
+  <p class="notes">La slide final es el terminal que muestra el error real de límite de uso de Claude — con los 66,94 € gastados y los 3,92 € de saldo. Humor y honestidad.</p>
+  <ul class="tips">
+    <li>Ríete un poco cuando aparezca. "Esto es real. Pasó mientras construía esto."</li>
+    <li>"66 euros en un mes de Claude. ¿Vale la pena? Mirad el producto."</li>
+    <li>Deja la slide ahí. "Gracias. Preguntas bienvenidas. Demiurgos sigue iterando."</li>
+    <li class="tip-warn">No cierres con slides extra. Este terminal es el mejor cierre posible — auténtico.</li>
+  </ul>
+  <span class="badge">~30 seg + Q&A</span>
+</div>
+
+<footer>
+  <span>guia-presentacion.html · Demiurgos Bootcamp IA 2026</span>
+  <span>Usa /presentacion para las slides · F = fullscreen</span>
+</footer>
+
+</body>
+</html>
