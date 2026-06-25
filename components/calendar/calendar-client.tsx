@@ -143,7 +143,7 @@ function ProposalMiniCard({
       </div>
 
       {/* Hook */}
-      <p className="font-serif text-[11px] leading-tight line-clamp-2">{hook}</p>
+      <p className="text-[11px] leading-tight line-clamp-2">{hook}</p>
 
       {/* Hover actions */}
       {!isExecuted && (

@@ -37,7 +37,7 @@ export function LandingHeader() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5" aria-label="Demiurgos, inicio">
-          <Logo size={32} className="[filter:drop-shadow(0_4px_12px_rgba(63,224,162,0.35))]" />
+          <Logo size={32} className="[filter:drop-shadow(0_4px_12px_rgba(34,214,122,0.35))]" />
           <span className="text-[1.05rem] font-semibold tracking-tight">Demiurgos</span>
         </Link>
 
