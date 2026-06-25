@@ -1,6 +1,6 @@
 # Demiurgos — Handoff de contexto (para continuar en otra sesión)
 
-> Última actualización: 24 jun 2026. Resume TODO lo necesario para seguir sin
+> Última actualización: 25 jun 2026. Resume TODO lo necesario para seguir sin
 > empezar de cero. Léelo entero al abrir una sesión nueva.
 > Para arrancar rápido: di "Lee HANDOFF.md en la raíz del repo y continúa".
 
@@ -963,4 +963,175 @@ lib/ai/gateway.ts                — MODELS.analyst y MODELS.trend corregidos
 components/admin/model-settings-form.tsx  — sugerencias actualizadas
 demo/fixtures/metrics.ts         — slug del analista corregido
 tests/resolve-models.test.ts     — slugs de tests actualizados
+```
+
+---
+
+## 17. Chat con conversaciones persistidas y panel de contexto dinámico (25 jun 2026)
+
+**Commit:** `aa1a059` + fixes `48cfc73`, `1db26d6`, `770e0d7`
+
+### 17.1 Qué se hizo
+
+- **Conversaciones persistidas en Supabase**: `/api/chat` crea una nueva conversación
+  (tabla `conversations`) al primer mensaje y la continúa en los siguientes, devolviendo
+  el ID en el header `X-Conversation-Id`. Todos los mensajes de la sesión quedan
+  asociados a la misma conversación.
+- **Transport personalizado** en `ChatClient` que lee el `conversationId` de una ref y
+  lo pasa en cada petición. Incluye `reconnectToStream` (requerido por la interfaz
+  `ChatTransport` del AI SDK).
+- **Corrección de transport**: se migró de un transport custom a `DefaultChatTransport`
+  (AI SDK v6) para resolver errores de streaming. El `conversationId` pasó a gestionarse
+  en el servidor (estado de la sesión), eliminando la necesidad de pasarlo desde el cliente.
+- **Botón "Nueva conversación"** en la cabecera del Director — limpia el chat y crea una
+  nueva conversación en el siguiente mensaje.
+- **Panel derecho rediseñado**: muestra los temas que el usuario mencionó en la
+  conversación actual (extraídos del contexto) + acciones rápidas (ir a Biblioteca,
+  ir a Propuestas). Reemplaza el panel de señales/perfil estático anterior.
+- **Dashboard**: carga las últimas 5 conversaciones del usuario con título y fecha,
+  enlazando directamente al chat.
+
+### 17.2 Archivos modificados
+
+```
+app/api/chat/route.ts               — crea/continúa conversaciones; X-Conversation-Id
+components/chat/chat-client.tsx     — transport + conversationId + botón Nueva
+components/chat/chat-shell.tsx      — panel derecho de contexto dinámico
+components/dashboard/dashboard-view.tsx  — últimas 5 conversaciones
+```
+
+---
+
+## 18. Demo completo y rutas de demo públicas (25 jun 2026)
+
+**Commits:** `269ad0e`, `6b70353`, `ac4a27c`, `e73cffd`, `7176554`
+
+### 18.1 Demo `/demo` — paridad total con la herramienta real
+
+- **DemoChat** renovado: encabezado con botón "Nueva conversación", estado vacío con
+  Logo + tipografía serif, chips de sugerencia, botón Paperclip (deshabilitado en demo),
+  spinner en envío. Callback `onMessagesChange` para sincronizar el panel de contexto.
+- **DemoExperience**: botón "Nueva conversación" en el sidebar (igual que AppRail),
+  panel derecho `RailRight` con contexto de conversación (visible en xl), sección
+  "Ajustes" en la navegación que resetea mensajes al cambiar perfil.
+- **DemoSettings** (nuevo componente): tabs Cuenta / Modelos de IA / Integraciones.
+  Muestra todos los grupos de tarea con sus opciones, precios y modo de competición
+  interactivo (visual, sin guardar en demo). Espeja la pantalla real `/settings`.
+- **Drawer de propuestas habilitado en `/demo`**: el botón Expand ya abre el
+  `ProposalDrawer` real (Sheet + descarga ZIP). `DemoFullProposal` es compatible con
+  `ProposalRow` mediante cast en el render.
+
+### 18.2 Rutas de demo públicas (sin auth)
+
+- **`/home-demo`**: copia de la landing con banner de demo — permite compartir sin
+  que el visitante sea redirigido al login.
+- **`/onboarding-demo`**: versión pública del wizard de onboarding. `OnboardingWizard`
+  gana una prop `demoMode` que omite la llamada a la API y muestra una pantalla de
+  "completado" al finalizar el último paso.
+- Ambas rutas están exentas del middleware de autenticación.
+
+### 18.3 Archivos clave
+
+```
+app/home-demo/page.tsx
+app/onboarding-demo/page.tsx
+components/onboarding/onboarding-wizard.tsx   — prop demoMode
+components/demo/demo-chat.tsx                 — renovado
+components/demo/demo-experience.tsx           — RailRight + DemoSettings
+components/demo/demo-settings.tsx             — nuevo
+```
+
+---
+
+## 19. `/presentacion` — deck de slides Next.js (25 jun 2026)
+
+**Commits:** `d6c22cb`, `ce7c190`, `72c4560`, `70e9504`, `4e2a763`, `8e0238a`,
+`347d81a`, `9fdc12e`, `411979a`, `50a77f4`
+
+### 19.1 Qué es
+
+Deck de presentación del producto para demos y bootcamps, construido como página
+Next.js (no HTML estático). Reemplaza el antiguo `public/bootcamp-deck.html`.
+
+- **`app/presentacion/page.tsx`** — punto de entrada con metadata `noindex`.
+- **`app/presentacion/deck.tsx`** — client component con 23 slides. Navegación por
+  teclado (←→), swipe y click en las mitades del deck. Barra de progreso superior.
+  Notas del presentador en la barra inferior. Timer configurable (por defecto 4 min).
+- **`BrowserWindow`** — componente que embebe iframes live de `/`, `/onboarding-demo`
+  y `/demo`, mostrando el producto real durante la presentación. Los iframes son
+  clicables; las diapositivas de contexto usan imágenes 1×1.
+- **Guía del presentador** (`app/presentacion/guia/page.tsx`): listado de los 23 slides
+  con tiempo sugerido, puntos clave y enlace al slide. Header sticky con el timer
+  siempre visible para controlar el ritmo.
+- **Slide SPrompt** (S23): slide adicional con imagen `public/slideprompt.png` sobre
+  el sistema de prompts y la arquitectura del orquestador.
+
+### 19.2 Rutas en producción
+
+- `/presentacion` — deck principal (noindex, sin nav)
+- `/presentacion/guia` — guía del presentador
+
+### 19.3 Archivos clave
+
+```
+app/presentacion/page.tsx
+app/presentacion/deck.tsx
+app/presentacion/guia/page.tsx
+public/slideprompt.png
+```
+
+---
+
+## 20. Panel de administración completo — usuarios, analíticas y auditoría (25 jun 2026)
+
+**Commit:** `3ca6711`
+
+### 20.1 Qué se añadió
+
+El `/admin` anterior solo tenía KPIs básicos y el formulario de modelos. Esta sesión lo
+convirtió en un panel de administración completo con cuatro pestañas:
+
+- **Dashboard** — resumen de KPIs globales (usuarios, propuestas, mensajes, coste IA),
+  mismo que antes.
+- **Usuarios** — tabla con búsqueda, filtro por estado y ordenación. Ficha individual
+  por usuario: KPIs, uso por modelo, actividad de los últimos 14 días, detección de
+  picos de uso, historial de runs y control de acceso (bloquear / suspender / fijar
+  límites de uso y gasto).
+- **Analíticas** — sparkbars de actividad diaria, distribución horaria, top modelos,
+  top usuarios y ranking de funcionalidades.
+- **Auditoría** — registro paginado de acciones de admin con exportación CSV.
+
+### 20.2 Infraestructura nueva
+
+- **Migración `0011_admin_panel.sql`** (aplicada vía MCP): añade campos de gestión a
+  `profiles` (`status`, `usage_limit`, `spend_limit`, `blocked_reason`, `blocked_by`,
+  `blocked_at`) y crea la tabla `admin_actions` para el log de auditoría.
+- **API REST** `/api/admin/` — rutas protegidas por `requireAdmin()` (sesión + email en
+  `ADMIN_EMAILS`, fail-closed):
+  - `GET /api/admin/users` — listado con filtros y paginación
+  - `GET /api/admin/users/[id]` — detalle + runs
+  - `PATCH /api/admin/users/[id]` — bloquear/suspender/fijar límites
+  - `GET /api/admin/analytics` — datos globales
+  - `GET /api/admin/audit` — log de auditoría paginado
+  - `GET /api/admin/export` — CSV de usuarios, uso de IA o auditoría
+- **Layout `/admin`** con sub-nav tabbed (client component); reemplaza la página única
+  anterior. Diseño dark esmeralda con tokens semánticos.
+
+### 20.3 Archivos clave
+
+```
+app/admin/
+  layout.tsx                          — sub-nav tabbed
+  page.tsx                            — Dashboard (KPIs)
+  users/page.tsx · [id]/page.tsx      — tabla y ficha de usuario
+  analytics/page.tsx                  — analíticas globales
+  audit/page.tsx                      — registro de auditoría
+  actions.ts                          — server actions (models + block/suspend)
+app/api/admin/
+  users/route.ts · [id]/route.ts
+  analytics/route.ts
+  audit/route.ts
+  export/route.ts
+lib/db/admin-queries.ts               — queries cross-tenant con service role (ampliado)
+supabase/migrations/0011_admin_panel.sql
 ```
