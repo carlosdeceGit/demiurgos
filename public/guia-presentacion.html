@@ -23,32 +23,38 @@
       color: var(--text);
       font-family: var(--font-sans);
       line-height: 1.6;
-      padding: 1.5rem 1.5rem 4rem;
+      padding: 0 1.5rem 4rem;
       max-width: 880px;
       margin: 0 auto;
     }
 
-    /* ── Header ── */
+    /* ── Header sticky ── */
     header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6,8,10,.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding-bottom: 1.25rem;
+      padding: 1rem 0 1rem;
       margin-bottom: 1.5rem;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
     }
-    header h1 { font-size: 1.4rem; font-weight: 800; color: var(--primary); letter-spacing: -0.04em; }
-    header p { color: var(--muted); font-family: var(--font-mono); font-size: .75rem; margin-top: .3rem; }
+    header h1 { font-size: 1.1rem; font-weight: 800; color: var(--primary); letter-spacing: -0.03em; }
+    header p { color: var(--muted); font-family: var(--font-mono); font-size: .7rem; margin-top: .15rem; }
 
     /* ── Timer ── */
     #timer-wrap {
-      display: flex; flex-direction: column; align-items: flex-end; gap: .3rem;
+      display: flex; align-items: center; gap: .75rem; flex-shrink: 0;
     }
     #timer {
       font-family: var(--font-mono);
-      font-size: 2.2rem;
+      font-size: 1.9rem;
       font-weight: 700;
       color: var(--primary);
       letter-spacing: .05em;
@@ -57,6 +63,8 @@
       user-select: none;
       text-shadow: 0 0 20px rgba(34,214,122,.4);
       transition: opacity .2s;
+      min-width: 4.5rem;
+      text-align: right;
     }
     #timer:hover { opacity: .8; }
     #timer.warning { color: var(--amber); text-shadow: 0 0 20px rgba(232,160,32,.4); }
@@ -70,7 +78,7 @@
       cursor: pointer; transition: border-color .15s, color .15s;
     }
     #timer-btns button:hover { border-color: var(--primary); color: var(--primary); }
-    #timer-note { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+    #timer-note { display: none; }
 
     /* ── How-to bar ── */
     .how-to {
@@ -166,10 +174,9 @@
   <div id="timer-wrap">
     <div id="timer" title="Click para iniciar / pausar">4:00</div>
     <div id="timer-btns">
-      <button id="btn-start">▶ Iniciar</button>
-      <button id="btn-reset">↺ Reset</button>
+      <button id="btn-start">▶</button>
+      <button id="btn-reset">↺</button>
     </div>
-    <p id="timer-note">Contador arriba — se pone ámbar al 50%, rojo al 80%</p>
   </div>
 </header>
 
