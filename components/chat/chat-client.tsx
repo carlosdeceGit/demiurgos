@@ -59,6 +59,9 @@ export function ChatClient({ onMessagesChange }: Props) {
         if (newId && !convIdRef.current) convIdRef.current = newId;
         return res;
       },
+      async reconnectToStream(): Promise<Response | null> {
+        return null;
+      },
     }),
     []
   );
