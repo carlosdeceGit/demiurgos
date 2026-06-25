@@ -60,6 +60,9 @@ export const TASK_GROUPS: TaskGroup[] = [
       { id: "deepseek/deepseek-r1", label: "DeepSeek R1 (razonamiento)", pricing: "≈$0.55 / $2.2" },
       { id: "deepseek/deepseek-v3", label: "DeepSeek V3 (económico)", pricing: "≈$0.30 / $1.2" },
       { id: "meta/llama-4-maverick", label: "Llama 4 Maverick (Meta)", pricing: "≈$0.27 / $0.85" },
+      { id: "zhipu/glm-4", label: "GLM-4 (Zhipu AI)", pricing: "≈$0.14 / $0.14" },
+      { id: "zhipu/glm-z1", label: "GLM-Z1 (razonamiento)", pricing: "≈$0.14 / $0.14" },
+      { id: "zhipu/glm-4-flash", label: "GLM-4 Flash (ultra económico)", pricing: "≈$0.01 / $0.01" },
     ],
   },
   {
