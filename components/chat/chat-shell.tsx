@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { PanelRight } from "lucide-react";
+import Link from "next/link";
+import { History, MessageSquare, MessageSquarePlus, PanelRight } from "lucide-react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { UploadContentButton } from "@/components/chat/upload-content-button";
@@ -9,6 +10,7 @@ import {
   ChatHistorySidebar,
   type ConversationItem,
 } from "@/components/chat/chat-history-sidebar";
+import { Sheet } from "@/components/ui/sheet";
 import type { PlatformKey } from "@/lib/ai/platforms";
 
 const PLATFORM_LABELS: Record<PlatformKey, string> = {
@@ -21,6 +23,81 @@ const PLATFORM_LABELS: Record<PlatformKey, string> = {
 };
 
 type SignalItem = { content: string; source: string | null };
+
+function timeLabel(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "Ahora";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+
+function MobileHistorySheet({
+  open,
+  onClose,
+  conversations,
+  activeId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  conversations: ConversationItem[];
+  activeId?: string;
+}) {
+  return (
+    <Sheet open={open} onClose={onClose} title="Conversaciones">
+      <div className="flex items-center justify-between border-b px-4 py-2">
+        <span className="text-muted-foreground text-xs">
+          {conversations.length} conversaciones
+        </span>
+        <Link
+          href="/chat"
+          onClick={onClose}
+          className="text-primary flex items-center gap-1.5 text-xs font-medium"
+        >
+          <MessageSquarePlus className="size-3.5" aria-hidden />
+          Nueva
+        </Link>
+      </div>
+      <nav className="flex flex-col gap-0.5 p-2">
+        {conversations.length === 0 && (
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            Aún no hay conversaciones.
+          </p>
+        )}
+        {conversations.map((c) => {
+          const isActive = c.id === activeId;
+          return (
+            <Link
+              key={c.id}
+              href={`/chat?conv=${c.id}`}
+              onClick={onClose}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                isActive
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              }`}
+            >
+              <MessageSquare className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium leading-snug">
+                  {c.title ?? "Nueva conversación"}
+                </p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+                  {timeLabel(c.last_message_at)}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+    </Sheet>
+  );
+}
 
 function ContextPanel({
   displayName,
@@ -117,6 +194,7 @@ export function ChatShell({
   children: React.ReactNode;
 }) {
   const [contextOpen, setContextOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   return (
     <div className="flex h-dvh overflow-hidden">
@@ -128,7 +206,7 @@ export function ChatShell({
         isAdmin={isAdmin}
       />
 
-      {/* 2: Historial de conversaciones */}
+      {/* 2: Historial desktop */}
       <ChatHistorySidebar
         conversations={conversations}
         activeId={activeConversationId}
@@ -136,7 +214,17 @@ export function ChatShell({
 
       {/* 3: Chat principal */}
       <main className="relative flex min-w-0 flex-1 flex-col">
-        {/* Botón para mostrar/ocultar el panel de contexto */}
+        {/* Botón historial móvil — solo visible en < md */}
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          aria-label="Ver historial de conversaciones"
+          className="border-border text-muted-foreground hover:text-foreground absolute left-4 top-3 z-10 flex rounded-lg border p-1.5 transition-colors md:hidden"
+        >
+          <History className="size-4" aria-hidden />
+        </button>
+
+        {/* Botón contexto desktop — solo visible en xl */}
         <button
           type="button"
           onClick={() => setContextOpen((v) => !v)}
@@ -154,7 +242,7 @@ export function ChatShell({
         {children}
       </main>
 
-      {/* 4: Panel de contexto (toggle) */}
+      {/* 4: Panel de contexto desktop (toggle) */}
       {contextOpen && (
         <ContextPanel
           displayName={displayName}
@@ -163,6 +251,14 @@ export function ChatShell({
           signals={signals}
         />
       )}
+
+      {/* 5: Sheet de historial móvil */}
+      <MobileHistorySheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        conversations={conversations}
+        activeId={activeConversationId}
+      />
     </div>
   );
 }

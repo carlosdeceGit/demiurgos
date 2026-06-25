@@ -214,8 +214,8 @@ export function ChatClient({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Cabecera */}
-      <header className="flex shrink-0 items-center justify-between border-b px-5 py-3">
+      {/* Cabecera — pl-14 en móvil para dejar espacio al botón de historial */}
+      <header className="flex shrink-0 items-center justify-between border-b pl-14 pr-5 py-3 md:px-5">
         <div className="flex items-center gap-2">
           <span className="bg-brand-accent size-2 rounded-full" />
           <span className="font-medium">Director creativo</span>
