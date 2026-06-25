@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Save, CheckCircle2, Link, Users } from "lucide-react";
+import { Save, CheckCircle2, Link, Users, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PLATFORM_KEYS, type PlatformKey } from "@/lib/ai/platforms";
 
@@ -261,6 +261,8 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
 
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [syncing, setSyncing] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
 
   function updatePlatform(key: PlatformKey, patch: Partial<PlatformEntry>) {
     setPlatforms((prev) =>
@@ -271,6 +273,17 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
 
   function handleChange() {
     setSaved(false);
+  }
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncDone(false);
+    try {
+      await fetch("/api/apify/scrape", { method: "POST" });
+      setSyncDone(true);
+    } finally {
+      setSyncing(false);
+    }
   }
 
   async function handleSave() {
@@ -445,20 +458,40 @@ export function ProfileEditor({ initial }: { initial: ProfileData }) {
 
       {/* Save */}
       <div className="sticky bottom-0 bg-background/80 backdrop-blur-sm py-4 border-t flex items-center justify-between gap-4">
-        {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-primary">
-            <CheckCircle2 className="size-4" />
-            Guardado
-          </span>
-        )}
-        <Button
-          onClick={handleSave}
-          disabled={pending}
-          className="ml-auto rounded-full gap-2"
-        >
-          <Save className="size-4" />
-          {pending ? "Guardando…" : "Guardar perfil"}
-        </Button>
+        <div className="flex items-center gap-3">
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-primary">
+              <CheckCircle2 className="size-4" />
+              Guardado
+            </span>
+          )}
+          {syncDone && (
+            <span className="flex items-center gap-1.5 text-sm text-primary">
+              <CheckCircle2 className="size-4" />
+              Sincronización iniciada (5–10 min)
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <Button
+            variant="outline"
+            onClick={handleSync}
+            disabled={syncing || pending}
+            className="rounded-full gap-2"
+            title="Analiza tus perfiles y los referentes con Apify"
+          >
+            <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Iniciando…" : "Sincronizar redes"}
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={pending}
+            className="rounded-full gap-2"
+          >
+            <Save className="size-4" />
+            {pending ? "Guardando…" : "Guardar perfil"}
+          </Button>
+        </div>
       </div>
     </div>
   );
