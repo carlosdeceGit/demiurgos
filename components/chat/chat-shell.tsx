@@ -1,8 +1,14 @@
-import { Sparkles } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { PanelRight } from "lucide-react";
 
 import { AppRail } from "@/components/app/app-rail";
-import { Button } from "@/components/ui/button";
 import { UploadContentButton } from "@/components/chat/upload-content-button";
+import {
+  ChatHistorySidebar,
+  type ConversationItem,
+} from "@/components/chat/chat-history-sidebar";
 import type { PlatformKey } from "@/lib/ai/platforms";
 
 const PLATFORM_LABELS: Record<PlatformKey, string> = {
@@ -16,7 +22,7 @@ const PLATFORM_LABELS: Record<PlatformKey, string> = {
 
 type SignalItem = { content: string; source: string | null };
 
-function RailRight({
+function ContextPanel({
   displayName,
   positioning,
   platforms,
@@ -28,28 +34,26 @@ function RailRight({
   signals: SignalItem[];
 }) {
   return (
-    <aside className="hidden w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l p-5 xl:flex">
+    <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l p-4">
       <div>
-        <h2 className="text-muted-foreground mb-3 font-mono text-xs tracking-wider uppercase">
-          Contexto
-        </h2>
-
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-muted-foreground text-xs">Perfil activo</p>
-          <p className="mt-0.5 font-medium">{displayName}</p>
+        <p className="text-muted-foreground mb-2 font-mono text-[10px] tracking-wider uppercase">
+          Perfil activo
+        </p>
+        <div className="bg-card rounded-xl border p-3">
+          <p className="font-medium">{displayName}</p>
           {positioning && (
-            <p className="text-muted-foreground mt-2 line-clamp-4 text-sm">
+            <p className="text-muted-foreground mt-1.5 line-clamp-4 text-xs leading-relaxed">
               {positioning}
             </p>
           )}
         </div>
       </div>
 
-      <div>
-        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
-          Plataformas activas
-        </h3>
-        {platforms.length > 0 ? (
+      {platforms.length > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-2 font-mono text-[10px] tracking-wider uppercase">
+            Plataformas
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {platforms.map((p) => (
               <span
@@ -61,45 +65,31 @@ function RailRight({
               </span>
             ))}
           </div>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Sin plataformas marcadas todavía.
-          </p>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div>
-        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
-          Señales recientes
-        </h3>
-        {signals.length > 0 ? (
+      {signals.length > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-2 font-mono text-[10px] tracking-wider uppercase">
+            Señales recientes
+          </p>
           <ul className="flex flex-col gap-2">
             {signals.map((s, i) => (
-              <li key={i} className="bg-card rounded-lg border p-3 text-sm">
-                <p className="line-clamp-2">{s.content}</p>
+              <li key={i} className="bg-card rounded-lg border p-2.5 text-xs">
+                <p className="line-clamp-2 leading-relaxed">{s.content}</p>
                 {s.source && (
-                  <span className="text-muted-foreground mt-1 inline-block font-mono text-[10px] tracking-wide uppercase">
+                  <span className="text-muted-foreground mt-1 inline-block font-mono text-[9px] tracking-wide uppercase">
                     {s.source}
                   </span>
                 )}
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Aún no hay señales. Comparte un artículo o una idea en el chat y
-            Demiurgos la recordará.
-          </p>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="mt-auto flex flex-col gap-2 pt-2">
+      <div className="mt-auto pt-2">
         <UploadContentButton />
-        <Button variant="outline" size="sm" disabled className="justify-start gap-2">
-          <Sparkles className="size-4" />
-          Generar propuestas
-          <span className="text-muted-foreground ml-auto text-[10px]">pronto</span>
-        </Button>
       </div>
     </aside>
   );
@@ -112,6 +102,8 @@ export function ChatShell({
   platforms,
   signals,
   isAdmin = false,
+  conversations,
+  activeConversationId,
   children,
 }: {
   email: string;
@@ -120,23 +112,57 @@ export function ChatShell({
   platforms: PlatformKey[];
   signals: SignalItem[];
   isAdmin?: boolean;
+  conversations: ConversationItem[];
+  activeConversationId?: string;
   children: React.ReactNode;
 }) {
+  const [contextOpen, setContextOpen] = useState(false);
+
   return (
-    <div className="flex h-dvh">
+    <div className="flex h-dvh overflow-hidden">
+      {/* 1: Nav rail */}
       <AppRail
         active="chat"
         displayName={displayName}
         email={email}
         isAdmin={isAdmin}
       />
-      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
-      <RailRight
-        displayName={displayName}
-        positioning={positioning}
-        platforms={platforms}
-        signals={signals}
+
+      {/* 2: Historial de conversaciones */}
+      <ChatHistorySidebar
+        conversations={conversations}
+        activeId={activeConversationId}
       />
+
+      {/* 3: Chat principal */}
+      <main className="relative flex min-w-0 flex-1 flex-col">
+        {/* Botón para mostrar/ocultar el panel de contexto */}
+        <button
+          type="button"
+          onClick={() => setContextOpen((v) => !v)}
+          aria-label={contextOpen ? "Cerrar contexto" : "Ver contexto"}
+          title={contextOpen ? "Cerrar contexto" : "Ver contexto"}
+          className={`absolute right-4 top-3 z-10 hidden rounded-lg border p-1.5 transition-colors xl:flex ${
+            contextOpen
+              ? "border-primary/40 bg-primary/10 text-primary"
+              : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+          }`}
+        >
+          <PanelRight className="size-4" />
+        </button>
+
+        {children}
+      </main>
+
+      {/* 4: Panel de contexto (toggle) */}
+      {contextOpen && (
+        <ContextPanel
+          displayName={displayName}
+          positioning={positioning}
+          platforms={platforms}
+          signals={signals}
+        />
+      )}
     </div>
   );
 }

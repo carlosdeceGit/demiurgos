@@ -6,17 +6,18 @@ import { ChatShell } from "@/components/chat/chat-shell";
 import { activePlatformKeys, type ProfilePlatform } from "@/lib/ai/platforms";
 import { isAdminEmail } from "@/lib/auth/admin";
 
-// Pantalla de chat. La ruta está protegida por middleware; aquí volvemos a
-// comprobar la sesión y cargamos el contexto que se muestra en el panel derecho.
-export default async function ChatPage() {
+export default async function ChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conv?: string }>;
+}) {
+  const { conv } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -29,8 +30,7 @@ export default async function ChatPage() {
   );
 
   const positioning =
-    (profile?.positioning as { declaracion?: string } | null)?.declaracion ??
-    null;
+    (profile?.positioning as { declaracion?: string } | null)?.declaracion ?? null;
 
   const { data: signals } = await supabase
     .from("signals")
@@ -38,6 +38,25 @@ export default async function ChatPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5);
+
+  // Cargar historial de conversaciones para el sidebar
+  const { data: conversations } = await supabase
+    .from("conversations")
+    .select("id, title, last_message_at")
+    .eq("user_id", user.id)
+    .order("last_message_at", { ascending: false })
+    .limit(30);
+
+  // Si hay una conversación activa, cargar sus mensajes
+  let initialMessages: { id: string; role: string; content: string }[] = [];
+  if (conv) {
+    const { data: msgs } = await supabase
+      .from("messages")
+      .select("id, role, content")
+      .eq("conversation_id", conv)
+      .order("created_at", { ascending: true });
+    initialMessages = msgs ?? [];
+  }
 
   return (
     <ChatShell
@@ -47,8 +66,13 @@ export default async function ChatPage() {
       platforms={platforms}
       signals={signals ?? []}
       isAdmin={isAdminEmail(user.email)}
+      conversations={conversations ?? []}
+      activeConversationId={conv}
     >
-      <ChatClient />
+      <ChatClient
+        conversationId={conv}
+        initialMessages={initialMessages}
+      />
     </ChatShell>
   );
 }

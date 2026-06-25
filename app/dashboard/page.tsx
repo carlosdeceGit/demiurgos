@@ -58,19 +58,46 @@ export default async function DashboardPage({
     redirect("/onboarding");
   }
 
-  const { data: proposalsRaw } = await supabase
-    .from("proposals")
-    .select("id, platform, idea, why_now, script, suggested_slot, status")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(12);
+  const [
+    { data: proposalsRaw },
+    { count: totalProposals },
+    { count: likedProposals },
+    { count: executedProposals },
+    { count: totalMessages },
+  ] = await Promise.all([
+    supabase
+      .from("proposals")
+      .select("id, platform, idea, why_now, script, suggested_slot, status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("proposals")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("proposals")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "liked"),
+    supabase
+      .from("proposals")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "ejecutada"),
+    supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("role", "user"),
+  ]);
 
-  const { data: signals } = await supabase
-    .from("signals")
-    .select("content, source")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const metrics = {
+    totalProposals: totalProposals ?? 0,
+    likedProposals: likedProposals ?? 0,
+    executedProposals: executedProposals ?? 0,
+    totalMessages: totalMessages ?? 0,
+  };
 
   const proposals: DashboardProposal[] = (proposalsRaw ?? []).map((p) => ({
     id: p.id as string,
@@ -94,7 +121,7 @@ export default async function DashboardPage({
         email={user.email ?? ""}
         isAdmin={isAdminEmail(user.email)}
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
         {welcome === "1" && (
           <WelcomeBanner name={profile?.display_name ?? user.email ?? "Tú"} />
         )}
@@ -105,7 +132,7 @@ export default async function DashboardPage({
             completeness: completenessOf(profile),
             platforms,
             proposals,
-            signals: signals ?? [],
+            metrics,
           }}
         />
       </main>

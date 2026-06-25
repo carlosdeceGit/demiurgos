@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Loader2, Paperclip, SendHorizontal } from "lucide-react";
@@ -15,9 +15,7 @@ const SUGGESTIONS = [
   "Vamos a afinar mi perfil",
 ];
 
-// Mismos formatos que la Biblioteca.
 const ACCEPT = ".md,.markdown,.txt,.html,.htm,.jpg,.jpeg,.png,.webp,.pdf,.docx,.rtf,.odt";
-// Tope de texto que inyectamos en el mensaje para no inflar el contexto.
 const MAX_INLINE_CHARS = 8000;
 
 function messageText(message: UIMessage): string {
@@ -27,16 +25,53 @@ function messageText(message: UIMessage): string {
     .join("");
 }
 
-export function ChatClient() {
+// Convierte mensajes históricos de la BD al formato UIMessage
+function toUIMessages(
+  raw: { id: string; role: string; content: string }[]
+): UIMessage[] {
+  return raw.map((m) => ({
+    id: m.id,
+    role: m.role as "user" | "assistant",
+    parts: [{ type: "text" as const, text: m.content }],
+    content: m.content,
+  }));
+}
+
+export function ChatClient({
+  conversationId: initialConvId,
+  initialMessages: rawInitial = [],
+}: {
+  conversationId?: string;
+  initialMessages?: { id: string; role: string; content: string }[];
+}) {
+  const [convId, setConvId] = useState<string | undefined>(initialConvId);
   const [input, setInput] = useState("");
   const [attaching, setAttaching] = useState<string | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
   const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: { conversationId: convId },
+      // Capturar el conversation_id devuelto en headers
+      fetch: async (url, init) => {
+        const res = await fetch(url, init);
+        const newConvId = res.headers.get("X-Conversation-Id");
+        if (newConvId && !convId) setConvId(newConvId);
+        return res;
+      },
+    }),
+    initialMessages: toUIMessages(rawInitial),
   });
 
   const busy = status === "submitted" || status === "streaming";
+
+  // Scroll al fondo en cada mensaje nuevo
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   function send(text: string) {
     const trimmed = text.trim();
@@ -45,7 +80,6 @@ export function ChatClient() {
     setInput("");
   }
 
-  // Sube el archivo a la Biblioteca y mete su contenido en la conversación.
   async function attachFiles(files: FileList | File[]) {
     setAttachError(null);
     for (const file of Array.from(files)) {
@@ -57,14 +91,11 @@ export function ChatClient() {
         if (!res.ok) throw new Error(await res.text());
         const { item } = await res.json();
 
-        // Recupera el Markdown convertido para dárselo al Director.
         let md = "";
         try {
           const detail = await fetch(`/api/library/${item.id}`);
           if (detail.ok) md = (await detail.json()).item?.markdown_content ?? "";
-        } catch {
-          /* si falla, mandamos solo el aviso de subida */
-        }
+        } catch { /* ignorar */ }
 
         if (item.status === "completed" && md) {
           const clipped =
@@ -76,17 +107,13 @@ export function ChatClient() {
           });
         } else if (item.status === "needs_review") {
           sendMessage({
-            text: `He subido «${file.name}» a mi biblioteca, pero la conversión a texto necesita revisión (${item.conversionError ?? "formato no extraído"}). Lo tengo guardado para revisarlo.`,
+            text: `He subido «${file.name}» a mi biblioteca, pero la conversión necesita revisión. Lo tengo guardado.`,
           });
         } else {
-          setAttachError(
-            `«${file.name}»: ${item.conversionError ?? "no se pudo convertir."}`
-          );
+          setAttachError(`«${file.name}»: ${item.conversionError ?? "no se pudo convertir."}`);
         }
       } catch (e) {
-        setAttachError(
-          `«${file.name}»: ${e instanceof Error ? e.message : String(e)}`
-        );
+        setAttachError(`«${file.name}»: ${e instanceof Error ? e.message : String(e)}`);
       } finally {
         setAttaching(null);
       }
@@ -97,8 +124,8 @@ export function ChatClient() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Cabecera del chat */}
-      <header className="flex items-center justify-between border-b px-5 py-3">
+      {/* Cabecera */}
+      <header className="flex shrink-0 items-center justify-between border-b px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="bg-brand-accent size-2 rounded-full" />
           <span className="font-medium">Director creativo</span>
@@ -109,7 +136,7 @@ export function ChatClient() {
       </header>
 
       {/* Mensajes */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
           {empty && (
             <div className="text-muted-foreground m-auto max-w-md py-16 text-center">
@@ -119,24 +146,35 @@ export function ChatClient() {
               </h1>
               <p className="mt-3 text-sm">
                 Cuéntame qué traes entre manos esta semana, pégame un post que te
-                haya llamado o <span className="text-foreground">adjunta un archivo</span>{" "}
-                (se guarda en tu biblioteca). Empieza por una de estas:
+                haya llamado o{" "}
+                <span className="text-foreground">adjunta un archivo</span>{" "}
+                (se guarda en tu biblioteca).
               </p>
+              <div className="mt-6 flex flex-col gap-2">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    disabled={busy}
+                    className="bg-card hover:border-primary/40 rounded-xl border px-4 py-2.5 text-left text-sm transition-colors disabled:opacity-50"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
           {messages.map((m) => (
             <div
               key={m.id}
-              className={
-                m.role === "user" ? "flex justify-end" : "flex justify-start"
-              }
+              className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
             >
               <div
                 className={
                   m.role === "user"
                     ? "bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap"
-                    : "bg-card max-w-[85%] rounded-2xl rounded-bl-sm border px-4 py-2 text-sm whitespace-pre-wrap"
+                    : "bg-card max-w-[85%] rounded-2xl rounded-bl-sm border px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
                 }
               >
                 {messageText(m)}
@@ -144,35 +182,44 @@ export function ChatClient() {
             </div>
           ))}
 
-          {error && (
-            <p className="text-destructive text-sm">
-              Algo falló: {error.message}
-            </p>
+          {busy && (
+            <div className="flex justify-start">
+              <div className="bg-card rounded-2xl rounded-bl-sm border px-4 py-3">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              </div>
+            </div>
           )}
+
+          {error && (
+            <p className="text-destructive text-sm">Algo falló: {error.message}</p>
+          )}
+
+          <div ref={bottomRef} />
         </div>
       </div>
 
       {/* Compositor */}
-      <div className="border-t p-4">
+      <div className="shrink-0 border-t p-4">
         <div className="mx-auto w-full max-w-3xl">
-          <div className="mb-2 flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                onClick={() => send(s)}
-                disabled={busy}
-                className="bg-secondary hover:bg-secondary/70 text-secondary-foreground rounded-full px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          {!empty && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => send(s)}
+                  disabled={busy}
+                  className="bg-secondary hover:bg-secondary/70 text-secondary-foreground rounded-full px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* Aviso de adjunto en curso / error */}
           {attaching && (
             <p className="text-muted-foreground mb-2 flex items-center gap-2 text-xs">
               <Loader2 className="size-3.5 animate-spin" />
-              Subiendo y convirtiendo «{attaching}»…
+              Subiendo «{attaching}»…
             </p>
           )}
           {attachError && (
@@ -199,7 +246,7 @@ export function ChatClient() {
               size="icon"
               disabled={busy || Boolean(attaching)}
               onClick={() => fileRef.current?.click()}
-              title="Adjuntar archivo (se guarda en tu biblioteca)"
+              title="Adjuntar archivo"
               className="text-muted-foreground hover:text-foreground shrink-0"
             >
               {attaching ? (
@@ -217,7 +264,7 @@ export function ChatClient() {
                   send(input);
                 }
               }}
-              placeholder="Escribe un mensaje, o pega un post que te haya llamado…"
+              placeholder="Escribe un mensaje…"
               rows={1}
               className="max-h-40 min-h-9 flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
             />
@@ -231,8 +278,7 @@ export function ChatClient() {
             </Button>
           </div>
           <p className="text-muted-foreground mt-1.5 text-center text-xs">
-            Demiurgos cruza tu perfil con cómo funciona cada red. Comparte
-            señales para afinar.
+            El Director cruza tu perfil con el ecosistema y las señales de la semana.
           </p>
         </div>
       </div>
