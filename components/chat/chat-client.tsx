@@ -2,6 +2,7 @@
 
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Loader2, Paperclip, Plus, SendHorizontal } from "lucide-react";
 
@@ -36,30 +37,23 @@ export function ChatClient({ onMessagesChange }: Props) {
   const convIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Transport custom que siempre lee el conversationId de la ref.
+  // Transport que inyecta el conversationId en cada petición y captura el id de vuelta.
   const transport = useMemo(
-    () => ({
-      async sendMessages({
-        messages,
-        abortSignal,
-      }: {
-        messages: unknown[];
-        abortSignal?: AbortSignal;
-      }): Promise<Response> {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages,
-            conversationId: convIdRef.current,
-          }),
-          signal: abortSignal,
-        });
-        const newId = res.headers.get("X-Conversation-Id");
-        if (newId && !convIdRef.current) convIdRef.current = newId;
-        return res;
-      },
-    }),
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        fetch: async (url, init) => {
+          const existing = init?.body ? (JSON.parse(init.body as string) as Record<string, unknown>) : {};
+          const patched: RequestInit = {
+            ...init,
+            body: JSON.stringify({ ...existing, conversationId: convIdRef.current }),
+          };
+          const res = await globalThis.fetch(url, patched);
+          const newId = res.headers.get("X-Conversation-Id");
+          if (newId && !convIdRef.current) convIdRef.current = newId;
+          return res;
+        },
+      }),
     []
   );
 
