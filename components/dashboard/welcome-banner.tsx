@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { X, Sparkles } from "lucide-react";
 
 export function WelcomeBanner({ name }: { name: string }) {
@@ -18,11 +19,14 @@ export function WelcomeBanner({ name }: { name: string }) {
       <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
       <div className="flex-1">
         <p className="text-sm font-medium text-foreground">
-          Bienvenido, {firstName}. Tu Director creativo está listo.
+          Listo, {firstName}. Tu perfil está configurado.
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Estamos analizando tus redes en segundo plano. En unos minutos tu perfil
-          estará completo y podrás generar tu primera semana de propuestas.
+          El siguiente paso: habla con el{" "}
+          <Link href="/chat" className="text-primary underline-offset-4 hover:underline">
+            Director
+          </Link>{" "}
+          y pídele tu primera semana de propuestas de contenido.
         </p>
       </div>
       <button

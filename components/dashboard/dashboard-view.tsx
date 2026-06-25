@@ -115,10 +115,18 @@ export function DashboardView({ data }: { data: DashboardData }) {
         </div>
         <div className="bg-secondary mt-3 h-2 overflow-hidden rounded-full">
           <div
-            className="bg-brand-accent h-full rounded-full"
+            className="bg-brand-accent h-full rounded-full transition-[width] duration-700"
             style={{ width: `${data.completeness}%` }}
           />
         </div>
+        {data.completeness < 100 && (
+          <Link
+            href="/profile"
+            className="text-primary mt-2 inline-flex items-center gap-1 text-xs underline-offset-4 hover:underline"
+          >
+            Completar perfil →
+          </Link>
+        )}
         {data.platforms.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
             {data.platforms.map((k) => (

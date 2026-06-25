@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Loader2, Paperclip, SendHorizontal } from "lucide-react";
@@ -134,6 +135,7 @@ export function ChatClient({
 }) {
   const [convId, setConvId] = useState<string | undefined>(initialConvId);
   const [input, setInput] = useState("");
+  const router = useRouter();
   const [attaching, setAttaching] = useState<string | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -147,7 +149,11 @@ export function ChatClient({
       fetch: async (url, init) => {
         const res = await fetch(url, init);
         const newConvId = res.headers.get("X-Conversation-Id");
-        if (newConvId && !convId) setConvId(newConvId);
+        if (newConvId && !convId) {
+          setConvId(newConvId);
+          // Actualiza la URL sin recargar para que el refresh no pierda la conversación
+          router.replace(`/chat?conv=${newConvId}`);
+        }
         return res;
       },
     }),
