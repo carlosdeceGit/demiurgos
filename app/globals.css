@@ -9,29 +9,32 @@
 :root,
 .dark {
   --radius: 0.625rem;
-  --background: #070809;
-  --foreground: #f3f6f4;
-  --card: #101315;
-  --card-foreground: #f3f6f4;
-  --popover: #101315;
-  --popover-foreground: #f3f6f4;
-  --primary: #3fe0a2;
-  --primary-foreground: #04130d;
-  --secondary: #161a1d;
-  --secondary-foreground: #f3f6f4;
-  --muted: #161a1d;
-  --muted-foreground: #98a09c;
-  --accent: #1b2024;
-  --accent-foreground: #f3f6f4;
-  --destructive: #f0616b;
-  --border: #1c2123;
-  --input: #2a2f31;
-  --ring: #3fe0a2;
+  --background: #06080a;
+  --foreground: #ecf3ee;
+  --card: #0d1210;
+  --card-foreground: #ecf3ee;
+  --popover: #0d1210;
+  --popover-foreground: #ecf3ee;
+  --primary: #22d67a;
+  --primary-foreground: #040c07;
+  --secondary: #121a18;
+  --secondary-foreground: #ecf3ee;
+  --muted: #121a18;
+  --muted-foreground: #9eb4ab;
+  --accent: #1c2622;
+  --accent-foreground: #ecf3ee;
+  --destructive: #f05252;
+  --border: #1e2c28;
+  --input: #2c3e3a;
+  --ring: #22d67a;
   /* Marca Demiurgos */
-  --brand-accent: #3fe0a2;
-  --brand-accent-foreground: #04130d;
+  --brand-accent: #22d67a;
+  --brand-accent-foreground: #040c07;
+  --brand-accent-deep: #18a85f;
+  --brand-accent-tint: #0b1c14;
+  --brand-accent-tint-border: #163223;
   --brand-violet: #5be0c2;
-  --brand-amber: #e6b45a;
+  --brand-amber: #e8a020;
 }
 
 @theme inline {
@@ -59,11 +62,15 @@
   --color-ring: var(--ring);
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-brand-accent-deep: var(--brand-accent-deep);
+  --color-brand-accent-tint: var(--brand-accent-tint);
+  --color-brand-accent-tint-border: var(--brand-accent-tint-border);
   --color-brand-violet: var(--brand-violet);
   --color-brand-amber: var(--brand-amber);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-instrument-serif);
+  --font-serif: var(--font-bricolage);
+  --font-display: var(--font-bricolage);
 }
 
 @layer base {
@@ -81,27 +88,28 @@
    /chat ni /login.
    ─────────────────────────────────────────────────────────────────── */
 .dmg-landing {
-  --paper: #070809;
-  --paper-2: #0a0c0d;
-  --surface: #101315;
-  --surface-2: #161a1d;
-  --ink: #f3f6f4;
-  --ink-soft: #b6bcb9;
-  --muted: #838a87;
-  --faint: #525956;
-  --line: #1c2123;
-  --line-strong: #2a2f31;
-  --green: #3fe0a2;
-  --green-strong: #16c988;
+  --paper: #06080a;
+  --paper-2: #0a0e0c;
+  --surface: #0d1210;
+  --surface-2: #121a18;
+  --surface-3: #1c2622;
+  --ink: #ecf3ee;
+  --ink-soft: #9eb4ab;
+  --muted: #5e7870;
+  --faint: #3d4e49;
+  --line: #1e2c28;
+  --line-strong: #2c3e3a;
+  --green: #22d67a;
+  --green-strong: #18a85f;
   --green-deep: #0b7f58;
-  --green-ink: #04130d;
-  --green-soft: rgba(63, 224, 162, 0.1);
-  --green-glow: rgba(63, 224, 162, 0.45);
+  --green-ink: #040c07;
+  --green-soft: rgba(34, 214, 122, 0.1);
+  --green-glow: rgba(34, 214, 122, 0.45);
   /* "toques" fríos verde-azulados y un oro suave, no púrpura */
   --violet: #5be0c2;
   --violet-soft: rgba(91, 224, 194, 0.1);
-  --amber: #e6b45a;
-  --amber-soft: rgba(230, 180, 90, 0.12);
+  --amber: #e8a020;
+  --amber-soft: rgba(232, 160, 32, 0.12);
 
   background: var(--paper);
   color: var(--ink);
@@ -116,8 +124,8 @@
 }
 
 .dmg-serif {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  letter-spacing: -0.01em;
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  letter-spacing: -0.03em;
 }
 
 /* CTA principal verde — glow + barrido de brillo */
@@ -133,9 +141,9 @@
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--green-ink);
-  background: linear-gradient(180deg, #67f0bb 0%, var(--green-strong) 100%);
+  background: linear-gradient(180deg, #4ef59a 0%, var(--green-strong) 100%);
   box-shadow:
-    0 0 0 1px rgba(63, 224, 162, 0.35),
+    0 0 0 1px rgba(34, 214, 122, 0.35),
     0 14px 36px -12px var(--green-glow),
     0 0 40px -16px var(--green-glow);
   transition:
@@ -160,6 +168,7 @@
     0 0 0 1px rgba(63, 224, 162, 0.5),
     0 20px 50px -14px var(--green-glow),
     0 0 60px -14px var(--green-glow);
+
 }
 .dmg-cta:hover::after {
   animation: dmg-shine 0.9s ease;
@@ -314,6 +323,17 @@
 }
 
 .dmg-float { animation: dmg-float 6s ease-in-out infinite; }
+
+/* ── Keyframes del Design System v1 (prefijo dgm-) ── */
+@keyframes dgm-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes dgm-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes dgm-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes dgm-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+@keyframes dgm-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0; } }
+@keyframes dgm-fill { from { width: 0; } to { width: 78%; } }
+@keyframes dgm-spin { to { transform: rotate(360deg); } }
+@keyframes dgm-slide-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes dgm-pop { 0% { opacity: 0; transform: scale(.92); } 100% { opacity: 1; transform: scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   .dmg-landing *,

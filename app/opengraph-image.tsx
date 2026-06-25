@@ -14,9 +14,9 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#070809",
+          background: "#06080a",
           backgroundImage:
-            "radial-gradient(60% 80% at 78% 0%, rgba(63,224,162,0.22), transparent), radial-gradient(55% 75% at 12% 100%, rgba(11,127,88,0.28), transparent)",
+            "radial-gradient(60% 80% at 78% 0%, rgba(34,214,122,0.22), transparent), radial-gradient(55% 75% at 12% 100%, rgba(24,168,95,0.28), transparent)",
           padding: 80,
           fontFamily: "sans-serif",
         }}
@@ -32,29 +32,29 @@ export default function OpengraphImage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#3FE0A2",
+              color: "#22d67a",
               fontSize: 30,
               fontWeight: 700,
             }}
           >
             D
           </div>
-          <div style={{ fontSize: 30, fontWeight: 600, color: "#F3F6F4" }}>Demiurgos</div>
+          <div style={{ fontSize: 30, fontWeight: 600, color: "#ecf3ee" }}>Demiurgos</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 76, fontWeight: 700, color: "#F3F6F4", lineHeight: 1.02, letterSpacing: -2 }}>
+          <div style={{ fontSize: 76, fontWeight: 700, color: "#ecf3ee", lineHeight: 1.02, letterSpacing: -2 }}>
             Publica con criterio.
           </div>
-          <div style={{ fontSize: 76, fontWeight: 700, color: "#3FE0A2", lineHeight: 1.02, letterSpacing: -2 }}>
+          <div style={{ fontSize: 76, fontWeight: 700, color: "#22d67a", lineHeight: 1.02, letterSpacing: -2 }}>
             No por inercia.
           </div>
-          <div style={{ marginTop: 28, fontSize: 30, color: "#B6BCB9", maxWidth: 940, lineHeight: 1.35 }}>
+          <div style={{ marginTop: 28, fontSize: 30, color: "#9eb4ab", maxWidth: 940, lineHeight: 1.35 }}>
             Tu director creativo personal: qué publicar, cuándo y por qué. Nada que pudiera haber escrito cualquiera.
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 14, fontSize: 24, color: "#838A87" }}>
+        <div style={{ display: "flex", gap: 14, fontSize: 24, color: "#5e7870" }}>
           LinkedIn · YouTube · TikTok · Instagram · X · Substack
         </div>
       </div>
