@@ -19,6 +19,7 @@ export type ProfileRow = {
   platforms: ProfilePlatform[] | null;
   performance_patterns: unknown;
   referents: unknown;
+  social_insights: Record<string, { synthesized_at: string; posts_analyzed: number; referents_analyzed: number; content_dna: string }> | null;
 };
 
 export type KnowledgeRow = { platform: string; content: string };
@@ -48,9 +49,9 @@ export type LearningRow = {
 
 export type ComposeInput = {
   motor: string; // capa 1: el motor (INSTRUCCIONES.md)
-  profile: ProfileRow | null; // capa 3: instancia del usuario
+  profile: ProfileRow | null; // capa 3: instancia del usuario (incluye social_insights)
   knowledge: KnowledgeRow[]; // capa 4: conocimiento del ecosistema
-  socialPosts: SocialPostRow[]; // posts reales scrapeados con Apify
+  socialPosts: SocialPostRow[]; // posts crudos (solo para tests / compatibilidad legacy)
   signals: SignalRow[]; // señales frescas (últimas 20)
   messages: MessageRow[]; // memoria de conversación (últimas 20)
   learning: LearningRow[]; // aprendizaje acumulado de feedback
@@ -71,7 +72,7 @@ function renderProfile(profile: ProfileRow): string {
   const field = (label: string, value: unknown) =>
     `## ${label}\n${JSON.stringify(value, null, 2)}`;
 
-  return [
+  const parts = [
     `Nombre: ${profile.display_name}`,
     field("Posicionamiento", profile.positioning),
     field("Pilares", profile.pillars),
@@ -82,7 +83,21 @@ function renderProfile(profile: ProfileRow): string {
     field("Plataformas", profile.platforms),
     field("Patrones de rendimiento", profile.performance_patterns),
     field("Referentes", profile.referents),
-  ].join("\n\n");
+  ];
+
+  // ADN de contenido: síntesis de los posts scrapeados, por plataforma.
+  // Esto es la fuente más rica sobre cómo escribe y qué publica de verdad.
+  if (profile.social_insights && Object.keys(profile.social_insights).length > 0) {
+    const dnaBlocks = Object.entries(profile.social_insights)
+      .map(([platform, data]) => {
+        const meta = `${data.posts_analyzed} posts propios + ${data.referents_analyzed} de referentes · analizado ${new Date(data.synthesized_at).toLocaleDateString("es-ES")}`;
+        return `### ${platform.toUpperCase()} (${meta})\n${data.content_dna}`;
+      })
+      .join("\n\n");
+    parts.push(`## ADN de contenido (síntesis real de sus publicaciones — máxima prioridad para entender su voz)\n${dnaBlocks}`);
+  }
+
+  return parts.join("\n\n");
 }
 
 // Renderiza el historial de feedback como instrucciones claras para el modelo.
@@ -240,16 +255,6 @@ export function composeSystemPrompt(input: ComposeInput): string {
     );
   }
 
-  const socialBody = renderSocialPosts(input.socialPosts);
-  if (socialBody) {
-    parts.push(
-      section(
-        "CONTENIDO SOCIAL (posts reales scrapeados — úsalos para entender la voz del usuario y aprender de sus referentes)",
-        socialBody
-      )
-    );
-  }
-
   if (input.signals.length > 0) {
     const body = input.signals
       .map((s) => {
@@ -304,7 +309,7 @@ export async function gatherContext(
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "display_name, positioning, pillars, audience, voice, tacit, goals, platforms, performance_patterns, referents"
+      "display_name, positioning, pillars, audience, voice, tacit, goals, platforms, performance_patterns, referents, social_insights"
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -322,28 +327,6 @@ export async function gatherContext(
       .in("platform", platformKeys);
     knowledge = data ?? [];
   }
-
-  // Posts sociales scrapeados: propios (últimos 10 por plataforma) + referentes (últimos 5 por cuenta)
-  const { data: ownPosts } = await supabase
-    .from("social_posts")
-    .select("platform, account_url, target, post_text, post_date, engagement")
-    .eq("user_id", userId)
-    .eq("target", "own")
-    .order("scraped_at", { ascending: false })
-    .limit(OWN_POSTS_PER_PLATFORM * platformKeys.length || OWN_POSTS_PER_PLATFORM * 6);
-
-  const { data: referentPosts } = await supabase
-    .from("social_posts")
-    .select("platform, account_url, target, post_text, post_date, engagement")
-    .eq("user_id", userId)
-    .eq("target", "referent")
-    .order("scraped_at", { ascending: false })
-    .limit(REFERENT_POSTS_PER_ACCOUNT * 10); // máx 10 cuentas referentes
-
-  const socialPosts = [
-    ...(ownPosts ?? []),
-    ...(referentPosts ?? []),
-  ] as SocialPostRow[];
 
   const { data: signalsDesc } = await supabase
     .from("signals")
@@ -372,7 +355,7 @@ export async function gatherContext(
     motor,
     profile: (profile as ProfileRow | null) ?? null,
     knowledge,
-    socialPosts,
+    socialPosts: [], // los posts crudos viven en social_posts; el ADN sintetizado está en profile.social_insights
     // Se piden en desc (los más recientes) y se invierten a orden cronológico.
     signals: (signalsDesc ?? []).reverse(),
     messages: (messagesDesc ?? []).reverse(),

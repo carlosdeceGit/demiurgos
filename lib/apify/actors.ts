@@ -14,7 +14,8 @@ export const ACTOR_IDS: Partial<Record<PlatformKey, string>> = {
 // Actor genérico para Substack
 export const SUBSTACK_ACTOR = "aYG0l9s7dbB7j3gbS"; // apify/website-content-crawler
 
-export const MAX_POSTS = 20;
+// ~2 posts/semana × 26 semanas = 52; ponemos 100 de margen para creadores más activos
+export const MAX_POSTS = 100;
 
 type ActorInput = Record<string, unknown>;
 

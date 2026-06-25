@@ -63,6 +63,7 @@ function demoProfileRow(profileId: string): ProfileRow | null {
     platforms: p.activePlatforms.map((key) => ({ key, status: "activo" })),
     performance_patterns: [],
     referents: [],
+    social_insights: null,
   };
 }
 

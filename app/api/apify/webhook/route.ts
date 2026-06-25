@@ -118,5 +118,13 @@ export async function POST(req: Request) {
     }
   }
 
+  // Dispara la síntesis en segundo plano (fire-and-forget, no bloqueamos la respuesta)
+  const synthUrl = `${req.headers.get("x-forwarded-proto") ?? "https"}://${req.headers.get("host")}/api/apify/synthesize`;
+  fetch(synthUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, platform }),
+  }).catch((e) => console.error("[webhook] synthesize trigger failed:", e));
+
   return NextResponse.json({ inserted: rows.length, platform, target });
 }
