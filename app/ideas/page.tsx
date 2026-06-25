@@ -58,7 +58,7 @@ export default async function IdeasPage() {
         email={user.email ?? ""}
         isAdmin={isAdminEmail(user.email)}
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
         <IdeasClient ideas={(ideas ?? []) as IdeaRow[]} />
       </main>
     </div>

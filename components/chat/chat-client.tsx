@@ -9,6 +9,94 @@ import { Logo } from "@/components/landing/logo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+// ── Markdown mínimo sin dependencias externas ──────────────────
+// Soporta: párrafos, **negrita**, *cursiva*, `código inline`,
+// ```bloques de código```, y listas con - o *.
+function renderMarkdown(text: string): React.ReactNode {
+  const blocks = text.split(/\n\n+/);
+
+  return blocks.map((block, bi) => {
+    // Bloque de código vallado
+    if (block.startsWith("```")) {
+      const end = block.indexOf("```", 3);
+      const code = end > 0 ? block.slice(block.indexOf("\n") + 1, end) : block.slice(3);
+      return (
+        <pre key={bi} className="bg-background overflow-x-auto rounded-lg border p-3 font-mono text-xs leading-relaxed">
+          <code>{code}</code>
+        </pre>
+      );
+    }
+
+    // Lista (líneas que empiezan con - o * o número.)
+    const lines = block.split("\n");
+    const isList = lines.every((l) => /^[-*•]\s/.test(l.trim()) || l.trim() === "");
+    const isOrderedList = lines.every((l) => /^\d+\.\s/.test(l.trim()) || l.trim() === "");
+
+    if (isList && lines.some((l) => /^[-*•]\s/.test(l.trim()))) {
+      return (
+        <ul key={bi} className="ml-4 list-disc space-y-1">
+          {lines.filter((l) => l.trim()).map((l, li) => (
+            <li key={li}>{inlineMarkdown(l.replace(/^[-*•]\s+/, ""))}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    if (isOrderedList && lines.some((l) => /^\d+\.\s/.test(l.trim()))) {
+      return (
+        <ol key={bi} className="ml-4 list-decimal space-y-1">
+          {lines.filter((l) => l.trim()).map((l, li) => (
+            <li key={li}>{inlineMarkdown(l.replace(/^\d+\.\s+/, ""))}</li>
+          ))}
+        </ol>
+      );
+    }
+
+    // Encabezado
+    if (block.startsWith("### ")) return <h3 key={bi} className="font-semibold">{inlineMarkdown(block.slice(4))}</h3>;
+    if (block.startsWith("## ")) return <h2 key={bi} className="font-semibold text-base">{inlineMarkdown(block.slice(3))}</h2>;
+    if (block.startsWith("# ")) return <h1 key={bi} className="font-bold text-base">{inlineMarkdown(block.slice(2))}</h1>;
+
+    // Párrafo normal (con saltos de línea suaves dentro)
+    return (
+      <p key={bi}>
+        {lines.map((line, li) => (
+          <span key={li}>
+            {inlineMarkdown(line)}
+            {li < lines.length - 1 && "\n"}
+          </span>
+        ))}
+      </p>
+    );
+  });
+}
+
+function inlineMarkdown(text: string): React.ReactNode {
+  // Procesa **negrita**, *cursiva*, `código inline`
+  const parts: React.ReactNode[] = [];
+  const re = /(\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`)/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    if (match[0].startsWith("**")) {
+      parts.push(<strong key={match.index}>{match[2]}</strong>);
+    } else if (match[0].startsWith("*")) {
+      parts.push(<em key={match.index}>{match[3]}</em>);
+    } else {
+      parts.push(
+        <code key={match.index} className="bg-background rounded px-1 py-0.5 font-mono text-[11px]">
+          {match[4]}
+        </code>
+      );
+    }
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length > 0 ? parts : text;
+}
+
 const SUGGESTIONS = [
   "¿Qué publico esta semana, y por qué?",
   "Dame 5 propuestas con criterio",
@@ -67,6 +155,8 @@ export function ChatClient({
   });
 
   const busy = status === "submitted" || status === "streaming";
+  // Muestra spinner solo mientras esperamos el primer token, no durante streaming
+  const showSpinner = status === "submitted";
 
   // Scroll al fondo en cada mensaje nuevo
   useEffect(() => {
@@ -139,7 +229,7 @@ export function ChatClient({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
           {empty && (
-            <div className="text-muted-foreground m-auto max-w-md py-16 text-center">
+            <div className="text-muted-foreground m-auto max-w-md py-8 text-center sm:py-16">
               <Logo size={44} className="mx-auto mb-5" />
               <h1 className="text-foreground font-serif text-3xl">
                 Soy tu <span className="text-primary italic">director creativo</span>.
@@ -170,19 +260,19 @@ export function ChatClient({
               key={m.id}
               className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
             >
-              <div
-                className={
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap"
-                    : "bg-card max-w-[85%] rounded-2xl rounded-bl-sm border px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
-                }
-              >
-                {messageText(m)}
-              </div>
+              {m.role === "user" ? (
+                <div className="bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2 text-sm whitespace-pre-wrap">
+                  {messageText(m)}
+                </div>
+              ) : (
+                <div className="bg-card text-foreground prose-sm max-w-[85%] space-y-2 rounded-2xl rounded-bl-sm border px-4 py-3 text-sm leading-relaxed">
+                  {renderMarkdown(messageText(m))}
+                </div>
+              )}
             </div>
           ))}
 
-          {busy && (
+          {showSpinner && (
             <div className="flex justify-start">
               <div className="bg-card rounded-2xl rounded-bl-sm border px-4 py-3">
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -198,11 +288,11 @@ export function ChatClient({
         </div>
       </div>
 
-      {/* Compositor */}
-      <div className="shrink-0 border-t p-4">
+      {/* Compositor — en móvil deja espacio para el bottom nav fijo */}
+      <div className="shrink-0 border-t p-4 pb-20 md:pb-4">
         <div className="mx-auto w-full max-w-3xl">
           {!empty && (
-            <div className="mb-2 flex flex-wrap gap-2">
+            <div className="mb-2 hidden flex-wrap gap-2 sm:flex">
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
