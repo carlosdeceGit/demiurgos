@@ -6,13 +6,13 @@
   <title>Guía del presentador · Demiurgos Bootcamp IA</title>
   <style>
     :root {
-      --bg: #07100a;
-      --card: #0d1a10;
-      --border: #1a2e1e;
+      --bg: #06080a;
+      --card: #0d1210;
+      --border: #1e2c28;
       --primary: #22D67A;
-      --primary-dim: rgba(34,214,122,.12);
-      --amber: #f59e0b;
-      --text: #e8f5ed;
+      --primary-dim: rgba(34,214,122,.10);
+      --amber: #E8A020;
+      --text: #ecf3ee;
       --muted: #7a9e85;
       --font-mono: 'Courier New', monospace;
       --font-sans: system-ui, -apple-system, sans-serif;
@@ -23,358 +23,478 @@
       color: var(--text);
       font-family: var(--font-sans);
       line-height: 1.6;
-      padding: 2rem;
-      max-width: 860px;
+      padding: 1.5rem 1.5rem 4rem;
+      max-width: 880px;
       margin: 0 auto;
     }
+
+    /* ── Header ── */
     header {
       border-bottom: 1px solid var(--border);
-      padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
-    header h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
+    header h1 { font-size: 1.4rem; font-weight: 800; color: var(--primary); letter-spacing: -0.04em; }
+    header p { color: var(--muted); font-family: var(--font-mono); font-size: .75rem; margin-top: .3rem; }
+
+    /* ── Timer ── */
+    #timer-wrap {
+      display: flex; flex-direction: column; align-items: flex-end; gap: .3rem;
+    }
+    #timer {
+      font-family: var(--font-mono);
+      font-size: 2.2rem;
+      font-weight: 700;
       color: var(--primary);
-      letter-spacing: -0.04em;
+      letter-spacing: .05em;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      text-shadow: 0 0 20px rgba(34,214,122,.4);
+      transition: opacity .2s;
     }
-    header p { color: var(--muted); font-family: var(--font-mono); font-size: .8rem; margin-top: .4rem; }
+    #timer:hover { opacity: .8; }
+    #timer.warning { color: var(--amber); text-shadow: 0 0 20px rgba(232,160,32,.4); }
+    #timer.danger  { color: #e05252; text-shadow: 0 0 20px rgba(224,82,82,.4); animation: blink-timer .8s step-end infinite; }
+    @keyframes blink-timer { 50% { opacity: .4 } }
+    #timer-btns { display: flex; gap: .4rem; }
+    #timer-btns button {
+      font-family: var(--font-mono); font-size: .7rem;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--muted); border-radius: 6px; padding: .2rem .6rem;
+      cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    #timer-btns button:hover { border-color: var(--primary); color: var(--primary); }
+    #timer-note { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+
+    /* ── How-to bar ── */
     .how-to {
       background: var(--primary-dim);
-      border: 1px solid rgba(34,214,122,.2);
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 2.5rem;
+      border: 1px solid rgba(34,214,122,.18);
+      border-radius: 10px;
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
       font-family: var(--font-mono);
-      font-size: .8rem;
+      font-size: .75rem;
       color: var(--primary);
     }
-    .how-to strong { display: block; margin-bottom: .4rem; font-size: .85rem; }
+    .how-to strong { display: block; margin-bottom: .3rem; }
     .how-to kbd {
       display: inline-flex; align-items: center; justify-content: center;
       height: 1.3em; min-width: 1.3em; padding: 0 .3em;
-      border: 1px solid var(--primary); border-radius: 4px;
-      font-size: .85em; font-family: var(--font-mono);
+      border: 1px solid var(--primary); border-radius: 4px; font-size: .85em;
     }
+
+    /* ── Slide blocks ── */
     .slide-block {
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin-bottom: .75rem;
       background: var(--card);
-      position: relative;
     }
-    .slide-block:hover { border-color: rgba(34,214,122,.25); }
-    .slide-block.highlight { border-color: rgba(34,214,122,.3); background: var(--primary-dim); }
+    .slide-block:hover { border-color: rgba(34,214,122,.2); }
+    .slide-block.hi { border-color: rgba(34,214,122,.28); background: var(--primary-dim); }
+    .slide-block.img { border-color: rgba(91,224,194,.2); background: rgba(91,224,194,.04); }
+
+    .slide-meta {
+      display: flex; align-items: center; gap: .6rem;
+      margin-bottom: .4rem; flex-wrap: wrap;
+    }
     .slide-num {
-      font-family: var(--font-mono);
-      font-size: .7rem;
-      color: var(--muted);
-      margin-bottom: .35rem;
-      text-transform: uppercase;
-      letter-spacing: .1em;
+      font-family: var(--font-mono); font-size: .68rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
     }
-    .slide-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: .6rem;
-      letter-spacing: -0.02em;
+    .tag {
+      font-family: var(--font-mono); font-size: .65rem;
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: .15em .6em; color: var(--muted);
     }
+    .tag.green { border-color: rgba(34,214,122,.3); color: var(--primary); background: var(--primary-dim); }
+    .tag.amber { border-color: rgba(232,160,32,.3); color: var(--amber); }
+
+    .slide-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: .5rem; letter-spacing: -0.02em; }
     .slide-title .accent { color: var(--primary); }
-    .notes { font-size: .9rem; color: var(--muted); margin-bottom: .75rem; }
+    .notes { font-size: .88rem; color: var(--muted); margin-bottom: .6rem; }
     .tips { list-style: none; display: flex; flex-direction: column; gap: .3rem; }
-    .tips li { display: flex; align-items: flex-start; gap: .5rem; font-size: .85rem; }
-    .tips li::before { content: "▸"; color: var(--primary); shrink: 0; margin-top: .05em; }
-    .tip-warn { color: var(--amber); }
-    .tip-key { color: var(--primary); font-family: var(--font-mono); font-size: .78rem; }
-    .badge {
-      display: inline-flex; align-items: center; gap: .3rem;
+    .tips li { display: flex; align-items: flex-start; gap: .5rem; font-size: .84rem; }
+    .tips li::before { content: "▸"; color: var(--primary); shrink: 0; }
+    .tip-warn { color: var(--amber) !important; }
+
+    .timing {
+      display: inline-flex; align-items: center; gap: .4rem;
       font-family: var(--font-mono); font-size: .68rem;
       border: 1px solid rgba(34,214,122,.2); border-radius: 999px;
       padding: .2em .7em; color: var(--primary); background: var(--primary-dim);
       margin-top: .5rem;
     }
-    .badge::before { content: "⏱"; }
+
+    /* ── Section dividers ── */
     .divider {
-      height: 1px; background: var(--border); margin: 1.5rem 0;
       display: flex; align-items: center; gap: .75rem;
+      margin: 1.25rem 0 .75rem;
+    }
+    .divider::before, .divider::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
     }
     .divider span {
-      font-family: var(--font-mono); font-size: .7rem; color: var(--muted);
-      white-space: nowrap;
+      font-family: var(--font-mono); font-size: .65rem; color: var(--muted);
+      white-space: nowrap; text-transform: uppercase; letter-spacing: .08em;
     }
-    .sub-steps { margin-top: .6rem; display: flex; flex-direction: column; gap: .25rem; }
-    .sub-step {
-      display: flex; align-items: flex-start; gap: .5rem;
-      font-size: .82rem; color: var(--text);
-      background: rgba(0,0,0,.2); border-radius: 8px; padding: .4rem .6rem;
-    }
-    .sub-step-n {
-      font-family: var(--font-mono); font-size: .7rem; color: var(--primary);
-      min-width: 1.2rem; shrink: 0; font-weight: bold;
-    }
+
+    /* ── Footer ── */
     footer {
-      margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem;
-      font-family: var(--font-mono); font-size: .75rem; color: var(--muted);
-      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 2.5rem; border-top: 1px solid var(--border); padding-top: 1rem;
+      font-family: var(--font-mono); font-size: .72rem; color: var(--muted);
+      display: flex; justify-content: space-between;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Guía del presentador · Demiurgos</h1>
-  <p>Bootcamp IA 2026 · 17 slides · Abre /presentacion en paralelo</p>
+  <div>
+    <h1>Guía del presentador · Demiurgos</h1>
+    <p>Bootcamp IA 2026 · 22 slides · Abre /presentacion en paralelo</p>
+  </div>
+  <!-- TIMER 4:00 -->
+  <div id="timer-wrap">
+    <div id="timer" title="Click para iniciar / pausar">4:00</div>
+    <div id="timer-btns">
+      <button id="btn-start">▶ Iniciar</button>
+      <button id="btn-reset">↺ Reset</button>
+    </div>
+    <p id="timer-note">Contador arriba — se pone ámbar al 50%, rojo al 80%</p>
+  </div>
 </header>
 
 <div class="how-to">
   <strong>Cómo usar esta guía</strong>
   Abre <code>/presentacion</code> en una ventana y esta guía en otra (o en el móvil).
-  Navega con <kbd>←</kbd> <kbd>→</kbd> o <kbd>Espacio</kbd>.
-  <kbd>F</kbd> = pantalla completa.
-  Las slides S11 y S12 tienen sub-pasos internos: cada → avanza la imagen, no la slide.
+  <kbd>←</kbd> <kbd>→</kbd> o <kbd>Espacio</kbd> para navegar · <kbd>F</kbd> fullscreen.
+  Pulsa el timer para iniciar el contador de 4 minutos.
 </div>
 
 <!-- S01 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 1 · Apertura</p>
+  <div class="slide-meta"><span class="slide-num">Slide 1</span><span class="tag">Apertura</span></div>
   <p class="slide-title">Bienvenidos a la era de <span class="accent">TU</span> marca personal.</p>
-  <p class="notes">Entra sin presentarte. La frase lo hace por ti. Deja 3–4 segundos en silencio antes de hablar.</p>
+  <p class="notes">Entra sin presentarte. 3–4 segundos en silencio antes de hablar.</p>
   <ul class="tips">
-    <li>Nada de "hola soy Carlos y voy a hablar de…". Entra directo.</li>
-    <li>Si alguien ya sabe quién eres, este silencio crea expectativa.</li>
+    <li>Nada de "hola soy Carlos". La frase lo hace por ti.</li>
     <li class="tip-warn">No expliques qué es Demiurgos todavía — la tensión funciona.</li>
   </ul>
-  <span class="badge">~30 seg</span>
+  <span class="timing">⏱ ~30 seg</span>
 </div>
 
 <!-- S02 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 2 · El dolor</p>
+  <div class="slide-meta"><span class="slide-num">Slide 2</span><span class="tag">El dolor</span></div>
   <p class="slide-title">Crear contenido <span class="accent">no es fácil.</span></p>
-  <p class="notes">Señala cada tarjeta y pregunta al público: "¿Quién ha sentido esto?". El último bloque — "Todo a la vez" — es el gancho.</p>
+  <p class="notes">Señala cada tarjeta. Haz pausa en "Todo a la vez".</p>
   <ul class="tips">
-    <li>No leas las tarjetas. Solo señálalas y deja que el público las lea.</li>
-    <li>Haz pausa en "Todo a la vez. El verdadero problema." — deja que cale.</li>
-    <li class="tip-warn">Si el grupo es pequeño, puedes preguntar directamente: "¿A quién le pasa?"</li>
+    <li>No leas las tarjetas — señálalas y deja que el público las lea.</li>
+    <li class="tip-warn">Si el grupo es pequeño: "¿A quién le pasa?"</li>
   </ul>
-  <span class="badge">~1 min</span>
+  <span class="timing">⏱ ~1 min</span>
 </div>
 
 <!-- S03 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 3 · El bloqueo real</p>
+  <div class="slide-meta"><span class="slide-num">Slide 3</span><span class="tag">Bloqueo real</span></div>
   <p class="slide-title">No nos falta talento. Nos falta <span class="accent">tiempo, método y consistencia.</span></p>
-  <p class="notes">Pausa de 3 segundos antes de entrar. Lee la cita lentamente. La última línea — "Y eso tiene solución" — es el pivot.</p>
-  <ul class="tips">
-    <li>Voz baja, pausa. Este es el momento de empatía, no de energía.</li>
-    <li>La última frase la dices con confianza, no como pregunta.</li>
-  </ul>
-  <span class="badge">~45 seg</span>
+  <p class="notes">Pausa de 3 segundos. Voz baja. "Y eso tiene solución" con confianza.</p>
+  <span class="timing">⏱ ~45 seg</span>
 </div>
 
 <!-- S04 -->
-<div class="slide-block highlight">
-  <p class="slide-num">Slide 4 · El producto · ⭐ Primer wow</p>
+<div class="slide-block hi">
+  <div class="slide-meta"><span class="slide-num">Slide 4</span><span class="tag green">⭐ Primer wow</span></div>
   <p class="slide-title"><span class="accent">Demiurgos</span> — No es un GPT. Es TU voz.</p>
-  <p class="notes">Primer momento de impacto. Nombra el producto. Lee el tagline en voz alta: "No es una skill. No es un GPT. Es TU voz. TU marca. Eres TÚ haciendo contenido."</p>
+  <p class="notes">Lee el tagline despacio: "No es una skill. No es un GPT. Es TU voz. TU marca. Eres TÚ haciendo contenido."</p>
   <ul class="tips">
-    <li>Enfatiza "TU" cada vez que aparezca — hay tres en la slide.</li>
-    <li>Deja que el logo y el nombre respiren. No expliques aún cómo funciona.</li>
-    <li class="tip-warn">Si hay silencio de expectación, es buena señal. No lo rompas rápido.</li>
+    <li>Enfatiza "TU" cada vez — hay tres.</li>
+    <li class="tip-warn">Silencio de expectación = buena señal. No lo rompas rápido.</li>
   </ul>
-  <span class="badge">~1 min</span>
+  <span class="timing">⏱ ~1 min</span>
 </div>
 
 <!-- S05 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 5 · Cómo funciona</p>
-  <p class="slide-title">Las 4 partes internas de <span class="accent">Demiurgos</span></p>
-  <p class="notes">Ahora ya puedes explicar el motor. Recorre las 4 tarjetas: Perfil → Contexto → Generación → Ciclo.</p>
+  <div class="slide-meta"><span class="slide-num">Slide 5</span><span class="tag">Cómo funciona</span></div>
+  <p class="slide-title">4 partes: perfil → contexto → generación → ciclo</p>
   <ul class="tips">
-    <li><strong>Perfil</strong>: "Defines quién eres una sola vez. A partir de ahí, todo está calibrado para ti."</li>
+    <li><strong>Perfil</strong>: "Defines quién eres una sola vez. A partir de ahí, todo calibrado."</li>
     <li><strong>Contexto</strong>: "No inventa. Analiza tendencias reales, tus redes, tus archivos."</li>
-    <li><strong>Generación</strong>: "No es 'dame una idea'. Es idea + por qué ahora + guion completo."</li>
-    <li><strong>Ciclo</strong>: "Cada semana que lo usas, mejora. Aprende de lo que publicas."</li>
+    <li><strong>Generación</strong>: "No 'dame una idea'. Idea + por qué ahora + guion completo."</li>
+    <li><strong>Ciclo</strong>: "Cada semana que lo usas, mejora."</li>
   </ul>
-  <span class="badge">~1.5 min</span>
+  <span class="timing">⏱ ~1.5 min</span>
 </div>
 
 <!-- S06 -->
-<div class="slide-block highlight">
-  <p class="slide-num">Slide 6 · Demo de output · ⭐ Momento concreto</p>
-  <p class="slide-title">Chat falseado: propuesta de <span class="accent">carrusel LinkedIn</span></p>
-  <p class="notes">Lee el chat en voz alta, como si lo estuvieras usando ahora mismo. La pregunta del usuario → la respuesta del director creativo con el carrusel de 4 slides.</p>
+<div class="slide-block hi">
+  <div class="slide-meta"><span class="slide-num">Slide 6</span><span class="tag green">⭐ Output concreto</span></div>
+  <p class="slide-title">Chat falseado: propuesta de carrusel LinkedIn</p>
+  <p class="notes">Lee el chat en voz alta. Señala las 4 tarjetas del carrusel.</p>
   <ul class="tips">
-    <li>Lee la pregunta con naturalidad: "Oye, ¿qué me recomiendas publicar esta semana?"</li>
-    <li>Para la propuesta: "Mira lo que genera. No una idea vaga. Un carrusel de 4 slides, con título, contenido y CTA."</li>
-    <li>Señala las 4 tarjetas del mini-carrusel mientras las describes.</li>
-    <li class="tip-warn">No leas cada tarjeta entera — da el titular y di "esto es lo que genera para ti, no para nadie más".</li>
+    <li>"Mira lo que genera. No una idea vaga. Un carrusel de 4 slides."</li>
+    <li class="tip-warn">No leas cada tarjeta entera — da el titular y sigue.</li>
   </ul>
-  <span class="badge">~2 min</span>
+  <span class="timing">⏱ ~2 min</span>
 </div>
 
-<div class="divider"><span>FASES DEL PRODUCTO (3 slides)</span></div>
+<div class="divider"><span>Fases del producto — 3 slides con iframes reales</span></div>
 
 <!-- S07a -->
 <div class="slide-block">
-  <p class="slide-num">Slide 7a · Fase 1</p>
-  <p class="slide-title">Landing — la primera impresión</p>
-  <p class="notes">Muestra la home real de Demiurgos. Sin login. Cualquiera puede verla.</p>
+  <div class="slide-meta"><span class="slide-num">Slide 7</span><span class="tag">Fase 1 · Landing</span></div>
+  <p class="slide-title">La primera impresión — <span class="accent">sin login</span></p>
   <ul class="tips">
-    <li>"Esto es lo que ve alguien que llega por primera vez. Sin registro, sin login."</li>
-    <li>Señala el CTA principal si se ve en el iframe.</li>
-    <li class="tip-warn">Si el iframe tarda en cargar, no esperes — habla mientras carga.</li>
+    <li>"Esto ve alguien que llega por primera vez. Sin registro."</li>
+    <li class="tip-warn">Si el iframe tarda, habla mientras carga.</li>
   </ul>
-  <span class="badge">~30 seg</span>
+  <span class="timing">⏱ ~30 seg</span>
 </div>
 
 <!-- S07b -->
 <div class="slide-block">
-  <p class="slide-num">Slide 7b · Fase 2</p>
-  <p class="slide-title">Onboarding — calibrar la voz</p>
-  <p class="notes">El onboarding real. Donde el usuario define quién es. Esto pasa solo una vez.</p>
+  <div class="slide-meta"><span class="slide-num">Slide 8</span><span class="tag">Fase 2 · Onboarding</span></div>
+  <p class="slide-title">Tu perfil, tu voz, tu sector — <span class="accent">una sola vez</span></p>
   <ul class="tips">
-    <li>"Aquí es donde Demiurgos aprende quién eres. Sector, tono, audiencia, referentes."</li>
-    <li>"Una vez que lo rellenas, ya no tienes que explicarte. Sabe cómo hablarte."</li>
+    <li>"Aquí es donde Demiurgos aprende quién eres."</li>
+    <li>"Una vez rellenado, ya no tienes que explicarte."</li>
   </ul>
-  <span class="badge">~45 seg</span>
+  <span class="timing">⏱ ~45 seg</span>
 </div>
 
 <!-- S07c -->
-<div class="slide-block highlight">
-  <p class="slide-num">Slide 7c · Fase 3</p>
-  <p class="slide-title">Panel demo — el producto en acción · <span class="accent">⭐ Úsalo en vivo</span></p>
-  <p class="notes">El panel real en modo demo, sin login. Aquí puedes hacer una demo en vivo si tienes conexión.</p>
+<div class="slide-block hi">
+  <div class="slide-meta"><span class="slide-num">Slide 9</span><span class="tag green">⭐ Demo en vivo</span></div>
+  <p class="slide-title">El director creativo en acción — <span class="accent">pruébalo</span></p>
   <ul class="tips">
-    <li>"Esto es el producto. Sin login. Probadlo después en /demo."</li>
-    <li class="tip-warn">Si haces demo en vivo: prepara una pregunta corta. No improvises el prompt aquí.</li>
-    <li>Pregunta sugerida para demo en vivo: "Dame 3 ideas de contenido para LinkedIn sobre IA y startups."</li>
+    <li>"Esto es el producto. Sin login. Probadlo en /demo después."</li>
+    <li class="tip-warn">Demo en vivo preparada: "Dame 3 ideas para LinkedIn sobre IA y startups."</li>
   </ul>
-  <span class="badge">~1–2 min</span>
+  <span class="timing">⏱ ~1–2 min</span>
 </div>
 
-<div class="divider"><span>QUÉ SE PUEDE HACER (2 slides)</span></div>
+<div class="divider"><span>Funcionalidades — iframes interactivos</span></div>
 
 <!-- S08 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 8 · ¿Qué puedes hacer?</p>
-  <p class="slide-title">Chat, propuestas, archivos, ideas frontera</p>
-  <p class="notes">Señala cada punto mientras el iframe del demo está visible. No leas la lista — señala.</p>
+  <div class="slide-meta"><span class="slide-num">Slide 10</span><span class="tag">¿Qué puedes hacer?</span></div>
+  <p class="slide-title">Chat · propuestas · archivos · ideas frontera</p>
+  <p class="notes">Iframe grande de /demo. Úsalo en vivo para mostrar cada función.</p>
   <ul class="tips">
     <li>Chat → "Hablas con él como con un colega creativo que te conoce."</li>
-    <li>Propuestas → "No te da ideas. Te da propuestas completas: idea + por qué + guion."</li>
-    <li>Archivos → "Súbele tu presentación, tu informe, tu PDF. Lo usa como contexto."</li>
-    <li>Ideas frontera → "Lo que aún nadie ha dicho. El contenido diferenciador."</li>
+    <li>Propuestas → "No ideas. Propuestas completas: idea + por qué + guion."</li>
+    <li>Archivos → "Súbele tu presentación, tu PDF. Lo usa como contexto."</li>
   </ul>
-  <span class="badge">~1.5 min</span>
+  <span class="timing">⏱ ~1.5 min</span>
 </div>
 
 <!-- S09 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 9 · Y también esto</p>
-  <p class="slide-title">Perfil, redes, tendencias, control de costes</p>
-  <p class="notes">La contraparte técnica. Termina siempre con "ajustes de coste" — despierta curiosidad en el público técnico.</p>
+  <div class="slide-meta"><span class="slide-num">Slide 11</span><span class="tag">Y también esto</span></div>
+  <p class="slide-title">Perfil · redes · tendencias · <span class="accent">control de costes</span></p>
+  <p class="notes">Termina con ajustes de costes — curiosidad técnica garantizada.</p>
   <ul class="tips">
-    <li>Perfil → "Cada respuesta sabe para quién es."</li>
-    <li>Redes → "Conectas LinkedIn o X y analiza tu historial publicado."</li>
-    <li>Tendencias → "No inventa lo que está de moda. Lo consulta en tiempo real."</li>
-    <li class="tip-warn">Ajustes de coste → pausa aquí. "Puedes elegir qué modelo IA usa para cada tarea. Eso cambia el precio radicalmente." → genera preguntas.</li>
+    <li class="tip-warn">"Puedes elegir qué modelo IA usa para cada tarea. Eso cambia el precio radicalmente." → genera preguntas.</li>
   </ul>
-  <span class="badge">~1.5 min</span>
+  <span class="timing">⏱ ~1.5 min</span>
 </div>
-
-<div class="divider"><span>STACK Y CONSTRUCCIÓN</span></div>
 
 <!-- S10 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 10 · El stack</p>
+  <div class="slide-meta"><span class="slide-num">Slide 12</span><span class="tag">Stack</span></div>
   <p class="slide-title"><span class="accent">Claude Code, Vercel, GitHub, Supabase</span> + ecosistema</p>
-  <p class="notes">Los 4 pilares en verde, el resto como contexto. No entres en detalle técnico — solo nombralos.</p>
   <ul class="tips">
-    <li>"Estos cuatro son los pilares: Claude Code para construir, Vercel para desplegar, GitHub para versionar, Supabase para la base de datos."</li>
-    <li>"El resto — TrendMCP, Apify, Google Cloud — son las piezas que fui añadiendo según las necesitaba."</li>
-    <li class="tip-warn">Si alguien pregunta por qué no X herramienta, responde: "Porque con estas llegué al producto. No necesité más."</li>
+    <li>"Estos cuatro son los pilares. El resto lo fui añadiendo según lo necesitaba."</li>
+    <li class="tip-warn">"¿Por qué no X?" → "Porque con estas llegué al producto."</li>
   </ul>
-  <span class="badge">~1 min</span>
+  <span class="timing">⏱ ~1 min</span>
 </div>
 
-<!-- S11 -->
-<div class="slide-block highlight">
-  <p class="slide-num">Slide 11 · Cómo se construyó · 4 sub-pasos con imágenes</p>
-  <p class="slide-title">Prompt → Levantar → Levantar (cont.) → <span class="accent">Iterar</span></p>
-  <p class="notes">Cada → avanza un sub-paso (imagen + bullet). Cuando terminas los 4, el siguiente → te lleva a S12.</p>
-  <div class="sub-steps">
-    <div class="sub-step"><span class="sub-step-n">1→</span><span><strong>Construir el prompt</strong> — "Antes de escribir código, construí el prompt. El prompt es la arquitectura invisible de todo." Imagen: slide11a.png</span></div>
-    <div class="sub-step"><span class="sub-step-n">2→</span><span><strong>Levantar el proyecto</strong> — "Claude Code, Next.js, Supabase, auth, gateway." Imagen: slide11b.png</span></div>
-    <div class="sub-step"><span class="sub-step-n">3→</span><span><strong>Levantar (cont.)</strong> — "Vercel, GitHub, variables de entorno, migraciones." Imagen: slide11c.png</span></div>
-    <div class="sub-step"><span class="sub-step-n">4→</span><span><strong>Iterar</strong> — "Aquí es donde nace el producto real. Debugging constante." Imagen: slide11d.png</span></div>
-  </div>
-  <span class="badge">~2 min</span>
+<div class="divider"><span>Cómo se construyó — 4 slides con imágenes reales</span></div>
+
+<!-- S11a -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 13</span><span class="tag">Construcción 1/4</span></div>
+  <p class="slide-title">Construir el prompt</p>
+  <ul class="tips">
+    <li>"Antes de escribir código, construí el prompt. Es la arquitectura invisible de todo."</li>
+  </ul>
+  <span class="timing">⏱ ~30 seg</span>
 </div>
 
-<!-- S12 -->
-<div class="slide-block highlight">
-  <p class="slide-num">Slide 12 · La pelea con la IA · 3 sub-pasos con imágenes</p>
-  <p class="slide-title">Bloqueos → Decisiones → <span class="accent">Costes</span></p>
-  <p class="notes">La parte honesta. Cada → avanza un bloqueo con su imagen real. Momento de conexión humana con el público.</p>
-  <div class="sub-steps">
-    <div class="sub-step"><span class="sub-step-n">1→</span><span><strong>Bloqueos técnicos</strong> — "Merges rotos, builds que fallan. Esto pasa. No es fracaso, es el proceso." Imagen: slide12a.png</span></div>
-    <div class="sub-step"><span class="sub-step-n">2→</span><span><strong>Decisiones en caliente</strong> — "¿Cambio la arquitectura ahora o sigo? Con el reloj corriendo." Imagen: slide12b.png</span></div>
-    <div class="sub-step"><span class="sub-step-n">3→</span><span><strong>Control de costes</strong> — "Cada prompt cuesta. Aprendes cuándo vale la pena y cuándo estás quemando dinero." Imagen: slide12c.png</span></div>
-  </div>
-  <ul class="tips" style="margin-top:.6rem">
-    <li class="tip-warn">Este es el momento de honestidad. No lo suavices. El público lo valora.</li>
-    <li>"Si alguien de aquí va a construir algo con IA, va a pasar por esto. Es bueno saberlo antes."</li>
+<!-- S11b -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 14</span><span class="tag">Construcción 2/4</span></div>
+  <p class="slide-title">Levantar el proyecto</p>
+  <ul class="tips">
+    <li>"Claude Code, Next.js, Supabase, auth, gateway. De cero a proyecto funcional."</li>
   </ul>
-  <span class="badge">~2 min</span>
+  <span class="timing">⏱ ~30 seg</span>
 </div>
+
+<!-- S11c -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 15</span><span class="tag">Construcción 3/4</span></div>
+  <p class="slide-title">Deploy y conexiones</p>
+  <ul class="tips">
+    <li>"Push = deploy automático. GitHub + Vercel. Todo conectado."</li>
+  </ul>
+  <span class="timing">⏱ ~30 seg</span>
+</div>
+
+<!-- S11d -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 16</span><span class="tag">Construcción 4/4</span></div>
+  <p class="slide-title">Iterar (y pelearse con la IA)</p>
+  <ul class="tips">
+    <li>"El producto real no sale de planificar. Sale de iterar."</li>
+  </ul>
+  <span class="timing">⏱ ~30 seg</span>
+</div>
+
+<div class="divider"><span>La pelea con la IA — 3 slides con imágenes reales</span></div>
+
+<!-- S12a -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 17</span><span class="tag amber">Bloqueo 1/3</span></div>
+  <p class="slide-title">Bloqueos técnicos</p>
+  <ul class="tips">
+    <li>"Merges rotos, builds que fallan. Esto pasa. No es fracaso, es el proceso."</li>
+    <li class="tip-warn">Normalízalo — el público va a pasar por esto.</li>
+  </ul>
+  <span class="timing">⏱ ~30 seg</span>
+</div>
+
+<!-- S12b -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 18</span><span class="tag amber">Bloqueo 2/3</span></div>
+  <p class="slide-title">Decisiones en caliente</p>
+  <ul class="tips">
+    <li>"¿Cambio la arquitectura ahora o sigo? Con el reloj corriendo."</li>
+  </ul>
+  <span class="timing">⏱ ~30 seg</span>
+</div>
+
+<!-- S12c -->
+<div class="slide-block img">
+  <div class="slide-meta"><span class="slide-num">Slide 19</span><span class="tag amber">Bloqueo 3/3</span></div>
+  <p class="slide-title">Control de costes</p>
+  <ul class="tips">
+    <li>"Cada prompt cuesta. Aprende cuándo vale la pena y cuándo estás quemando dinero."</li>
+  </ul>
+  <span class="timing">⏱ ~30 seg</span>
+</div>
+
+<div class="divider"><span>Cierre</span></div>
 
 <!-- S13 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 13 · Aprendizajes reales</p>
+  <div class="slide-meta"><span class="slide-num">Slide 20</span><span class="tag">Aprendizajes</span></div>
   <p class="slide-title">Todo lo que <span class="accent">no sabías</span> que ibas a necesitar</p>
-  <p class="notes">Las etiquetas son los temas que aprendiste durante el build. Sin saber que los ibas a necesitar.</p>
   <ul class="tips">
-    <li>"Ninguna de estas cosas estaba en el plan inicial. Las fui aprendiendo según las necesitaba."</li>
-    <li>"Eso es lo que hace la IA diferente: te permite aprender en contexto, no antes de empezar."</li>
+    <li>"Ninguna de estas cosas estaba en el plan inicial."</li>
     <li class="tip-warn">No leas todas las etiquetas — señala dos o tres y di "y muchas más".</li>
   </ul>
-  <span class="badge">~1 min</span>
+  <span class="timing">⏱ ~1 min</span>
 </div>
 
 <!-- S14 -->
 <div class="slide-block">
-  <p class="slide-num">Slide 14 · Cierre</p>
-  <p class="slide-title">Demiurgos no es solo una herramienta.</p>
-  <p class="notes">Pausa larga. Di la primera línea. Para. Di la segunda. Deja que respire.</p>
-  <ul class="tips">
-    <li>Voz tranquila, sin urgencia. Este es el cierre emocional.</li>
-    <li>"Es aprender a construir con IA mientras construyes." — lo dices despacio.</li>
-    <li>"El proceso es el producto." — pausa final antes de la última slide.</li>
-  </ul>
-  <span class="badge">~45 seg</span>
+  <div class="slide-meta"><span class="slide-num">Slide 21</span><span class="tag">Cierre</span></div>
+  <p class="slide-title">El proceso es el producto.</p>
+  <p class="notes">Pausa larga. Voz tranquila. Di las dos frases despacio.</p>
+  <span class="timing">⏱ ~45 seg</span>
 </div>
 
 <!-- S15 -->
-<div class="slide-block highlight">
-  <p class="slide-num">Slide 15 · Final</p>
-  <p class="slide-title">Terminal con el <span class="accent">límite real alcanzado</span> durante el build</p>
-  <p class="notes">La slide final es el terminal que muestra el error real de límite de uso de Claude — con los 66,94 € gastados y los 3,92 € de saldo. Humor y honestidad.</p>
+<div class="slide-block hi">
+  <div class="slide-meta"><span class="slide-num">Slide 22</span><span class="tag green">⭐ Final</span></div>
+  <p class="slide-title">La imagen del límite de uso alcanzado</p>
+  <p class="notes">Imagen real de Claude con el límite. Ríete. Luego: "Gracias. Preguntas bienvenidas."</p>
   <ul class="tips">
-    <li>Ríete un poco cuando aparezca. "Esto es real. Pasó mientras construía esto."</li>
-    <li>"66 euros en un mes de Claude. ¿Vale la pena? Mirad el producto."</li>
-    <li>Deja la slide ahí. "Gracias. Preguntas bienvenidas. Demiurgos sigue iterando."</li>
-    <li class="tip-warn">No cierres con slides extra. Este terminal es el mejor cierre posible — auténtico.</li>
+    <li>"Esto es real. Pasó mientras construía esto."</li>
+    <li>"66 euros en un mes. ¿Vale la pena? Mirad el producto."</li>
+    <li class="tip-warn">No cierres con más slides. Este es el mejor cierre posible.</li>
   </ul>
-  <span class="badge">~30 seg + Q&A</span>
+  <span class="timing">⏱ ~30 seg + Q&amp;A</span>
 </div>
 
 <footer>
-  <span>guia-presentacion.html · Demiurgos Bootcamp IA 2026</span>
-  <span>Usa /presentacion para las slides · F = fullscreen</span>
+  <span>guia-presentacion.html · Demiurgos Bootcamp IA 2026 · 22 slides</span>
+  <span>/presentacion · F = fullscreen</span>
 </footer>
 
+<!-- ══ TIMER SCRIPT ════════════════════════════════════════════════════════ -->
+<script>
+  const TOTAL = 4 * 60; // 4:00
+  let remaining = TOTAL;
+  let interval = null;
+  let running = false;
+
+  const el      = document.getElementById('timer');
+  const btnStart = document.getElementById('btn-start');
+  const btnReset = document.getElementById('btn-reset');
+
+  function fmt(s) {
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
+  function render() {
+    el.textContent = fmt(remaining);
+    const ratio = remaining / TOTAL;
+    el.className = ratio <= 0.2 ? 'danger' : ratio <= 0.5 ? 'warning' : '';
+  }
+
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(interval);
+      running = false;
+      btnStart.textContent = '▶ Iniciar';
+      remaining = 0;
+      render();
+      return;
+    }
+    remaining--;
+    render();
+  }
+
+  function startStop() {
+    if (running) {
+      clearInterval(interval);
+      running = false;
+      btnStart.textContent = '▶ Iniciar';
+    } else {
+      if (remaining <= 0) remaining = TOTAL;
+      interval = setInterval(tick, 1000);
+      running = true;
+      btnStart.textContent = '⏸ Pausar';
+    }
+  }
+
+  el.addEventListener('click', startStop);
+  btnStart.addEventListener('click', startStop);
+  btnReset.addEventListener('click', () => {
+    clearInterval(interval);
+    running = false;
+    remaining = TOTAL;
+    btnStart.textContent = '▶ Iniciar';
+    render();
+  });
+
+  render();
+</script>
 </body>
 </html>
