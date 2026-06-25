@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 // Cliente de Supabase para el servidor (Server Components, Route Handlers,
@@ -27,5 +28,14 @@ export async function createClient() {
         },
       },
     }
+  );
+}
+
+// Cliente con service-role para webhooks y jobs que no tienen sesión de usuario.
+// Solo usar en Route Handlers server-side donde NO hay cookies de sesión.
+export async function createServiceClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }

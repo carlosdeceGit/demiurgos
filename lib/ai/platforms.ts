@@ -20,6 +20,13 @@ export type ProfilePlatform = {
   format?: string;
   // 'activo' marca las plataformas en las que el usuario juega de verdad.
   status?: string;
+  // URL del propio perfil del usuario en esta red.
+  url?: string;
+  // Perfiles de referencia para scraping (uno por línea o array).
+  reference_accounts?: string | string[];
+  // Estado del último scrape de Apify.
+  sync_status?: "syncing" | "synced" | "failed";
+  last_synced_at?: string;
 };
 
 const ACTIVE_STATUSES = new Set(["activo", "active"]);

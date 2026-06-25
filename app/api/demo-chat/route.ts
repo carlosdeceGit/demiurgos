@@ -63,6 +63,7 @@ function demoProfileRow(profileId: string): ProfileRow | null {
     platforms: p.activePlatforms.map((key) => ({ key, status: "activo" })),
     performance_patterns: [],
     referents: [],
+    social_insights: null,
   };
 }
 
@@ -116,6 +117,7 @@ export async function POST(req: Request) {
       motor,
       profile,
       knowledge: (knowledge as KnowledgeRow[]) ?? [],
+      socialPosts: [],
       signals: signalsFor(profileId).map((s) => ({
         content: s.content,
         type: null,

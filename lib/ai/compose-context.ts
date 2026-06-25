@@ -19,6 +19,7 @@ export type ProfileRow = {
   platforms: ProfilePlatform[] | null;
   performance_patterns: unknown;
   referents: unknown;
+  social_insights: Record<string, { synthesized_at: string; posts_analyzed: number; referents_analyzed: number; content_dna: string }> | null;
 };
 
 export type KnowledgeRow = { platform: string; content: string };
@@ -28,6 +29,14 @@ export type SignalRow = {
   source: string | null;
 };
 export type MessageRow = { role: string; content: string };
+export type SocialPostRow = {
+  platform: string;
+  account_url: string | null;
+  target: string;
+  post_text: string;
+  post_date: string | null;
+  engagement: Record<string, number> | null;
+};
 
 // Historial de feedback del usuario sobre propuestas anteriores.
 export type LearningRow = {
@@ -40,8 +49,9 @@ export type LearningRow = {
 
 export type ComposeInput = {
   motor: string; // capa 1: el motor (INSTRUCCIONES.md)
-  profile: ProfileRow | null; // capa 3: instancia del usuario
+  profile: ProfileRow | null; // capa 3: instancia del usuario (incluye social_insights)
   knowledge: KnowledgeRow[]; // capa 4: conocimiento del ecosistema
+  socialPosts: SocialPostRow[]; // posts crudos (solo para tests / compatibilidad legacy)
   signals: SignalRow[]; // señales frescas (últimas 20)
   messages: MessageRow[]; // memoria de conversación (últimas 20)
   learning: LearningRow[]; // aprendizaje acumulado de feedback
@@ -49,6 +59,8 @@ export type ComposeInput = {
 
 const SIGNALS_LIMIT = 20;
 const MESSAGES_LIMIT = 20;
+const OWN_POSTS_PER_PLATFORM = 10;
+const REFERENT_POSTS_PER_ACCOUNT = 5;
 
 function section(title: string, body: string): string {
   return `\n\n# ${title}\n${body}`;
@@ -60,7 +72,7 @@ function renderProfile(profile: ProfileRow): string {
   const field = (label: string, value: unknown) =>
     `## ${label}\n${JSON.stringify(value, null, 2)}`;
 
-  return [
+  const parts = [
     `Nombre: ${profile.display_name}`,
     field("Posicionamiento", profile.positioning),
     field("Pilares", profile.pillars),
@@ -71,7 +83,21 @@ function renderProfile(profile: ProfileRow): string {
     field("Plataformas", profile.platforms),
     field("Patrones de rendimiento", profile.performance_patterns),
     field("Referentes", profile.referents),
-  ].join("\n\n");
+  ];
+
+  // ADN de contenido: síntesis de los posts scrapeados, por plataforma.
+  // Esto es la fuente más rica sobre cómo escribe y qué publica de verdad.
+  if (profile.social_insights && Object.keys(profile.social_insights).length > 0) {
+    const dnaBlocks = Object.entries(profile.social_insights)
+      .map(([platform, data]) => {
+        const meta = `${data.posts_analyzed} posts propios + ${data.referents_analyzed} de referentes · analizado ${new Date(data.synthesized_at).toLocaleDateString("es-ES")}`;
+        return `### ${platform.toUpperCase()} (${meta})\n${data.content_dna}`;
+      })
+      .join("\n\n");
+    parts.push(`## ADN de contenido (síntesis real de sus publicaciones — máxima prioridad para entender su voz)\n${dnaBlocks}`);
+  }
+
+  return parts.join("\n\n");
 }
 
 // Renderiza el historial de feedback como instrucciones claras para el modelo.
@@ -121,6 +147,77 @@ function renderLearning(rows: LearningRow[]): string {
     "\n\nREGLA: Amplifica los patrones de lo que ha funcionado. Excluye activamente" +
     " los temas, formatos y estilos de lo rechazado. No repitas propuestas ya ejecutadas."
   );
+}
+
+// Agrupa y renderiza los posts sociales scrapeados.
+// Posts propios primero (aprende la voz), luego referentes (aprende patrones externos).
+function renderSocialPosts(posts: SocialPostRow[]): string {
+  if (posts.length === 0) return "";
+
+  const own = posts.filter((p) => p.target === "own");
+  const referents = posts.filter((p) => p.target === "referent");
+
+  const parts: string[] = [];
+
+  if (own.length > 0) {
+    // Agrupa por plataforma
+    const byPlatform = new Map<string, SocialPostRow[]>();
+    for (const p of own) {
+      const list = byPlatform.get(p.platform) ?? [];
+      list.push(p);
+      byPlatform.set(p.platform, list);
+    }
+
+    const lines: string[] = [
+      "## Contenido propio (publicaciones reales del usuario — aprende su voz y formatos)",
+    ];
+    for (const [platform, items] of byPlatform) {
+      lines.push(`\n### ${platform.toUpperCase()}`);
+      for (const item of items.slice(0, OWN_POSTS_PER_PLATFORM)) {
+        const eng = item.engagement
+          ? Object.entries(item.engagement)
+              .filter(([, v]) => v > 0)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ")
+          : "";
+        const meta = [item.post_date, eng].filter(Boolean).join(" · ");
+        lines.push(`---\n${meta ? `(${meta})\n` : ""}${item.post_text.trim()}`);
+      }
+    }
+    parts.push(lines.join("\n"));
+  }
+
+  if (referents.length > 0) {
+    // Agrupa por cuenta de referente
+    const byAccount = new Map<string, SocialPostRow[]>();
+    for (const p of referents) {
+      const key = `${p.platform}:${p.account_url ?? ""}`;
+      const list = byAccount.get(key) ?? [];
+      list.push(p);
+      byAccount.set(key, list);
+    }
+
+    const lines: string[] = [
+      "## Referentes (posts de cuentas que el usuario admira — extrae patrones, no copies)",
+    ];
+    for (const [key, items] of byAccount) {
+      const [platform, url] = key.split(":");
+      lines.push(`\n### ${platform.toUpperCase()} — ${url}`);
+      for (const item of items.slice(0, REFERENT_POSTS_PER_ACCOUNT)) {
+        const eng = item.engagement
+          ? Object.entries(item.engagement)
+              .filter(([, v]) => v > 0)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ")
+          : "";
+        const meta = [item.post_date, eng].filter(Boolean).join(" · ");
+        lines.push(`---\n${meta ? `(${meta})\n` : ""}${item.post_text.trim()}`);
+      }
+    }
+    parts.push(lines.join("\n"));
+  }
+
+  return parts.join("\n\n");
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -212,7 +309,7 @@ export async function gatherContext(
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "display_name, positioning, pillars, audience, voice, tacit, goals, platforms, performance_patterns, referents"
+      "display_name, positioning, pillars, audience, voice, tacit, goals, platforms, performance_patterns, referents, social_insights"
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -258,6 +355,7 @@ export async function gatherContext(
     motor,
     profile: (profile as ProfileRow | null) ?? null,
     knowledge,
+    socialPosts: [], // los posts crudos viven en social_posts; el ADN sintetizado está en profile.social_insights
     // Se piden en desc (los más recientes) y se invierten a orden cronológico.
     signals: (signalsDesc ?? []).reverse(),
     messages: (messagesDesc ?? []).reverse(),
