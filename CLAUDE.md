@@ -11,8 +11,8 @@ Resumen no negociable:
 - **Dark-only.** Usa solo tokens semánticos (Tailwind: `bg-background`, `bg-card`,
   `text-foreground`, `text-muted-foreground`, `border`, `bg-primary`, `ring`). **Nunca**
   colores crudos (`bg-white`, `#fff`, `bg-zinc-*`, etc.).
-- **Acento único = verde esmeralda `#3FE0A2`.** Nada de púrpura.
-- **Tipografía**: Instrument Serif (display/itálica acento) + Geist (UI) + Geist Mono (datos).
+- **Acento único = verde esmeralda `#22D67A`.** Nada de púrpura.
+- **Tipografía**: Bricolage Grotesque (display, peso 700–800) + Geist (UI) + Geist Mono (datos).
 - **Logo** = `components/landing/logo.tsx`; **favicon** = `app/icon.svg`. Iconos Lucide (línea).
 - Reutiliza componentes (`.dmg-cta`, `.dmg-card`, `.dmg-pill`, `Button`, `Card`). No reinventes.
 - Motion con propósito + `prefers-reduced-motion`. Accesibilidad AA. Sin stock genérico.

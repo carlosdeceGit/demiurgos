@@ -305,8 +305,8 @@ grep -rn "Carlos" lib app   # debe dar 0 (regla de separación motor/datos)
   luz". El toque especial = esa chispa luminosa (acto de creación).
 - **Implementación**: `components/landing/logo.tsx` → `<Logo size={n} />`. SVG `viewBox
   0 0 40 40`: tile redondeado `rx 12` fondo `#0A0D0E` con borde esmeralda al 35%; glow
-  radial interior; D en degradado `#7CF3C6 → #3FE0A2 → #0FA56F` (stroke 3, linecap round);
-  chispa `#C9FCE8`.
+  radial interior; D en degradado `#4ef59a → #22D67A → #18A85F` (stroke 3, linecap round);
+  chispa `#b2f5d4`.
 - **Favicon**: `app/icon.svg` (mismo dibujo, stroke 3.4 para legibilidad pequeña). Next lo
   sirve como icono. NO usar el `favicon.ico` por defecto (se eliminó).
 - **Lockups**: marca sola (header/footer), marca + wordmark "Demiurgos" (Geist 600). En el
@@ -322,22 +322,22 @@ Tokens (hex) — definidos en `.dmg-landing`:
 --paper-2:      #0A0C0D   /* secciones alternas */
 --surface:      #101315   /* tarjetas/paneles */
 --surface-2:    #161A1D   /* hover de tarjeta */
---ink:          #F3F6F4   /* texto principal (hueso) */
---ink-soft:     #B6BCB9   /* texto secundario */
---muted:        #838A87   /* texto terciario */
---faint:        #525956   /* sutil / metadatos */
---line:         #1C2123   /* bordes */
---line-strong:  #2A2F31   /* bordes destacados */
---green:        #3FE0A2   /* ACENTO único: CTA, énfasis, glow, foco */
---green-strong: #16C988   /* gradiente del CTA */
+--ink:          #ECF3EE   /* texto principal (hueso) */
+--ink-soft:     #9EB4AB   /* texto secundario */
+--muted:        #5E7870   /* texto terciario */
+--faint:        #3D4E49   /* sutil / metadatos */
+--line:         #1E2C28   /* bordes */
+--line-strong:  #2C3E3A   /* bordes destacados */
+--green:        #22D67A   /* ACENTO único: CTA, énfasis, glow, foco */
+--green-strong: #18A85F   /* gradiente del CTA */
 --green-deep:   #0B7F58   /* gradiente / sombras verdes */
---green-ink:    #04130D   /* texto sobre verde */
---green-soft:   rgba(63,224,162,.10)  /* fondos de icon/badge */
---green-glow:   rgba(63,224,162,.45)  /* resplandor del CTA */
+--green-ink:    #040C07   /* texto sobre verde */
+--green-soft:   rgba(34,214,122,.10)  /* fondos de icon/badge */
+--green-glow:   rgba(34,214,122,.45)  /* resplandor del CTA */
 --violet:       #5BE0C2   /* "toque" frío verde-azulado (NO púrpura) */
 --violet-soft:  rgba(91,224,194,.10)
---amber:        #E6B45A   /* oro suave, solo para "por qué/avisos" */
---amber-soft:   rgba(230,180,90,.12)
+--amber:        #E8A020   /* oro suave, solo para "por qué/avisos" */
+--amber-soft:   rgba(232,160,32,.12)
 ```
 **Reglas de color (importantes):**
 - Verde **con disciplina**: acento, CTA, foco, palabra-clave y glows. Nunca como fondo de
@@ -349,14 +349,13 @@ Tokens (hex) — definidos en `.dmg-landing`:
   variante equivalente, pero la identidad pública (landing) es oscura.
 
 ### 10.4 Tipografía
-- **Display / titulares**: *Instrument Serif* (Google Fonts), incluida **itálica** para la
-  palabra-acento (ej. "Publica con *criterio*"). Tracking ligeramente negativo.
+- **Display / titulares**: *Bricolage Grotesque* (Google Fonts, peso 400–800). Tracking muy
+  negativo (−0.03 em a −0.045 em). Se usa en peso 700/800 para headings grandes.
 - **UI / cuerpo**: *Geist* (400/500/600/700). Body 15–16 px, line-height ~1.55.
 - **Datos / chips técnicos**: *Geist Mono*.
-- **Patrón de titular**: sans bold + 1 palabra clave en serif itálica verde. No mezclar más
-  de una serif por titular.
-- Variables ya cargadas en `app/layout.tsx`: `--font-instrument-serif`, `--font-geist-sans`,
-  `--font-geist-mono`. Clase helper `.dmg-serif`.
+- **Patrón de titular**: Bricolage Grotesque bold + palabra-acento en verde (ej. `color:var(--green)`).
+- Variables cargadas en `app/layout.tsx`: `--font-bricolage`, `--font-geist-sans`,
+  `--font-geist-mono`. `--font-serif` y `--font-display` apuntan a Bricolage. Clase helper `.dmg-serif`.
 
 ### 10.5 Forma, sombra y luz
 - **Radios**: tarjetas 18 px, inputs/botones pequeños ~12 px, píldoras 999 px.
@@ -426,12 +425,12 @@ Tokens (hex) — definidos en `.dmg-landing`:
 Aplicados en `:root, .dark` (mismos valores = dark-only). Cualquier pantalla los hereda vía
 Tailwind (`bg-background`, `text-foreground`, `bg-primary`, `border`, `bg-card`, etc.):
 ```
---background #070809   --foreground #F3F6F4   --card/#101315  --popover #101315
---primary #3FE0A2 (texto --primary-foreground #04130D)
---secondary #161A1D    --muted #161A1D  --muted-foreground #98A09C
---accent #1B2024       --destructive #F0616B
---border #1C2123       --input #2A2F31  --ring #3FE0A2
---brand-accent #3FE0A2 --brand-violet #5BE0C2 --brand-amber #E6B45A
+--background #06080A   --foreground #ECF3EE   --card #0D1210  --popover #0D1210
+--primary #22D67A (texto --primary-foreground #040C07)
+--secondary #121A18    --muted #121A18  --muted-foreground #9EB4AB
+--accent #1C2622       --destructive #F05252
+--border #1E2C28       --input #2C3E3A  --ring #22D67A
+--brand-accent #22D67A --brand-accent-deep #18A85F --brand-violet #5BE0C2 --brand-amber #E8A020
 ```
 Reglas al construir pantallas nuevas: usa SIEMPRE estas clases semánticas (no colores
 sueltos), botón primario = verde esmeralda, foco con `--ring` verde, superficies en `--card`.

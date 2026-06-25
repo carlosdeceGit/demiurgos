@@ -24,21 +24,21 @@ La app es **dark-only**. Los tokens viven en `:root, .dark` de `app/globals.css`
 usan vía clases Tailwind semánticas. **Prohibido** `bg-white`, `text-black`, `#fff`,
 `bg-zinc-*`, `style={{color:'#...'}}` con colores crudos, etc.
 
-- Fondos: `bg-background` (#070809) · superficies/tarjetas: `bg-card` (#101315).
-- Texto: `text-foreground` (#F3F6F4) · secundario: `text-muted-foreground`.
-- **Acento ÚNICO = verde esmeralda** `#3FE0A2` (`bg-primary`, `text-primary`, `ring`,
-  `bg-brand-accent`). Texto sobre verde: `text-primary-foreground` (#04130D).
-- Bordes: `border` (#1C2123) · inputs: `border-input` · foco: `ring` verde.
+- Fondos: `bg-background` (#06080A) · superficies/tarjetas: `bg-card` (#0D1210).
+- Texto: `text-foreground` (#ECF3EE) · secundario: `text-muted-foreground`.
+- **Acento ÚNICO = verde esmeralda** `#22D67A` (`bg-primary`, `text-primary`, `ring`,
+  `bg-brand-accent`). Texto sobre verde: `text-primary-foreground` (#040C07).
+- Bordes: `border` (#1E2C28) · inputs: `border-input` · foco: `ring` verde.
 - Apoyos mínimos (no protagonistas): `--brand-violet` #5BE0C2 (teal frío),
-  `--brand-amber` #E6B45A (oro suave). **Nunca púrpura.**
+  `--brand-amber` #E8A020 (oro suave). **Nunca púrpura.**
 - El verde se usa con disciplina: CTA, foco, énfasis, glow. No como fondo de bloques.
 
 ## 2. Tipografía
-- **Display / titulares**: `Instrument Serif` (clase `font-serif` / `.dmg-serif`),
-  con la **palabra-acento en itálica verde** (patrón: sans bold + 1 palabra serif itálica).
+- **Display / titulares**: `Bricolage Grotesque` (clase `font-serif` / `font-display` / `.dmg-serif`),
+  peso 700–800, tracking muy negativo (−0.03 em a −0.045 em). Palabra-acento en **verde** (`color:var(--green)`).
 - **UI / cuerpo**: `Geist` (por defecto). Cuerpo 15–16px, interlineado ~1.55.
 - **Datos / chips técnicos**: `Geist Mono` (`font-mono`).
-- Ya cargadas en `app/layout.tsx`. No añadas otras fuentes.
+- Ya cargadas en `app/layout.tsx` (`--font-bricolage`). No añadas otras fuentes.
 
 ## 3. Logo e iconos
 - **Logo = `components/landing/logo.tsx`** (`<Logo size={n} />`): la "D" con la chispa
@@ -85,7 +85,7 @@ usan vía clases Tailwind semánticas. **Prohibido** `bg-white`, `text-black`, `
 
 ## Checklist antes de dar por hecha CUALQUIER tarea de UI
 1. ¿Solo tokens semánticos? (`grep -nE "bg-white|text-black|#fff|bg-(zinc|stone|neutral|gray|slate)-" <archivos>` → 0)
-2. ¿Tipografía correcta? (Instrument Serif display, Geist cuerpo, Geist Mono datos).
+2. ¿Tipografía correcta? (Bricolage Grotesque display, Geist cuerpo, Geist Mono datos).
 3. ¿Logo = `<Logo/>` y favicon intacto? ¿Iconos Lucide línea?
 4. ¿Imágenes sin stock genérico; coherentes con dark esmeralda?
 5. ¿CTA/tarjetas/píldoras reutilizan los componentes existentes?
