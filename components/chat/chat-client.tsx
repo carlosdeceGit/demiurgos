@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, useMemo, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { Loader2, Paperclip, Plus, SendHorizontal } from "lucide-react";
 
 import { Logo } from "@/components/landing/logo";
@@ -33,48 +33,16 @@ export function ChatClient({ onMessagesChange }: Props) {
   const [input, setInput] = useState("");
   const [attaching, setAttaching] = useState<string | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
-  const convIdRef = useRef<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // Transport custom que siempre lee el conversationId de la ref.
-  const transport = useMemo(
-    () => ({
-      async sendMessages({
-        messages,
-        abortSignal,
-      }: {
-        messages: unknown[];
-        abortSignal?: AbortSignal;
-      }): Promise<Response> {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages,
-            conversationId: convIdRef.current,
-          }),
-          signal: abortSignal,
-        });
-        const newId = res.headers.get("X-Conversation-Id");
-        if (newId && !convIdRef.current) convIdRef.current = newId;
-        return res;
-      },
-      async reconnectToStream(): Promise<Response | null> {
-        return null;
-      },
-    }),
-    []
-  );
 
   const { messages, sendMessage, status, error, setMessages } = useChat({
-    transport,
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
+
+  const busy = status === "submitted" || status === "streaming";
 
   useEffect(() => {
     onMessagesChange?.(messages);
   }, [messages, onMessagesChange]);
-
-  const busy = status === "submitted" || status === "streaming";
 
   function send(text: string) {
     const trimmed = text.trim();
@@ -83,10 +51,9 @@ export function ChatClient({ onMessagesChange }: Props) {
     setInput("");
   }
 
-  function newConversation() {
+  async function newConversation() {
+    await fetch("/api/chat/new", { method: "POST" });
     setMessages([]);
-    convIdRef.current = null;
-    onMessagesChange?.([]);
   }
 
   async function attachFiles(files: FileList | File[]) {
@@ -237,11 +204,14 @@ export function ChatClient({ onMessagesChange }: Props) {
 
           <div className="bg-card focus-within:ring-ring/50 flex items-end gap-2 rounded-2xl border p-2 focus-within:ring-[3px]">
             <input
-              ref={fileRef}
+              ref={(el) => {
+                if (el) el.value = "";
+              }}
               type="file"
               multiple
               accept={ACCEPT}
               className="hidden"
+              id="chat-file-input"
               onChange={(e) => {
                 if (e.target.files?.length) attachFiles(e.target.files);
                 e.target.value = "";
@@ -252,7 +222,7 @@ export function ChatClient({ onMessagesChange }: Props) {
               variant="ghost"
               size="icon"
               disabled={busy || Boolean(attaching)}
-              onClick={() => fileRef.current?.click()}
+              onClick={() => document.getElementById("chat-file-input")?.click()}
               title="Adjuntar archivo (se guarda en tu biblioteca)"
               className="text-muted-foreground hover:text-foreground shrink-0"
             >
