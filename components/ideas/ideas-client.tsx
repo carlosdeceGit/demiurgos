@@ -95,7 +95,7 @@ function IdeaCard({
       </div>
 
       {/* Idea */}
-      <p className="font-serif text-sm leading-snug">{idea.idea}</p>
+      <p className="text-sm leading-snug">{idea.idea}</p>
 
       {/* Why interesting */}
       {idea.why_interesting && (

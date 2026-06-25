@@ -73,7 +73,7 @@ function Platforms() {
             {[...PLATFORMS, ...PLATFORMS, ...PLATFORMS].map((p, i) => (
               <span
                 key={`${p}-${i}`}
-                className="dmg-serif text-2xl whitespace-nowrap italic sm:text-3xl"
+                className="dmg-serif text-2xl whitespace-nowrap font-semibold sm:text-3xl"
                 style={{ color: "var(--ink-soft)" }}
               >
                 {p}
@@ -299,7 +299,7 @@ function HowItWorks() {
           <Reveal as="li" key={s.n} delay={i * 0.1}>
             <div className="dmg-card dmg-card-hover h-full p-7">
               <span
-                className="dmg-serif text-5xl leading-none italic"
+                className="dmg-serif text-5xl leading-none font-bold"
                 style={{ color: "transparent", WebkitTextStroke: "1px var(--line-strong)" }}
               >
                 {s.n}
@@ -383,12 +383,12 @@ function Vision() {
       <Reveal>
         <div className="mx-auto max-w-3xl text-center">
           <Eyebrow center>La visión</Eyebrow>
-          <p className="dmg-serif mt-4 text-3xl leading-[1.25] tracking-tight sm:text-[2.6rem]">
-            “Tu marca personal no necesita más contenido. Necesita un{" "}
-            <span className="italic" style={{ color: "var(--green)" }}>
+          <p className="dmg-serif mt-4 text-3xl leading-[1.25] sm:text-[2.6rem]">
+            "Tu marca personal no necesita más contenido. Necesita un{" "}
+            <span className="font-bold" style={{ color: "var(--green)" }}>
               criterio
             </span>{" "}
-            que decida qué merece la pena publicar.”
+            que decida qué merece la pena publicar."
           </p>
           <p className="mt-7 text-[0.95rem]" style={{ color: "var(--muted)" }}>
             Demiurgos está en construcción, con la misma exigencia que pone en cada
@@ -412,8 +412,8 @@ function FinalCta() {
             <Sparkles className="size-3.5" style={{ color: "var(--green)" }} strokeWidth={2} />
             Listo para conocerte
           </span>
-          <h2 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">
-            Dale forma a tu <span className="dmg-serif italic" style={{ color: "var(--green)" }}>voz</span>.
+          <h2 className="dmg-serif mt-6 text-4xl font-semibold sm:text-5xl">
+            Dale forma a tu <span className="dmg-serif font-bold" style={{ color: "var(--green)" }}>voz</span>.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed" style={{ color: "var(--ink-soft)" }}>
             Empieza por una conversación. Cuéntale quién eres y deja que Demiurgos te
@@ -499,7 +499,7 @@ function Eyebrow({ children, center }: { children: React.ReactNode; center?: boo
 
 function H2({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight sm:text-[2.6rem] sm:leading-[1.1]">
+    <h2 className="dmg-serif mt-4 max-w-2xl text-3xl font-semibold sm:text-[2.6rem] sm:leading-[1.1]">
       {children}
     </h2>
   );
@@ -515,7 +515,7 @@ function Lead({ children }: { children: React.ReactNode }) {
 
 function Accent({ children }: { children: React.ReactNode }) {
   return (
-    <span className="dmg-serif italic" style={{ color: "var(--green)" }}>
+    <span className="dmg-serif font-bold" style={{ color: "var(--green)" }}>
       {children}
     </span>
   );

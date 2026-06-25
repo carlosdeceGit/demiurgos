@@ -97,10 +97,10 @@ export function Hero() {
             initial={reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.06, ease: EASE }}
-            className="mt-6 text-[2.6rem] leading-[1.04] font-semibold tracking-tight sm:text-6xl"
+            className="mt-6 text-[2.6rem] leading-[1.04] font-semibold sm:text-6xl dmg-serif"
           >
             Publica con{" "}
-            <span className="dmg-serif italic" style={{ color: "var(--green)" }}>
+            <span className="dmg-serif font-bold" style={{ color: "var(--green)" }}>
               criterio
             </span>
             .

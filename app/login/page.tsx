@@ -112,7 +112,7 @@ export default function LoginPage() {
 
         <Card className="shadow-[0_30px_80px_-40px_rgba(0,0,0,0.8)] ring-1 ring-white/5">
           <CardHeader className="text-center">
-            <CardTitle className="font-serif text-2xl font-normal">
+            <CardTitle className="font-serif text-2xl font-semibold tracking-tight">
               {isSignup ? (
                 <>
                   Crea tu <span className="text-primary italic">cuenta</span>

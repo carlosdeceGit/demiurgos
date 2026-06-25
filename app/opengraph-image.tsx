@@ -28,7 +28,7 @@ export default function OpengraphImage() {
               height: 50,
               borderRadius: 14,
               background: "#0A0D0E",
-              border: "1px solid rgba(63,224,162,0.4)",
+              border: "1px solid rgba(34,214,122,0.4)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
