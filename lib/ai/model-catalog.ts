@@ -50,8 +50,16 @@ export const TASK_GROUPS: TaskGroup[] = [
     options: [
       { id: "anthropic/claude-opus-4.8", label: "Claude Opus 4.8", pricing: "$5 / $25" },
       { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6", pricing: "$3 / $15" },
+      { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5 (rápido)", pricing: "$1 / $5" },
       { id: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro", pricing: "≈$1.25 / $5" },
+      { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", pricing: "≈$1.25 / $10" },
+      { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (económico)", pricing: "≈$0.30 / $2.5" },
+      { id: "openai/o3", label: "OpenAI o3 (razonamiento)", pricing: "≈$10 / $40" },
+      { id: "openai/o4-mini", label: "OpenAI o4-mini (razonamiento rápido)", pricing: "≈$1.1 / $4.4" },
+      { id: "openai/gpt-4.1", label: "GPT-4.1", pricing: "≈$2 / $8" },
       { id: "deepseek/deepseek-r1", label: "DeepSeek R1 (razonamiento)", pricing: "≈$0.55 / $2.2" },
+      { id: "deepseek/deepseek-v3", label: "DeepSeek V3 (económico)", pricing: "≈$0.30 / $1.2" },
+      { id: "meta/llama-4-maverick", label: "Llama 4 Maverick (Meta)", pricing: "≈$0.27 / $0.85" },
     ],
   },
   {
