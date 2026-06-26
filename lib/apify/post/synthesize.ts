@@ -77,7 +77,6 @@ export async function synthesizeProfile(
     model: gatewayModel("anthropic/claude-haiku-4.5"),
     system: SYNTHESIS_PROMPT,
     messages: [{ role: "user", content: userMessage }],
-    maxTokens: 1200,
   });
 
   return text.trim();
