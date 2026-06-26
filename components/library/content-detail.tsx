@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Pencil, RefreshCw, Save, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Pencil, RefreshCw, Save, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,24 @@ import {
   SOURCE_LABELS,
   type ContentItem,
 } from "@/lib/library/types";
+
+type RawPost = {
+  text: string;
+  date?: string;
+  stats?: Record<string, number>;
+  url?: string;
+};
+
+type SocialMeta = {
+  content_type?: string;
+  platform?: string;
+  handle?: string;
+  posts_analyzed?: number;
+  last_scraped_at?: string;
+  scrape_count?: number;
+  synthesis_updated_at?: string;
+  raw_posts?: RawPost[];
+};
 
 type DetailData = {
   id: string;
@@ -23,7 +41,103 @@ type DetailData = {
   original_extension: string | null;
   source_type: ContentItem["sourceType"];
   source_url: string | null;
+  metadata_json: SocialMeta | null;
 };
+
+const PROFILE_TYPES = new Set(["profile", "company", "channel", "page"]);
+
+function isSocialProfile(data: DetailData | null): boolean {
+  return !!data?.metadata_json?.content_type && PROFILE_TYPES.has(data.metadata_json.content_type);
+}
+
+function fmtDate(iso: string | undefined): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function SocialProfileView({
+  data,
+  rawPostsOpen,
+  renewMsg,
+  onToggleRawPosts,
+}: {
+  data: DetailData;
+  rawPostsOpen: boolean;
+  renewMsg: string | null;
+  onToggleRawPosts: () => void;
+}) {
+  const meta = data.metadata_json ?? {};
+  const rawPosts = meta.raw_posts ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+        {meta.posts_analyzed != null && <span>{meta.posts_analyzed} posts analizados</span>}
+        {meta.last_scraped_at && <span>Último scrape: {fmtDate(meta.last_scraped_at)}</span>}
+        {meta.scrape_count != null && <span>Scrape #{meta.scrape_count}</span>}
+      </div>
+
+      {renewMsg && (
+        <p className="text-primary text-sm">{renewMsg}</p>
+      )}
+
+      <section>
+        <h3 className="text-foreground mb-3 text-sm font-semibold">Análisis del Director</h3>
+        {data.markdown_content ? (
+          <pre className="text-foreground font-mono text-xs leading-relaxed whitespace-pre-wrap">
+            {data.markdown_content}
+          </pre>
+        ) : (
+          <p className="text-muted-foreground text-sm">Sin análisis todavía.</p>
+        )}
+      </section>
+
+      {rawPosts.length > 0 && (
+        <section>
+          <button
+            onClick={onToggleRawPosts}
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm font-medium"
+          >
+            {rawPostsOpen ? (
+              <ChevronDown className="size-4" />
+            ) : (
+              <ChevronRight className="size-4" />
+            )}
+            Posts importados ({rawPosts.length})
+          </button>
+          {rawPostsOpen && (
+            <ol className="mt-3 space-y-3">
+              {rawPosts.map((p, i) => (
+                <li key={i} className="bg-background rounded-lg border p-3 text-xs">
+                  <p className="text-foreground line-clamp-4 leading-relaxed">{p.text}</p>
+                  <div className="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-0.5">
+                    {p.date && <span>{fmtDate(p.date)}</span>}
+                    {p.stats &&
+                      Object.entries(p.stats)
+                        .filter(([, v]) => v > 0)
+                        .map(([k, v]) => (
+                          <span key={k}>{k}: {v.toLocaleString()}</span>
+                        ))}
+                    {p.url && (
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Ver post
+                      </a>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
 
 export function ContentDetail({
   item,
@@ -44,6 +158,9 @@ export function ContentDetail({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftMd, setDraftMd] = useState("");
   const [busy, setBusy] = useState(false);
+  const [renewBusy, setRenewBusy] = useState(false);
+  const [renewMsg, setRenewMsg] = useState<string | null>(null);
+  const [rawPostsOpen, setRawPostsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,6 +229,30 @@ export function ContentDetail({
     }
   }
 
+  async function renew() {
+    setRenewBusy(true);
+    setError(null);
+    setRenewMsg(null);
+    try {
+      const res = await fetch(`/api/library/${item.id}/renew`, { method: "POST" });
+      if (!res.ok) throw new Error(await res.text());
+      const json = await res.json();
+      setRenewMsg(`${json.posts_analyzed} posts renovados (scrape #${json.scrape_count})`);
+      onChanged();
+      const r = await fetch(`/api/library/${item.id}`);
+      if (r.ok) {
+        const d = await r.json();
+        setData(d.item);
+        setDraftMd(d.item.markdown_content ?? "");
+        setDraftTitle(d.item.title ?? "");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRenewBusy(false);
+    }
+  }
+
   async function remove() {
     if (!confirm("¿Eliminar este contenido de la biblioteca?")) return;
     setBusy(true);
@@ -174,9 +315,16 @@ export function ContentDetail({
               Guardar
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={reprocess} disabled={busy}>
-            <RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} /> Reprocesar
-          </Button>
+          {isSocialProfile(data) ? (
+            <Button variant="outline" size="sm" onClick={renew} disabled={renewBusy || busy}>
+              <RefreshCw className={`size-3.5 ${renewBusy ? "animate-spin" : ""}`} />
+              {renewBusy ? "Renovando…" : "Renovar posts"}
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={reprocess} disabled={busy}>
+              <RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} /> Reprocesar
+            </Button>
+          )}
           {item.sourceUrl && (
             <a
               href={item.sourceUrl}
@@ -229,6 +377,13 @@ export function ContentDetail({
                 placeholder="Contenido en Markdown…"
               />
             </div>
+          ) : isSocialProfile(data) ? (
+            <SocialProfileView
+              data={data!}
+              rawPostsOpen={rawPostsOpen}
+              renewMsg={renewMsg}
+              onToggleRawPosts={() => setRawPostsOpen((o) => !o)}
+            />
           ) : data?.markdown_content ? (
             <pre className="text-foreground font-mono text-xs leading-relaxed whitespace-pre-wrap">
               {data.markdown_content}

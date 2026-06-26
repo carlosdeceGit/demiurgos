@@ -47,6 +47,14 @@ export type LearningRow = {
   based_on: Record<string, unknown> | null;
 };
 
+// Fuentes externas añadidas por el usuario (artículos, vídeos, webs scrapeados).
+export type UserSourceRow = {
+  title: string;
+  source_url: string;
+  markdown_content: string | null;
+  metadata_json: Record<string, unknown> | null;
+};
+
 export type ComposeInput = {
   motor: string; // capa 1: el motor (INSTRUCCIONES.md)
   profile: ProfileRow | null; // capa 3: instancia del usuario (incluye social_insights)
@@ -55,6 +63,7 @@ export type ComposeInput = {
   signals: SignalRow[]; // señales frescas (últimas 20)
   messages: MessageRow[]; // memoria de conversación (últimas 20)
   learning: LearningRow[]; // aprendizaje acumulado de feedback
+  userSources?: UserSourceRow[]; // fuentes web añadidas por el usuario (top 10)
 };
 
 const SIGNALS_LIMIT = 20;
@@ -274,6 +283,25 @@ export function composeSystemPrompt(input: ComposeInput): string {
     );
   }
 
+  if (input.userSources && input.userSources.length > 0) {
+    const body = input.userSources
+      .map((s) => {
+        const platform = s.metadata_json?.platform as string | undefined;
+        const header = `## ${s.title}${platform ? ` (${platform})` : ""}\n*${s.source_url}*`;
+        const content = s.markdown_content
+          ? `\n${s.markdown_content.slice(0, 1500)}${s.markdown_content.length > 1500 ? "\n[...]" : ""}`
+          : "";
+        return header + content;
+      })
+      .join("\n\n---\n\n");
+    parts.push(
+      section(
+        "FUENTES DEL USUARIO (artículos, vídeos y webs que ha añadido como referencia — úsalos para entender sus intereses y enriquecer las propuestas)",
+        body
+      )
+    );
+  }
+
   if (input.messages.length > 0) {
     const body = input.messages
       .map((m) => `${m.role}: ${m.content}`)
@@ -351,6 +379,16 @@ export async function gatherContext(
     .order("created_at", { ascending: false })
     .limit(40);
 
+  // Fuentes web añadidas por el usuario (top 10 más recientes con contenido).
+  const { data: userSourcesData } = await supabase
+    .from("content_library")
+    .select("title, source_url, markdown_content, metadata_json")
+    .eq("user_id", userId)
+    .not("source_url", "is", null)
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
   return {
     motor,
     profile: (profile as ProfileRow | null) ?? null,
@@ -360,5 +398,6 @@ export async function gatherContext(
     signals: (signalsDesc ?? []).reverse(),
     messages: (messagesDesc ?? []).reverse(),
     learning: (learningDesc ?? []) as LearningRow[],
+    userSources: (userSourcesData ?? []) as UserSourceRow[],
   };
 }

@@ -1054,3 +1054,272 @@ components/propuestas/propuestas-shell.tsx         (nuevo: tabs client)
 6. **Credenciales Google Drive** — activar sync real de Biblioteca.
 7. **`TRENDS_API_KEY` en Vercel** — activar tendencias reales.
 8. **`ADMIN_EMAILS` en Vercel** — abrir `/admin`.
+
+---
+
+## 17. Perfil por pestañas + scraping de fuentes web (26 jun 2026)
+
+> Rama `claude/happy-faraday-9uc22z`. Pendiente de merge a producción.
+
+### 17.1 Qué se hizo
+
+- **`/profile` por pestañas** (`components/profile/profile-editor.tsx`): el formulario
+  largo se divide en 3 pestañas con el mismo patrón visual de `settings-tabs.tsx`.
+  - **Sobre mí**: nombre, oferta, posicionamiento, pilares, audiencia, voz, guía de
+    estilo, objetivos. Botón "Guardar perfil" sticky en el fondo.
+  - **Mis redes**: bloques de plataforma (toggle + URL propia + referentes) y referentes
+    generales. Mismo botón de guardado + "Sincronizar redes" (Apify).
+  - **Fuentes**: nueva sección de fuentes de inspiración (ver abajo).
+  
+- **Nueva pestaña "Fuentes"** (`FuentesTab` inline en profile-editor.tsx):
+  - Input de URL con botón "Añadir" → llama a `/api/library/scrape-url`.
+  - Lista de fuentes añadidas con título, URL clicable, fecha, caracteres y botón de
+    borrado individual (llama a `DELETE /api/library/{id}`).
+  - Nota explicativa y enlace al chat Director + a la Biblioteca para archivos.
+  - Las fuentes se persisten en `content_library` (con `source_url` no null).
+
+- **Nueva ruta API** `POST /api/library/scrape-url`:
+  - Valida URL (http/https), fetch server-side con User-Agent realista.
+  - Extrae `<title>` de la respuesta para el título.
+  - Convierte HTML → Markdown con el conversor existente (`htmlToMarkdown` +
+    `cleanMarkdown` de `lib/library/convert.ts`).
+  - Guarda en `content_library` con `source_type='manual_upload'`, `source_url=url`.
+  - Sin migración de BD: reutiliza la columna `source_url` ya existente.
+
+- **Biblioteca** (`components/library/library-view.tsx`):
+  - Items con `source_url` muestran "Fuente web · dominio" en vez de "Subida manual".
+  - Nuevo filtro "Fuente web" en el selector de orígenes (filtra por `sourceUrl != null`).
+  - La búsqueda también busca dentro de `source_url`.
+
+- **`app/profile/page.tsx`**: carga en paralelo el perfil + los items con `source_url`
+  de `content_library` y los pasa como `initialUrlSources` al `ProfileEditor`.
+
+### 17.2 Archivos tocados
+
+```
+app/api/library/scrape-url/route.ts   (NUEVO)
+app/profile/page.tsx                   (actualizado: carga URL sources)
+components/profile/profile-editor.tsx  (refactorizado: 3 pestañas + FuentesTab)
+components/library/library-view.tsx    (mejoras display + filtro URL)
+```
+
+### 17.3 Segunda ronda (26 jun 2026) — Scraping avanzado + Contexto IA + Descarga
+
+- **`lib/library/scrape.ts`** (NUEVO): motor de scraping con detección de plataforma
+  y extracción de metadatos estructurados. Cubre:
+  - YouTube: JSON-LD `VideoObject` → título, canal, fecha, vistas/likes (fmtNum K/M),
+    duración ISO8601 → "3h 42m". Nota: transcripción no disponible; instrucción de
+    descarga manual incluida en el Markdown resultante.
+  - LinkedIn: `og:tags` + `Person` JSON-LD. Nota de login para contenido privado.
+  - TikTok: `VideoObject`/`SocialMediaPosting` JSON-LD con vistas/likes/comentarios.
+  - Instagram: solo metadata pública + aviso de login.
+  - Twitter/X: metadata + aviso de login.
+  - Substack: `Article` JSON-LD → título, autor, fecha.
+  - Web genérica: `Article`/`BlogPosting`/`NewsArticle`/`WebPage` JSON-LD + og:tags.
+  - Todos producen un Markdown estructurado con cabecera:
+    `# Título`, línea de metadatos, métricas de engagement, URL fuente, nota de
+    plataforma (si aplica), luego el cuerpo.
+  - Helper `fmtNum` (1.4 M, 32 K) y `fmtDuration` (ISO8601 → "3h 42m").
+  - Helper `decode` para entidades HTML.
+
+- **`app/api/library/scrape-url/route.ts`** (actualizado): usa `scrapeHtml()` del
+  nuevo `lib/library/scrape.ts`. Elimina la lógica simple de extracción de título;
+  ahora el Markdown resultante incluye metadatos de plataforma y engagement. El campo
+  `metadata_json` guarda `{ scraped_at, domain, platform }`.
+
+- **`app/api/profile/my-context/route.ts`** (NUEVO): endpoint `GET` que genera y
+  descarga un fichero `.md` "Lo que Demiurgos sabe de mí":
+  - Perfil completo (posicionamiento, pilares, audiencia, voz, tacit, objetivos,
+    plataformas, referentes, ADN de contenido por plataforma si existe).
+  - Hasta 50 fuentes web añadidas (con excerpt de 2000 car. por fuente).
+  - Últimas 20 señales.
+  - Propuestas liked/ejecutadas.
+  - Devuelve `Content-Disposition: attachment` con nombre `demiurgos-contexto-*.md`.
+
+- **`lib/ai/compose-context.ts`** (actualizado):
+  - Nuevo tipo `UserSourceRow` (title, source_url, markdown_content, metadata_json).
+  - `ComposeInput` ahora incluye `userSources?: UserSourceRow[]`.
+  - `gatherContext()` fetcha las 10 fuentes web más recientes con status='completed'.
+  - `composeSystemPrompt()` añade sección "FUENTES DEL USUARIO" antes de la memoria
+    de conversación (con excerpt de 1500 car. por fuente).
+
+- **`app/profile/page.tsx`** (actualizado): botón "Lo que Demiurgos sabe de mí"
+  en la cabecera del perfil → descarga via `/api/profile/my-context`.
+
+### 17.4 Archivos tocados (segunda ronda)
+
+```
+lib/library/scrape.ts                        (NUEVO)
+app/api/library/scrape-url/route.ts          (actualizado: usa scrapeHtml)
+app/api/profile/my-context/route.ts          (NUEVO)
+lib/ai/compose-context.ts                    (actualizado: UserSourceRow + fuentes en prompt)
+app/profile/page.tsx                         (actualizado: botón de descarga)
+```
+
+### 17.5 Qué queda pendiente
+
+- **Scraping de redes con login** (Twitter/LinkedIn): la ruta actual falla si la
+  red requiere autenticación; el Apify existente en "Mis redes" cubre este caso.
+- **YouTube transcripts**: el scraping trae metadata pero no el transcript. Una
+  integración real requeriría la API de YouTube Data o un extractor de subtítulos.
+- **Merge a producción**: hacer PR / merge de `claude/happy-faraday-9uc22z` →
+  `claude/upbeat-knuth-6uil82` para desplegar.
+
+---
+
+## 18. Scraping multi-plataforma vía Apify + síntesis del Director (26 jun 2026)
+
+Rama: `claude/happy-faraday-9uc22z`
+
+### 18.1 Visión general
+
+Nuevo pipeline de importación de perfiles y posts de redes sociales directamente
+en la Biblioteca de Contenidos. El usuario pega una URL; el sistema detecta la
+plataforma, llama a Apify de forma síncrona y (si es un perfil) el Director
+genera una síntesis accionable. Todo en una sola petición (~60 s).
+
+Dos capas de datos:
+- **`markdown_content`** = síntesis del Director (lo que la IA lee como contexto).
+- **`metadata_json.raw_posts`** = posts crudos renovables (lo que el usuario ve en el panel).
+
+La síntesis se **enriquece** en cada renovación en lugar de sobrescribirse.
+
+### 18.2 Arquitectura: `lib/apify/post/`
+
+```
+lib/apify/post/
+  types.ts          → SocialPlatform, UrlContentType, DetectedUrl, NormalizedPost,
+                       PlatformAdapter, ScrapePostError
+  router.ts         → detectSocialUrl(url) → DetectedUrl | null
+                       isProfileContentType(t) → boolean
+  scrape-post.ts    → scrapeSource(url) → ScrapeResult (post | profile)
+  synthesize.ts     → synthesizeProfile(posts, platform, handle, existingSynthesis?)
+  adapters/
+    linkedin.ts     → posts y perfiles LinkedIn (actores apimaestro + 2SyF0bVxmgGr8IVCZ)
+    instagram.ts    → posts y perfiles Instagram (actor shu8hvrXbJbY3Eb9W)
+    tiktok.ts       → vídeos y perfiles TikTok (actores clockworks + OtzYfK1ndEGdwWFKQ)
+    youtube.ts      → vídeos y canales YouTube (actores epctex + h7LD7yBFaiycoRuU)
+    twitter.ts      → tweets y perfiles X/Twitter (actores apidojo + heLL6fUofdPgRXZie)
+    facebook.ts     → páginas Facebook (actor apify/facebook-pages-scraper, limitado)
+    index.ts        → ADAPTERS: Record<SocialPlatform, PlatformAdapter>
+```
+
+#### Plataformas y tipos de URL detectados
+
+| Plataforma | Tipos de contenido | `limitedAccess` |
+|---|---|---|
+| LinkedIn | post, profile (personal), company | – |
+| Instagram | post, reel, profile | – |
+| TikTok | video, profile | – |
+| YouTube | video, channel | – |
+| X/Twitter | post, profile | – |
+| Facebook | post, page | ✓ (solo páginas públicas) |
+
+#### `runSync()` en `lib/apify/client.ts`
+
+Llamada síncrona a `POST /v2/acts/{actorId}/run-sync-get-dataset-items`.
+- `timeout=90` segundos a Apify + 15 s de margen en `AbortSignal`.
+- Retorna el dataset completo deserializado como `T[]`.
+
+### 18.3 Rutas API
+
+**`POST /api/library/import-source`** (`maxDuration=120`)
+1. `detectSocialUrl(url)` → error 400 si no es red social soportada.
+2. `scrapeSource(url)` → llama al adaptador correcto via `runSync()`.
+3. Si es perfil: `synthesizeProfile(posts, platform, handle)` → síntesis del Director.
+4. Guarda en `content_library`:
+   - Perfiles: `markdown_content=síntesis`, `metadata_json.raw_posts=posts[:40]`
+   - Posts únicos: `markdown_content=markdown formateado`
+
+**`POST /api/library/[id]/renew`** (`maxDuration=120`)
+1. Recupera `source_url` y síntesis existente (`markdown_content`).
+2. Re-scrapea via `scrapeSource()`.
+3. `synthesizeProfile(posts, platform, handle, existingSynthesis)` → enriquece.
+4. Actualiza `markdown_content`, `metadata_json.raw_posts`, `scrape_count++`.
+
+**`GET /api/library/[id]`** (actualizado)
+- Ahora incluye `metadata_json` en la select para que el panel de detalle pueda
+  mostrar los posts crudos y las métricas de scraping.
+
+### 18.4 Síntesis del Director (`lib/apify/post/synthesize.ts`)
+
+Modelo: `claude-haiku-4.5` (cost-efficient, ~1200 tokens de salida).
+Secciones del informe (texto plano, sin markdown):
+1. VOZ Y ESTILO
+2. TEMAS RECURRENTES (5-8 temas con peso aproximado)
+3. PATRONES DE HOOK (3-5 tipos de apertura con ejemplos)
+4. FORMATOS QUE DOMINA
+5. QUÉ RESUENA CON SU AUDIENCIA (basado en engagement visible)
+6. QUÉ SE PUEDE APRENDER (patrones concretos adaptables)
+7. SÍNTESIS EN UNA FRASE
+
+En renovaciones: el prompt recibe la síntesis previa con instrucción
+"actualiza y enriquece, no ignores lo que ya sabías".
+
+### 18.5 UI/UX
+
+**`components/profile/profile-editor.tsx` — FuentesTab**
+
+State machine `ImportPhase`:
+```typescript
+| { tag: "idle" }
+| { tag: "confirming"; detected: DetectedUrl; url: string }
+| { tag: "loading"; label: string; isProfile: boolean }
+| { tag: "error"; message: string }
+```
+
+Flujo:
+1. Usuario pega URL → `detectSocialUrl()` (cliente, sin red).
+2. Si es red social → muestra **tarjeta de confirmación** con: plataforma, tipo,
+   descripción, aviso "hasta 60 s" para perfiles, aviso `AlertTriangle` amarillo
+   para Facebook (acceso limitado).
+3. Confirma → llama `POST /api/library/import-source`.
+4. URLs no sociales → ruta directa a `POST /api/library/scrape-url` (sin confirmación).
+5. Error → card con mensaje y botón "Entendido".
+
+**`components/library/content-detail.tsx`**
+
+Detecta perfiles sociales via `metadata_json.content_type` ∈ {profile, company, channel, page}.
+
+Para perfiles:
+- Barra de toolbar: botón **"Renovar posts"** (`POST /api/library/[id]/renew`) en lugar de "Reprocesar".
+- Cabecera de metadata: N posts analizados · último scrape · scrape #N.
+- Sección **"Análisis del Director"**: síntesis legible en `<pre>`.
+- Sección colapsable **"Posts importados (N)"**: lista paginada con texto,
+  fecha, stats (likes/comentarios/shares/vistas) y enlace al post original.
+- Mensaje de éxito tras renovar: "N posts renovados (scrape #N)".
+
+### 18.6 Archivos tocados
+
+```
+lib/apify/client.ts                          (actualizado: runSync<T>())
+lib/apify/post/types.ts                      (NUEVO)
+lib/apify/post/router.ts                     (NUEVO)
+lib/apify/post/scrape-post.ts                (NUEVO)
+lib/apify/post/synthesize.ts                 (NUEVO)
+lib/apify/post/adapters/linkedin.ts          (NUEVO)
+lib/apify/post/adapters/instagram.ts         (NUEVO)
+lib/apify/post/adapters/tiktok.ts            (NUEVO)
+lib/apify/post/adapters/youtube.ts           (NUEVO)
+lib/apify/post/adapters/twitter.ts           (NUEVO)
+lib/apify/post/adapters/facebook.ts          (NUEVO)
+lib/apify/post/adapters/index.ts             (NUEVO)
+app/api/library/import-source/route.ts       (NUEVO)
+app/api/library/[id]/renew/route.ts          (NUEVO)
+app/api/library/[id]/route.ts                (actualizado: +metadata_json en select)
+components/profile/profile-editor.tsx        (actualizado: ImportPhase state machine)
+components/library/content-detail.tsx        (actualizado: SocialProfileView, renew())
+```
+
+### 18.7 Pendientes y limitaciones conocidas
+
+- **Facebook**: solo páginas públicas. Perfiles personales no accesibles sin login.
+- **TikTok subtitles**: el actor `clockworks/tiktok-scraper` incluye transcripción
+  solo cuando `shouldDownloadVideos: true` — puede ser lento. Evaluar separar en
+  paso opcional.
+- **Coste Apify**: ~40 posts × 6 plataformas puede consumir unidades significativas
+  en cuentas con bajo plan. Monitorizar usage.
+- **YouTube transcripts**: el actor descarga el vídeo pero no extrae subtítulos
+  automáticamente. El transcript se captura solo si el actor lo devuelve en `subtitles`.
+- **Rate limits / perfiles privados**: si el perfil es privado o Apify devuelve 0 items,
+  `ScrapePostError` se lanza y el usuario ve un mensaje de error en la UI.

@@ -17,7 +17,7 @@ export async function GET(_request: Request, { params }: Ctx) {
   const { data, error } = await supabase
     .from("content_library")
     .select(
-      "id, title, tags, markdown_content, status, conversion_tool, conversion_error, original_file_name, original_extension, source_type, source_url, created_at, updated_at"
+      "id, title, tags, markdown_content, status, conversion_tool, conversion_error, original_file_name, original_extension, source_type, source_url, metadata_json, created_at, updated_at"
     )
     .eq("id", id)
     .maybeSingle();
