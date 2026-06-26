@@ -51,7 +51,7 @@ export function LibraryView({
   const [items, setItems] = useState(initialItems);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">("all");
-  const [sourceFilter, setSourceFilter] = useState<ContentSourceType | "all">("all");
+  const [sourceFilter, setSourceFilter] = useState<ContentSourceType | "all" | "url">("all");
   const [selected, setSelected] = useState<ContentItem | null>(null);
   const [uploads, setUploads] = useState<UploadState[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -64,11 +64,16 @@ export function LibraryView({
     const q = query.trim().toLowerCase();
     return items.filter((it) => {
       if (statusFilter !== "all" && it.status !== statusFilter) return false;
-      if (sourceFilter !== "all" && it.sourceType !== sourceFilter) return false;
+      if (sourceFilter === "url") {
+        if (!it.sourceUrl) return false;
+      } else if (sourceFilter !== "all" && it.sourceType !== sourceFilter) {
+        return false;
+      }
       if (!q) return true;
       return (
         it.title.toLowerCase().includes(q) ||
         (it.originalFileName ?? "").toLowerCase().includes(q) ||
+        (it.sourceUrl ?? "").toLowerCase().includes(q) ||
         it.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
@@ -208,10 +213,13 @@ export function LibraryView({
         </select>
         <select
           value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value as ContentSourceType | "all")}
+          onChange={(e) =>
+            setSourceFilter(e.target.value as ContentSourceType | "all" | "url")
+          }
           className="bg-background rounded-md border px-3 py-2 text-sm"
         >
           <option value="all">Todos los orígenes</option>
+          <option value="url">Fuente web</option>
           {Object.entries(SOURCE_LABELS).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
@@ -249,9 +257,13 @@ export function LibraryView({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{it.title}</p>
                     <p className="text-muted-foreground truncate text-xs">
-                      {SOURCE_LABELS[it.sourceType]}
-                      {it.originalExtension ? ` · .${it.originalExtension}` : ""} ·{" "}
-                      {fmtDate(it.createdAt)} · {fmtBytes(it.originalSize)} ·{" "}
+                      {it.sourceUrl
+                        ? `Fuente web · ${(() => { try { return new URL(it.sourceUrl).hostname; } catch { return it.sourceUrl; } })()}`
+                        : SOURCE_LABELS[it.sourceType]}
+                      {!it.sourceUrl && it.originalExtension
+                        ? ` · .${it.originalExtension}`
+                        : ""}{" "}
+                      · {fmtDate(it.createdAt)} · {fmtBytes(it.originalSize)} ·{" "}
                       {it.markdownSize} car. MD
                     </p>
                     {it.tags.length > 0 && (
