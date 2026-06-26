@@ -1,6 +1,6 @@
 # Demiurgos — Handoff de contexto (para continuar en otra sesión)
 
-> Última actualización: 24 jun 2026. Resume TODO lo necesario para seguir sin
+> Última actualización: 26 jun 2026. Resume TODO lo necesario para seguir sin
 > empezar de cero. Léelo entero al abrir una sesión nueva.
 > Para arrancar rápido: di "Lee HANDOFF.md en la raíz del repo y continúa".
 
@@ -114,9 +114,10 @@ y `grep "Carlos"` a 0 en `/lib` y `/app`.
 
 ## 4. Infraestructura (IDs y dónde está cada cosa)
 
-- **Repo GitHub**: `carlosdeceGit/demiurgos` (público). Rama de trabajo:
-  **`claude/upbeat-knuth-6uil82`**. No hay rama `main`/default; Vercel despliega
-  producción desde esa rama (push = auto-deploy vía integración GitHub).
+- **Repo GitHub**: `carlosdeceGit/demiurgos` (público). Rama de producción:
+  **`main`**. Vercel despliega desde `main` (push = auto-deploy vía integración GitHub).
+  Las ramas de trabajo históricas (`claude/upbeat-knuth-6uil82`, `claude/awesome-mayer-s7lytd`,
+  `claude/stoic-meitner-jvv2wn`) ya están mergeadas a `main`.
 - **Supabase**: proyecto `isvgigmlkwlwikxxzrqd` ("Demiurgos Web", eu-west-3).
   - **Tablas (8)**: `profiles, ecosystem_knowledge, signals, uploads, proposals,
     messages, ai_runs` (migr. 0001/0002) + `settings` (migr. 0003, singleton de modelos,
@@ -912,3 +913,115 @@ tests/
 supabase/migrations/
   0006_ideas_table                    (aplicada vía MCP)
 ```
+
+---
+
+## 16. UX/UI overhaul completo — sesión 26 jun 2026 (rama `claude/stoic-meitner-jvv2wn`, mergeada a `main`)
+
+Rediseño completo de la experiencia de la zona logueada. Decisión del usuario: toda la
+dirección de diseño y experiencia delegada al agente. Mergeado a `main` y listo para deploy.
+
+### 16.1 Decisiones de producto aplicadas
+
+| Área | Decisión tomada |
+|---|---|
+| Chat | Historial de conversaciones en sidebar izquierdo, persistencia en DB, URL routing `/chat?conv=<id>` |
+| Dashboard | Señales eliminadas (pertenecen al chat); métricas reales del usuario |
+| Propuestas + Calendario | Unificados: calendario es una pestaña dentro de `/propuestas`, no ruta separada |
+| `/calendar` | Redirige a `/propuestas?vista=calendario` |
+| Feature discovery | Wizard de descubrimiento de funciones en dashboard (localStorage, aparece solo en sesión nueva) |
+| Navegación móvil | Bottom bar fijo 60 px (md:hidden), `pb-16 md:pb-0` en todas las páginas |
+| Demo | Alineada 1:1 con la app real (calendario como pestaña, dashboard con métricas, sin señales) |
+
+### 16.2 Qué se implementó
+
+#### Chat con historial de conversaciones
+- **Tabla `conversations`** (migración `conversations_v2`): `id`, `user_id`, `title`, `last_message_at`, `created_at`. RLS: owner-only.
+- **`messages.conversation_id`** FK (migración `messages_conversation_id`).
+- **`app/api/chat/route.ts`** reescrito: acepta `conversationId`, crea conv si no hay, auto-titula del primer mensaje (60 chars), actualiza `last_message_at`, devuelve cabecera `X-Conversation-Id`, persiste mensajes con FK.
+- **API endpoints nuevos**:
+  - `GET/POST /api/chat/conversations` — lista 30 convs, crea nueva.
+  - `GET /api/chat/conversations/[id]/messages` — mensajes de una conv.
+  - `DELETE /api/chat/conversations/[id]` — borra conv (RLS owner-only).
+- **`app/chat/page.tsx`**: acepta `?conv=<id>`, carga mensajes históricos, pasa `conversationId` al cliente.
+- **`components/chat/chat-history-sidebar.tsx`** (nuevo): panel izquierdo 256 px (`hidden md:flex`), lista convs ordenadas por `last_message_at`, tiempo relativo, botón nueva conv, botón eliminar en hover (Trash2, optimistic removal, navega a `/chat` si se borra la activa).
+- **`components/chat/chat-shell.tsx`**: incluye sidebar + `MobileHistorySheet` (drawer de historial para móvil con `Sheet`).
+- **`components/chat/chat-client.tsx`**: `router.replace('/chat?conv=<id>')` al recibir primera respuesta; spinner solo en `status === "submitted"` (no durante streaming); markdown custom (`renderMarkdown` + `inlineMarkdown` sin deps externas) para negrita, cursiva, código, headings, listas.
+
+#### Dashboard con métricas reales
+- **`app/dashboard/page.tsx`**: 5 queries en `Promise.all` — proposals total, liked, executed, messages (role user). Pasa `metrics` a `DashboardView`.
+- **`components/dashboard/dashboard-view.tsx`**: nuevo `MetricCard`, grid 2×2 (sm: 4 cols), señales eliminadas, CTA al chat en estado vacío de propuestas, `Clock` icon (no emoji), link "Completar perfil →" si completeness < 100.
+- **`components/dashboard/feature-discovery.tsx`** (nuevo): 4 tarjetas (Director, Ideas, Propuestas, Biblioteca) con links, aparece hasta que el usuario la descarta (`localStorage` key `dmg:feature-discovery-dismissed`).
+- **`components/dashboard/welcome-banner.tsx`**: copy honesto sin afirmaciones falsas ("analizando tus redes").
+
+#### Propuestas + Calendario unificados
+- **`components/propuestas/propuestas-shell.tsx`** (nuevo): client component con tabs "grid" / "calendario", `router.replace()` para sincronizar URL, `ProposalsGrid` en tab grid, `CalendarClient` en tab calendario.
+- **`app/propuestas/page.tsx`**: acepta `searchParams: Promise<{ vista?: string }>`, dos queries en `Promise.all`, `defaultTab` según `vista`.
+- **`app/calendar/page.tsx`**: `redirect("/propuestas?vista=calendario")`.
+- **`components/propuestas/proposals-grid.tsx`**: estado vacío con CTA al chat (Wand2 icon + link).
+
+#### Navegación móvil
+- **`components/app/app-rail.tsx`**: bottom bar `fixed bottom-0 left-0 right-0 z-50 md:hidden` 60 px con 5 items (Dashboard, Propuestas, Director, Ideas, Perfil). Eliminado "Calendario" del rail (ahora es tab en Propuestas).
+- **Todas las páginas logueadas**: `<main className="... pb-16 md:pb-0">` — dashboard, chat, ideas, library, profile, settings.
+- **Chat compositor**: `pb-20 md:pb-4` para que el input no quede tapado.
+- **Sugerencias de chat**: `hidden sm:flex` (no se solapan en móvil pequeño).
+
+#### Demo alineada con la app real
+- **`components/demo/demo-experience.tsx`**: eliminado "calendario" del nav y del tipo `Section`; añadido estado `propuestasTab` con tabs grid/calendario dentro de la sección Propuestas (igual que `PropuestasShell`).
+- **`components/demo/demo-dashboard.tsx`**: eliminada sección "Señales recientes", añadido grid de métricas (`MetricCard`), `🕒` → `<Clock>` icon, `bg-brand-accent` → `bg-primary` en barra de completitud.
+
+### 16.3 Migraciones de Supabase aplicadas en esta sesión
+
+| Migración | Qué hace |
+|---|---|
+| `conversations_v2` | Tabla `conversations` (id, user_id, title, last_message_at) + RLS |
+| `messages_conversation_id` | FK `messages.conversation_id` + índice |
+
+Aplicadas con MCP de Supabase (`apply_migration`).
+
+### 16.4 Archivos clave creados/modificados
+
+```
+app/
+  chat/page.tsx                               (historial + URL routing)
+  propuestas/page.tsx                         (PropuestasShell + Promise.all)
+  calendar/page.tsx                           (redirect a /propuestas)
+  dashboard/page.tsx                          (5 queries métricas)
+  ideas/page.tsx · library/page.tsx
+  profile/page.tsx · settings/page.tsx        (pb-16 md:pb-0)
+  api/chat/route.ts                           (conversations, auto-title, X-Conversation-Id)
+  api/chat/conversations/route.ts             (nuevo: GET/POST)
+  api/chat/conversations/[id]/route.ts        (nuevo: DELETE)
+  api/chat/conversations/[id]/messages/route.ts (nuevo: GET)
+components/
+  chat/chat-history-sidebar.tsx               (nuevo: sidebar con delete)
+  chat/chat-shell.tsx                         (sidebar + mobile drawer)
+  chat/chat-client.tsx                        (markdown, URL sync, spinner fix)
+  app/app-rail.tsx                            (bottom bar móvil, sin Calendario)
+  dashboard/dashboard-view.tsx                (MetricCard, sin señales)
+  dashboard/feature-discovery.tsx             (nuevo)
+  dashboard/welcome-banner.tsx                (copy honesto)
+  propuestas/propuestas-shell.tsx             (nuevo: tabs client)
+  propuestas/proposals-grid.tsx               (empty state CTA)
+  demo/demo-experience.tsx                    (propuestasTab state, sin Calendario en nav)
+  demo/demo-dashboard.tsx                     (métricas, sin señales, Clock icon)
+```
+
+### 16.5 Estado actual de la rama principal
+
+Todo mergeado a `main` con fast-forward. Vercel despliega automáticamente en push.
+`grep -rn "Carlos" lib app` = 0. Build/lint/typecheck no verificables sin `node_modules`
+en el entorno remoto (environment-level issue, no errores de código).
+
+### 16.6 Pendientes para próximas sesiones (priorizados)
+
+1. **Verificar build en Vercel** — confirmar que el deploy automático de `main` queda verde.
+2. **Migración de Supabase**: si el deploy falla por columna `conversation_id` en `messages`, aplicar la migración `messages_conversation_id` vía MCP (`execute_sql`).
+3. **Drawer de detalle de propuesta** — ver propuesta completa + descarga ZIP (`.md` + recursos). Era pendiente de la sesión anterior (§15.4).
+4. **Regeneración semanal automática** — cron que llama `/api/generate-calendar` por usuario (Supabase Edge Function o Railway).
+5. **Integración Apify** — análisis de redes sociales desde onboarding/dashboard → señales.
+6. **Notificaciones email** (Resend) — "tu semana está lista" tras generación.
+7. **Perfil editable** — `/profile` ya existe con editor largo; revisar UX en móvil si es necesario.
+8. **Credenciales Google Drive** (`GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI` + `LIBRARY_TOKEN_SECRET`) — activar sync real de Biblioteca.
+9. **`TRENDS_API_KEY` en Vercel** — activar tendencias reales en el orquestador.
+10. **`ADMIN_EMAILS` en Vercel** — abrir `/admin` para el usuario.
