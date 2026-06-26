@@ -40,22 +40,36 @@ export function AuditTableClient() {
   const [offset, setOffset] = useState(0);
   const limit = 50;
 
+  async function fetchPage(off: number) {
+    const res = await fetch(`/api/admin/audit?limit=${limit}&offset=${off}`);
+    if (res.ok) {
+      const d = await res.json();
+      setActions(d.actions);
+      setTotal(d.total);
+      setOffset(off);
+    }
+  }
+
   async function load(off = 0) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/audit?limit=${limit}&offset=${off}`);
-      if (res.ok) {
-        const d = await res.json();
-        setActions(d.actions);
-        setTotal(d.total);
-        setOffset(off);
-      }
+      await fetchPage(off);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  // Carga inicial: el primer setState ocurre tras el await (no es síncrono dentro
+  // del effect) y `loading` ya arranca en true → sin renders en cascada.
+  useEffect(() => {
+    (async () => {
+      try {
+        await fetchPage(0);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <div className="space-y-4">

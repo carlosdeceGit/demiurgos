@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Logo } from "@/components/landing/logo";
 
@@ -724,7 +724,8 @@ export function PresentacionDeck() {
       if (["ArrowRight", "ArrowDown", " "].includes(e.key)) { e.preventDefault(); goto(current + 1); }
       if (["ArrowLeft", "ArrowUp"].includes(e.key)) { e.preventDefault(); goto(current - 1); }
       if (e.key === "f" || e.key === "F") {
-        document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
       }
       if (e.key === "Home") goto(0);
       if (e.key === "End") goto(total - 1);
@@ -753,11 +754,11 @@ export function PresentacionDeck() {
         onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
         onTouchEnd={(e) => {
           const dx = e.changedTouches[0].clientX - touchX;
-          if (Math.abs(dx) > 50) dx < 0 ? goto(current + 1) : goto(current - 1);
+          if (Math.abs(dx) > 50) goto(dx < 0 ? current + 1 : current - 1);
         }}
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("a,button,input,select,textarea,iframe")) return;
-          e.clientX > window.innerWidth / 2 ? goto(current + 1) : goto(current - 1);
+          goto(e.clientX > window.innerWidth / 2 ? current + 1 : current - 1);
         }}
       >
         {/* Glow ambiente */}

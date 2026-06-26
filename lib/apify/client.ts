@@ -17,8 +17,6 @@ export type RunOptions = {
 
 // Lanza un actor de Apify y configura el webhook para cuando termine.
 export async function startRun(opts: RunOptions): Promise<string> {
-  const url = `${BASE}/acts/${opts.actorId}/runs?token=${token()}`;
-
   // Apify acepta webhooks como parte del cuerpo (campo "webhooks")
   const body = {
     ...opts.input,

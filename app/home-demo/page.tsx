@@ -237,9 +237,9 @@ function Vision() {
         <div className="mx-auto max-w-3xl text-center">
           <Eyebrow center>La visión</Eyebrow>
           <p className="dmg-serif mt-4 text-3xl leading-[1.25] sm:text-[2.6rem]">
-            "Tu marca personal no necesita más contenido. Necesita un{" "}
+            &quot;Tu marca personal no necesita más contenido. Necesita un{" "}
             <span className="font-bold" style={{ color: "var(--green)" }}>criterio</span>{" "}
-            que decida qué merece la pena publicar."
+            que decida qué merece la pena publicar.&quot;
           </p>
           <p className="mt-7 text-[0.95rem]" style={{ color: "var(--muted)" }}>
             Demiurgos está en construcción, con la misma exigencia que pone en cada propuesta. Hoy ya dirige tu contenido desde el chat; el resto del taller llega paso a paso.

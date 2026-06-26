@@ -68,8 +68,6 @@ export type ComposeInput = {
 
 const SIGNALS_LIMIT = 20;
 const MESSAGES_LIMIT = 20;
-const OWN_POSTS_PER_PLATFORM = 10;
-const REFERENT_POSTS_PER_ACCOUNT = 5;
 
 function section(title: string, body: string): string {
   return `\n\n# ${title}\n${body}`;
@@ -156,77 +154,6 @@ function renderLearning(rows: LearningRow[]): string {
     "\n\nREGLA: Amplifica los patrones de lo que ha funcionado. Excluye activamente" +
     " los temas, formatos y estilos de lo rechazado. No repitas propuestas ya ejecutadas."
   );
-}
-
-// Agrupa y renderiza los posts sociales scrapeados.
-// Posts propios primero (aprende la voz), luego referentes (aprende patrones externos).
-function renderSocialPosts(posts: SocialPostRow[]): string {
-  if (posts.length === 0) return "";
-
-  const own = posts.filter((p) => p.target === "own");
-  const referents = posts.filter((p) => p.target === "referent");
-
-  const parts: string[] = [];
-
-  if (own.length > 0) {
-    // Agrupa por plataforma
-    const byPlatform = new Map<string, SocialPostRow[]>();
-    for (const p of own) {
-      const list = byPlatform.get(p.platform) ?? [];
-      list.push(p);
-      byPlatform.set(p.platform, list);
-    }
-
-    const lines: string[] = [
-      "## Contenido propio (publicaciones reales del usuario — aprende su voz y formatos)",
-    ];
-    for (const [platform, items] of byPlatform) {
-      lines.push(`\n### ${platform.toUpperCase()}`);
-      for (const item of items.slice(0, OWN_POSTS_PER_PLATFORM)) {
-        const eng = item.engagement
-          ? Object.entries(item.engagement)
-              .filter(([, v]) => v > 0)
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(", ")
-          : "";
-        const meta = [item.post_date, eng].filter(Boolean).join(" · ");
-        lines.push(`---\n${meta ? `(${meta})\n` : ""}${item.post_text.trim()}`);
-      }
-    }
-    parts.push(lines.join("\n"));
-  }
-
-  if (referents.length > 0) {
-    // Agrupa por cuenta de referente
-    const byAccount = new Map<string, SocialPostRow[]>();
-    for (const p of referents) {
-      const key = `${p.platform}:${p.account_url ?? ""}`;
-      const list = byAccount.get(key) ?? [];
-      list.push(p);
-      byAccount.set(key, list);
-    }
-
-    const lines: string[] = [
-      "## Referentes (posts de cuentas que el usuario admira — extrae patrones, no copies)",
-    ];
-    for (const [key, items] of byAccount) {
-      const [platform, url] = key.split(":");
-      lines.push(`\n### ${platform.toUpperCase()} — ${url}`);
-      for (const item of items.slice(0, REFERENT_POSTS_PER_ACCOUNT)) {
-        const eng = item.engagement
-          ? Object.entries(item.engagement)
-              .filter(([, v]) => v > 0)
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(", ")
-          : "";
-        const meta = [item.post_date, eng].filter(Boolean).join(" · ");
-        lines.push(`---\n${meta ? `(${meta})\n` : ""}${item.post_text.trim()}`);
-      }
-    }
-    parts.push(lines.join("\n"));
-  }
-
-  return parts.join("\n\n");
 }
 
 // ─────────────────────────────────────────────────────────────

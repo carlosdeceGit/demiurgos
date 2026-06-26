@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
-# Recordatorio de proyecto al arrancar cualquier sesión (incl. Claude Code web).
+# Hook de arranque de sesión (incl. Claude Code web).
+
+# El contenedor remoto se clona limpio (sin node_modules). Sin dependencias,
+# `tsc`, `eslint` y `next build` escupen CIENTOS de errores fantasma (no encuentran
+# los tipos de React/Next, `process`, etc.). Instalamos una sola vez si faltan,
+# para que typecheck/lint/build funcionen de verdad en cada sesión.
+if [ ! -d node_modules ] && [ -f package.json ]; then
+  echo "[Demiurgos] node_modules ausente: instalando dependencias…"
+  if npm ci --no-audit --no-fund >/dev/null 2>&1 || npm install --no-audit --no-fund >/dev/null 2>&1; then
+    echo "[Demiurgos] Dependencias listas."
+  else
+    echo "[Demiurgos] ⚠ La instalación automática falló; ejecuta 'npm install' a mano."
+  fi
+fi
+
+# Recordatorio de proyecto.
 cat <<'MSG'
 [Demiurgos]
 · UI/UX: el sitio tiene UNA sola identidad "dark esmeralda". Antes de crear o editar

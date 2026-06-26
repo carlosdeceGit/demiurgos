@@ -70,8 +70,12 @@ export function FeatureDiscovery() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // localStorage solo existe en cliente: leerlo en el initializer de useState
+    // provocaría hydration mismatch. Sincronizar este store externo en un effect
+    // es el patrón correcto (la regla no distingue este caso legítimo).
     try {
       if (!localStorage.getItem(STORAGE_KEY)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setVisible(true);
       }
     } catch {

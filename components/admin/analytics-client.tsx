@@ -42,17 +42,31 @@ export function AnalyticsClient() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  async function fetchAnalytics() {
+    const res = await fetch("/api/admin/analytics");
+    if (res.ok) setData(await res.json());
+  }
+
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/analytics");
-      if (res.ok) setData(await res.json());
+      await fetchAnalytics();
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  // Carga inicial: el primer setState ocurre tras el await (no es síncrono dentro
+  // del effect) y `loading` ya arranca en true → sin renders en cascada.
+  useEffect(() => {
+    (async () => {
+      try {
+        await fetchAnalytics();
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   if (loading) {
     return (
