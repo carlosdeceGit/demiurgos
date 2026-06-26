@@ -32,10 +32,52 @@ function fmt(iso: string | null): string {
   });
 }
 
+type SortState = { key: SortKey; dir: "asc" | "desc" };
+
+// Cabecera ordenable. Declarada a nivel de módulo (no dentro del render) para no
+// recrear el componente en cada render; recibe el estado de orden por props.
+function SortIcon({ k, sort }: { k: SortKey; sort: SortState }) {
+  if (sort.key !== k) return <ChevronUp className="size-3 opacity-20" />;
+  return sort.dir === "asc" ? (
+    <ChevronUp className="text-primary size-3" />
+  ) : (
+    <ChevronDown className="text-primary size-3" />
+  );
+}
+
+function Th({
+  k,
+  children,
+  className = "",
+  sort,
+  onSort,
+}: {
+  k: SortKey;
+  children: React.ReactNode;
+  className?: string;
+  sort: SortState;
+  onSort: (k: SortKey) => void;
+}) {
+  return (
+    <th
+      className={[
+        "cursor-pointer select-none px-4 py-2 text-left text-xs font-medium",
+        className,
+      ].join(" ")}
+      onClick={() => onSort(k)}
+    >
+      <span className="flex items-center gap-1">
+        {children}
+        <SortIcon k={k} sort={sort} />
+      </span>
+    </th>
+  );
+}
+
 export function UsersTableClient({ users }: { users: User[] }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
+  const [sort, setSort] = useState<SortState>({
     key: "totalCost",
     dir: "desc",
   });
@@ -69,40 +111,6 @@ export function UsersTableClient({ users }: { users: User[] }) {
       prev.key === key
         ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
         : { key, dir: "desc" }
-    );
-  }
-
-  function SortIcon({ k }: { k: SortKey }) {
-    if (sort.key !== k) return <ChevronUp className="size-3 opacity-20" />;
-    return sort.dir === "asc" ? (
-      <ChevronUp className="text-primary size-3" />
-    ) : (
-      <ChevronDown className="text-primary size-3" />
-    );
-  }
-
-  function Th({
-    k,
-    children,
-    className = "",
-  }: {
-    k: SortKey;
-    children: React.ReactNode;
-    className?: string;
-  }) {
-    return (
-      <th
-        className={[
-          "cursor-pointer select-none px-4 py-2 text-left text-xs font-medium",
-          className,
-        ].join(" ")}
-        onClick={() => toggleSort(k)}
-      >
-        <span className="flex items-center gap-1">
-          {children}
-          <SortIcon k={k} />
-        </span>
-      </th>
     );
   }
 
@@ -151,19 +159,27 @@ export function UsersTableClient({ users }: { users: User[] }) {
           <table className="w-full text-sm">
             <thead className="bg-muted/30 text-muted-foreground border-b">
               <tr>
-                <Th k="email">Usuario</Th>
+                <Th k="email" sort={sort} onSort={toggleSort}>
+                  Usuario
+                </Th>
                 <th className="px-4 py-2 text-left text-xs font-medium">
                   Estado
                 </th>
-                <Th k="createdAt">Registro</Th>
-                <Th k="lastLoginAt">Último acceso</Th>
-                <Th k="totalRuns" className="text-right">
+                <Th k="createdAt" sort={sort} onSort={toggleSort}>
+                  Registro
+                </Th>
+                <Th k="lastLoginAt" sort={sort} onSort={toggleSort}>
+                  Último acceso
+                </Th>
+                <Th k="totalRuns" sort={sort} onSort={toggleSort} className="text-right">
                   Runs
                 </Th>
-                <Th k="totalCost" className="text-right">
+                <Th k="totalCost" sort={sort} onSort={toggleSort} className="text-right">
                   Coste
                 </Th>
-                <Th k="lastActivity">Actividad</Th>
+                <Th k="lastActivity" sort={sort} onSort={toggleSort}>
+                  Actividad
+                </Th>
                 <th className="px-4 py-2 text-xs font-medium">Modelos</th>
                 <th className="px-4 py-2" />
               </tr>

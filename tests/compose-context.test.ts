@@ -19,6 +19,7 @@ const base: ComposeInput = {
     platforms: [{ key: "linkedin", status: "activo" }],
     performance_patterns: [],
     referents: ["Babbage"],
+    social_insights: null,
   },
   knowledge: [{ platform: "linkedin", content: "En LinkedIn rinden los carruseles." }],
   socialPosts: [],

@@ -78,13 +78,17 @@ export default async function AdminUserDetailPage({
     byModel[model].tokens += tokens;
   }
 
+  // Server Component (force-dynamic): se renderiza una vez por request, así que
+  // `now` es estable durante el render. react-hooks/purity asume cliente/compiler.
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
   const daysActive = Math.max(
     1,
-    Math.round((Date.now() - new Date(u.created_at).getTime()) / 86400000)
+    Math.round((now - new Date(u.created_at).getTime()) / 86400000)
   );
 
   // Actividad por día (últimos 14 días)
-  const last14 = new Date(Date.now() - 14 * 86400000).toISOString();
+  const last14 = new Date(now - 14 * 86400000).toISOString();
   const actByDay: Record<string, number> = {};
   for (const r of runs) {
     if ((r.created_at as string) >= last14) {
