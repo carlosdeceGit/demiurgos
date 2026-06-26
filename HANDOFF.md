@@ -1054,3 +1054,68 @@ components/propuestas/propuestas-shell.tsx         (nuevo: tabs client)
 6. **Credenciales Google Drive** — activar sync real de Biblioteca.
 7. **`TRENDS_API_KEY` en Vercel** — activar tendencias reales.
 8. **`ADMIN_EMAILS` en Vercel** — abrir `/admin`.
+
+---
+
+## 17. Perfil por pestañas + scraping de fuentes web (26 jun 2026)
+
+> Rama `claude/happy-faraday-9uc22z`. Pendiente de merge a producción.
+
+### 17.1 Qué se hizo
+
+- **`/profile` por pestañas** (`components/profile/profile-editor.tsx`): el formulario
+  largo se divide en 3 pestañas con el mismo patrón visual de `settings-tabs.tsx`.
+  - **Sobre mí**: nombre, oferta, posicionamiento, pilares, audiencia, voz, guía de
+    estilo, objetivos. Botón "Guardar perfil" sticky en el fondo.
+  - **Mis redes**: bloques de plataforma (toggle + URL propia + referentes) y referentes
+    generales. Mismo botón de guardado + "Sincronizar redes" (Apify).
+  - **Fuentes**: nueva sección de fuentes de inspiración (ver abajo).
+  
+- **Nueva pestaña "Fuentes"** (`FuentesTab` inline en profile-editor.tsx):
+  - Input de URL con botón "Añadir" → llama a `/api/library/scrape-url`.
+  - Lista de fuentes añadidas con título, URL clicable, fecha, caracteres y botón de
+    borrado individual (llama a `DELETE /api/library/{id}`).
+  - Nota explicativa y enlace al chat Director + a la Biblioteca para archivos.
+  - Las fuentes se persisten en `content_library` (con `source_url` no null).
+
+- **Nueva ruta API** `POST /api/library/scrape-url`:
+  - Valida URL (http/https), fetch server-side con User-Agent realista.
+  - Extrae `<title>` de la respuesta para el título.
+  - Convierte HTML → Markdown con el conversor existente (`htmlToMarkdown` +
+    `cleanMarkdown` de `lib/library/convert.ts`).
+  - Guarda en `content_library` con `source_type='manual_upload'`, `source_url=url`.
+  - Sin migración de BD: reutiliza la columna `source_url` ya existente.
+
+- **Biblioteca** (`components/library/library-view.tsx`):
+  - Items con `source_url` muestran "Fuente web · dominio" en vez de "Subida manual".
+  - Nuevo filtro "Fuente web" en el selector de orígenes (filtra por `sourceUrl != null`).
+  - La búsqueda también busca dentro de `source_url`.
+
+- **`app/profile/page.tsx`**: carga en paralelo el perfil + los items con `source_url`
+  de `content_library` y los pasa como `initialUrlSources` al `ProfileEditor`.
+
+### 17.2 Archivos tocados
+
+```
+app/api/library/scrape-url/route.ts   (NUEVO)
+app/profile/page.tsx                   (actualizado: carga URL sources)
+components/profile/profile-editor.tsx  (refactorizado: 3 pestañas + FuentesTab)
+components/library/library-view.tsx    (mejoras display + filtro URL)
+```
+
+### 17.3 Qué queda pendiente (Fuentes + Perfil)
+
+- **"Carpeta personal" como MD generado**: el Director ya lee el perfil en
+  `compose-context.ts` (campos jsonb → contexto). El siguiente paso sería un
+  endpoint "Ver mi perfil para la IA" que renderice el markdown compilado (como
+  `PERFIL_CARLOS.md`) para que el usuario lo entienda / exporte.
+- **Fuentes en el contexto del Director**: actualmente `compose-context.ts` lee
+  `signals`, `social_posts` y `messages` pero NO `content_library`. Conectar las
+  fuentes (o un subset relevante) al contexto del Director y el Orquestador para
+  que los artículos añadidos influyan en las propuestas.
+- **Scraping de redes con login** (Twitter/LinkedIn): la ruta actual falla si la
+  red requiere autenticación; el Apify existente en "Mis redes" cubre este caso.
+- **YouTube transcripts**: el scraping de YouTube.com trae metadata pero no el
+  transcript. Una integración real requeriría la API de YouTube Data o un extractor.
+- **Merge a producción**: hacer PR / merge de `claude/happy-faraday-9uc22z` →
+  `claude/upbeat-knuth-6uil82` para desplegar.
