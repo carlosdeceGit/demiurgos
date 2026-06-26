@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Download } from "lucide-react";
 
 import { createClient } from "@/lib/db/server";
 import { AppRail } from "@/components/app/app-rail";
@@ -49,10 +51,19 @@ export default async function ProfilePage() {
             <span className="bg-primary/10 text-primary grid size-12 shrink-0 place-items-center rounded-full text-lg font-semibold">
               {displayName.charAt(0).toUpperCase()}
             </span>
-            <div>
+            <div className="flex-1 min-w-0">
               <h1 className="font-serif text-2xl">{displayName}</h1>
               <p className="text-muted-foreground text-sm">{user.email}</p>
             </div>
+            <Link
+              href="/api/profile/my-context"
+              download
+              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              title="Descarga todo lo que Demiurgos sabe de ti como Markdown"
+            >
+              <Download className="size-3.5" aria-hidden />
+              Lo que Demiurgos sabe de mí
+            </Link>
           </div>
 
           <ProfileEditor

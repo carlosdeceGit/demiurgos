@@ -1103,19 +1103,64 @@ components/profile/profile-editor.tsx  (refactorizado: 3 pestañas + FuentesTab)
 components/library/library-view.tsx    (mejoras display + filtro URL)
 ```
 
-### 17.3 Qué queda pendiente (Fuentes + Perfil)
+### 17.3 Segunda ronda (26 jun 2026) — Scraping avanzado + Contexto IA + Descarga
 
-- **"Carpeta personal" como MD generado**: el Director ya lee el perfil en
-  `compose-context.ts` (campos jsonb → contexto). El siguiente paso sería un
-  endpoint "Ver mi perfil para la IA" que renderice el markdown compilado (como
-  `PERFIL_CARLOS.md`) para que el usuario lo entienda / exporte.
-- **Fuentes en el contexto del Director**: actualmente `compose-context.ts` lee
-  `signals`, `social_posts` y `messages` pero NO `content_library`. Conectar las
-  fuentes (o un subset relevante) al contexto del Director y el Orquestador para
-  que los artículos añadidos influyan en las propuestas.
+- **`lib/library/scrape.ts`** (NUEVO): motor de scraping con detección de plataforma
+  y extracción de metadatos estructurados. Cubre:
+  - YouTube: JSON-LD `VideoObject` → título, canal, fecha, vistas/likes (fmtNum K/M),
+    duración ISO8601 → "3h 42m". Nota: transcripción no disponible; instrucción de
+    descarga manual incluida en el Markdown resultante.
+  - LinkedIn: `og:tags` + `Person` JSON-LD. Nota de login para contenido privado.
+  - TikTok: `VideoObject`/`SocialMediaPosting` JSON-LD con vistas/likes/comentarios.
+  - Instagram: solo metadata pública + aviso de login.
+  - Twitter/X: metadata + aviso de login.
+  - Substack: `Article` JSON-LD → título, autor, fecha.
+  - Web genérica: `Article`/`BlogPosting`/`NewsArticle`/`WebPage` JSON-LD + og:tags.
+  - Todos producen un Markdown estructurado con cabecera:
+    `# Título`, línea de metadatos, métricas de engagement, URL fuente, nota de
+    plataforma (si aplica), luego el cuerpo.
+  - Helper `fmtNum` (1.4 M, 32 K) y `fmtDuration` (ISO8601 → "3h 42m").
+  - Helper `decode` para entidades HTML.
+
+- **`app/api/library/scrape-url/route.ts`** (actualizado): usa `scrapeHtml()` del
+  nuevo `lib/library/scrape.ts`. Elimina la lógica simple de extracción de título;
+  ahora el Markdown resultante incluye metadatos de plataforma y engagement. El campo
+  `metadata_json` guarda `{ scraped_at, domain, platform }`.
+
+- **`app/api/profile/my-context/route.ts`** (NUEVO): endpoint `GET` que genera y
+  descarga un fichero `.md` "Lo que Demiurgos sabe de mí":
+  - Perfil completo (posicionamiento, pilares, audiencia, voz, tacit, objetivos,
+    plataformas, referentes, ADN de contenido por plataforma si existe).
+  - Hasta 50 fuentes web añadidas (con excerpt de 2000 car. por fuente).
+  - Últimas 20 señales.
+  - Propuestas liked/ejecutadas.
+  - Devuelve `Content-Disposition: attachment` con nombre `demiurgos-contexto-*.md`.
+
+- **`lib/ai/compose-context.ts`** (actualizado):
+  - Nuevo tipo `UserSourceRow` (title, source_url, markdown_content, metadata_json).
+  - `ComposeInput` ahora incluye `userSources?: UserSourceRow[]`.
+  - `gatherContext()` fetcha las 10 fuentes web más recientes con status='completed'.
+  - `composeSystemPrompt()` añade sección "FUENTES DEL USUARIO" antes de la memoria
+    de conversación (con excerpt de 1500 car. por fuente).
+
+- **`app/profile/page.tsx`** (actualizado): botón "Lo que Demiurgos sabe de mí"
+  en la cabecera del perfil → descarga via `/api/profile/my-context`.
+
+### 17.4 Archivos tocados (segunda ronda)
+
+```
+lib/library/scrape.ts                        (NUEVO)
+app/api/library/scrape-url/route.ts          (actualizado: usa scrapeHtml)
+app/api/profile/my-context/route.ts          (NUEVO)
+lib/ai/compose-context.ts                    (actualizado: UserSourceRow + fuentes en prompt)
+app/profile/page.tsx                         (actualizado: botón de descarga)
+```
+
+### 17.5 Qué queda pendiente
+
 - **Scraping de redes con login** (Twitter/LinkedIn): la ruta actual falla si la
   red requiere autenticación; el Apify existente en "Mis redes" cubre este caso.
-- **YouTube transcripts**: el scraping de YouTube.com trae metadata pero no el
-  transcript. Una integración real requeriría la API de YouTube Data o un extractor.
+- **YouTube transcripts**: el scraping trae metadata pero no el transcript. Una
+  integración real requeriría la API de YouTube Data o un extractor de subtítulos.
 - **Merge a producción**: hacer PR / merge de `claude/happy-faraday-9uc22z` →
   `claude/upbeat-knuth-6uil82` para desplegar.

@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/db/server";
-import {
-  cleanMarkdown,
-  contentHash,
-  deriveTitle,
-  htmlToMarkdown,
-} from "@/lib/library/convert";
+import { contentHash } from "@/lib/library/convert";
 import { CONTENT_LIST_COLUMNS, mapContentItem } from "@/lib/library/queries";
+import { scrapeHtml } from "@/lib/library/scrape";
 
 export const maxDuration = 30;
 
@@ -39,7 +35,6 @@ export async function POST(request: Request) {
   }
 
   let html = "";
-  let pageTitle = parsedUrl.hostname;
   try {
     const res = await fetch(rawUrl, {
       headers: {
@@ -58,8 +53,6 @@ export async function POST(request: Request) {
       );
     }
     html = await res.text();
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch) pageTitle = titleMatch[1].trim().replace(/\s+/g, " ");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return new NextResponse(`No se pudo acceder a la URL: ${msg}`, {
@@ -67,9 +60,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const rawMd = htmlToMarkdown(html);
-  const cleanMd = cleanMarkdown(rawMd);
-  const title = deriveTitle(cleanMd, pageTitle);
+  const { title, markdown, platform, domain } = scrapeHtml(html, parsedUrl, rawUrl);
 
   const { data, error } = await supabase
     .from("content_library")
@@ -78,16 +69,17 @@ export async function POST(request: Request) {
       title,
       source_type: "manual_upload",
       source_url: rawUrl,
-      markdown_content: cleanMd,
-      markdown_size: cleanMd.length,
-      content_hash: cleanMd ? contentHash(cleanMd) : null,
-      status: cleanMd.length > 0 ? "completed" : "needs_review",
-      conversion_tool: "html-to-md",
+      markdown_content: markdown,
+      markdown_size: markdown.length,
+      content_hash: markdown ? contentHash(markdown) : null,
+      status: markdown.length > 0 ? "completed" : "needs_review",
+      conversion_tool: "scrape-html",
       conversion_error:
-        cleanMd.length === 0 ? "La página no tiene texto extraíble." : null,
+        markdown.length === 0 ? "La página no tiene texto extraíble." : null,
       metadata_json: {
         scraped_at: new Date().toISOString(),
-        domain: parsedUrl.hostname,
+        domain,
+        platform,
       },
     })
     .select(CONTENT_LIST_COLUMNS)
