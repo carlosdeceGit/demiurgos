@@ -141,30 +141,33 @@ export function ChatClient({
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: { conversationId: convId },
-      // Capturar el conversation_id devuelto en headers
       fetch: async (url, init) => {
         const res = await fetch(url, init);
         const newConvId = res.headers.get("X-Conversation-Id");
         if (newConvId && !convId) {
           setConvId(newConvId);
-          // Actualiza la URL sin recargar para que el refresh no pierda la conversación
           router.replace(`/chat?conv=${newConvId}`);
         }
         return res;
       },
     }),
-    initialMessages: toUIMessages(rawInitial),
   });
 
+  // Cargar mensajes históricos al montar (AI SDK v6 no acepta initialMessages en useChat)
+  useEffect(() => {
+    if (rawInitial.length > 0) {
+      setMessages(toUIMessages(rawInitial));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const busy = status === "submitted" || status === "streaming";
-  // Muestra spinner solo mientras esperamos el primer token, no durante streaming
   const showSpinner = status === "submitted";
 
-  // Scroll al fondo en cada mensaje nuevo
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
