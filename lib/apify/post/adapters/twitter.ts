@@ -31,7 +31,8 @@ export const twitterAdapter: PlatformAdapter = {
     const shares = Number(r.retweet_count ?? r.retweetCount ?? 0);
 
     // Media: puede ser HLS m3u8 o mp4 directo
-    const mediaArr = (r.media ?? r.extended_entities?.media ?? []) as Record<string, unknown>[];
+    const extEntities = r.extended_entities as Record<string, unknown> | undefined;
+    const mediaArr = (r.media ?? extEntities?.media ?? []) as Record<string, unknown>[];
     const mediaUrls: string[] = [];
     let mediaType: NormalizedPost["media"]["type"] = "none";
 
