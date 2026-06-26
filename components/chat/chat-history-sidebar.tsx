@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageSquarePlus, MessageSquare } from "lucide-react";
+import { MessageSquarePlus, MessageSquare, Trash2 } from "lucide-react";
 
 export type ConversationItem = {
   id: string;
@@ -24,14 +24,26 @@ function timeLabel(iso: string): string {
 }
 
 export function ChatHistorySidebar({
-  conversations,
+  conversations: initial,
   activeId,
 }: {
   conversations: ConversationItem[];
   activeId?: string;
 }) {
   const router = useRouter();
+  const [conversations, setConversations] = useState(initial);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function deleteConversation(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleting(id);
+    await fetch(`/api/chat/conversations/${id}`, { method: "DELETE" });
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (id === activeId) router.push("/chat");
+    setDeleting(null);
+  }
 
   async function newChat() {
     setLoading(true);
@@ -67,26 +79,36 @@ export function ChatHistorySidebar({
         {conversations.map((c) => {
           const isActive = c.id === activeId;
           return (
-            <Link
-              key={c.id}
-              href={`/chat?conv=${c.id}`}
-              aria-current={isActive ? "page" : undefined}
-              className={`group flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                isActive
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              }`}
-            >
-              <MessageSquare className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium leading-snug">
-                  {c.title ?? "Nueva conversación"}
-                </p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground/70">
-                  {timeLabel(c.last_message_at)}
-                </p>
-              </div>
-            </Link>
+            <div key={c.id} className="group relative">
+              <Link
+                href={`/chat?conv=${c.id}`}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-start gap-2 rounded-lg px-3 py-2.5 pr-8 text-sm transition-colors ${
+                  isActive
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                }`}
+              >
+                <MessageSquare className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium leading-snug">
+                    {c.title ?? "Nueva conversación"}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+                    {timeLabel(c.last_message_at)}
+                  </p>
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={(e) => deleteConversation(c.id, e)}
+                disabled={deleting === c.id}
+                aria-label="Eliminar conversación"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 opacity-0 transition-all group-hover:opacity-100 text-muted-foreground hover:!text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-3" aria-hidden />
+              </button>
+            </div>
           );
         })}
       </nav>
