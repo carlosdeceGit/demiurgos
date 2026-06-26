@@ -58,6 +58,30 @@ export async function startRun(opts: RunOptions): Promise<string> {
   return data.data.id;
 }
 
+// Modo síncrono: lanza el actor y espera a que termine devolviendo los items.
+// Usa el endpoint run-sync-get-dataset-items de Apify.
+// Adecuado para 1 post (~10–20 s) o ~40 posts de perfil (~30–60 s).
+export async function runSync<T = Record<string, unknown>>(
+  actorId: string,
+  input: Record<string, unknown>,
+  timeoutSecs = 90
+): Promise<T[]> {
+  const url =
+    `${BASE}/acts/${encodeURIComponent(actorId)}/run-sync-get-dataset-items` +
+    `?token=${token()}&timeout=${timeoutSecs}&format=json&clean=true`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+    signal: AbortSignal.timeout((timeoutSecs + 15) * 1_000),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Apify runSync error ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<T[]>;
+}
+
 // Descarga todos los items de un dataset de Apify.
 export async function fetchDataset(
   datasetId: string

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
+  AlertTriangle,
   CheckCircle2,
   ExternalLink,
   Link as LinkIcon,
@@ -17,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { PLATFORM_KEYS, type PlatformKey } from "@/lib/ai/platforms";
 import type { ContentItem } from "@/lib/library/types";
+import { detectSocialUrl, isProfileContentType } from "@/lib/apify/post/router";
+import type { DetectedUrl } from "@/lib/apify/post/types";
 
 // ── Tipos ──────────────────────────────────────────────────────
 
@@ -273,36 +276,67 @@ function PlatformBlock({
 
 // ── Pestaña Fuentes ────────────────────────────────────────────
 
+type ImportPhase =
+  | { tag: "idle" }
+  | { tag: "confirming"; detected: DetectedUrl; url: string }
+  | { tag: "loading"; label: string; isProfile: boolean }
+  | { tag: "error"; message: string };
+
 function FuentesTab({ initialItems }: { initialItems: ContentItem[] }) {
   const [items, setItems] = useState<ContentItem[]>(initialItems);
   const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<ImportPhase>({ tag: "idle" });
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function handleAdd() {
+  function handleAdd() {
     const trimmed = url.trim();
-    if (!trimmed) return;
-    setLoading(true);
-    setError(null);
+    if (!trimmed || phase.tag === "loading") return;
+    const detected = detectSocialUrl(trimmed);
+    if (detected) {
+      setPhase({ tag: "confirming", detected, url: trimmed });
+    } else {
+      importUrl(trimmed, false);
+    }
+  }
+
+  async function importUrl(rawUrl: string, isSocial: boolean) {
+    const label = isSocial && phase.tag === "confirming"
+      ? phase.detected.label
+      : rawUrl;
+    const isProfile = isSocial && phase.tag === "confirming"
+      ? isProfileContentType(phase.detected.contentType)
+      : false;
+
+    setPhase({ tag: "loading", label, isProfile });
+
+    const endpoint = isSocial ? "/api/library/import-source" : "/api/library/scrape-url";
+
     try {
-      const res = await fetch("/api/library/scrape-url", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: trimmed }),
+        body: JSON.stringify({ url: rawUrl }),
       });
       if (!res.ok) {
-        setError(await res.text());
+        setPhase({ tag: "error", message: await res.text() });
         return;
       }
       const { item } = (await res.json()) as { item: ContentItem };
       setItems((prev) => [item, ...prev]);
       setUrl("");
+      setPhase({ tag: "idle" });
     } catch {
-      setError("Error de red. Inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
+      setPhase({ tag: "error", message: "Error de red. Inténtalo de nuevo." });
     }
+  }
+
+  function confirmImport() {
+    if (phase.tag !== "confirming") return;
+    importUrl(phase.url, true);
+  }
+
+  function cancelConfirm() {
+    setPhase({ tag: "idle" });
   }
 
   async function handleDelete(id: string) {
@@ -315,15 +349,17 @@ function FuentesTab({ initialItems }: { initialItems: ContentItem[] }) {
     }
   }
 
+  const inputDisabled = phase.tag === "loading" || phase.tag === "confirming";
+
   return (
     <div className="space-y-6">
       {/* Explicación */}
       <div className="rounded-xl border bg-card p-4 space-y-1">
         <p className="text-sm font-medium">¿Para qué sirven las fuentes?</p>
         <p className="text-xs text-muted-foreground">
-          Artículos que lees, creadores que sigues, vídeos de referencia. El Director
-          los convierte a texto y los tiene en cuenta al generar tu contenido. También
-          puedes pegar cualquier texto directamente en el{" "}
+          Artículos, creadores que sigues, vídeos de referencia, perfiles de LinkedIn…
+          El Director analiza el contenido y lo tiene en cuenta al generar tus propuestas.
+          También puedes pegar texto directamente en el{" "}
           <Link href="/chat" className="text-primary underline-offset-2 hover:underline">
             chat con el Director
           </Link>
@@ -332,7 +368,7 @@ function FuentesTab({ initialItems }: { initialItems: ContentItem[] }) {
       </div>
 
       {/* Input de URL */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Añadir fuente por URL
         </label>
@@ -340,35 +376,99 @@ function FuentesTab({ initialItems }: { initialItems: ContentItem[] }) {
           <input
             type="url"
             value={url}
+            disabled={inputDisabled}
             onChange={(e) => {
               setUrl(e.target.value);
-              if (error) setError(null);
+              if (phase.tag === "error") setPhase({ tag: "idle" });
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && url.trim() && !loading) handleAdd();
+              if (e.key === "Enter" && url.trim() && !inputDisabled) handleAdd();
             }}
-            placeholder="https://artículo.com, https://youtube.com/watch?v=…"
-            className={`${inputCls} flex-1`}
+            placeholder="https://linkedin.com/in/alguien, https://youtube.com/@canal, https://artículo.com…"
+            className={`${inputCls} flex-1 disabled:opacity-50`}
           />
-          <Button
-            onClick={handleAdd}
-            disabled={!url.trim() || loading}
-            className="shrink-0 gap-1.5"
-          >
-            {loading ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
+          {phase.tag !== "confirming" && phase.tag !== "loading" && (
+            <Button
+              onClick={handleAdd}
+              disabled={!url.trim()}
+              className="shrink-0 gap-1.5"
+            >
               <Plus className="size-4" />
-            )}
-            {loading ? "Leyendo…" : "Añadir"}
-          </Button>
+              Añadir
+            </Button>
+          )}
         </div>
-        {error && (
-          <p className="text-xs text-destructive">{error}</p>
+
+        {/* Estado: confirmación */}
+        {phase.tag === "confirming" && (
+          <div className="rounded-xl border bg-card p-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium">{phase.detected.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {phase.detected.description}
+              </p>
+              {phase.detected.limitedAccess && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs text-[color:var(--brand-amber)]">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                  Facebook limita el acceso sin login. El resultado puede estar vacío o incompleto.
+                </p>
+              )}
+              {isProfileContentType(phase.detected.contentType) && (
+                <p className="mt-1.5 text-xs text-muted-foreground/70">
+                  Puede tardar hasta 60 segundos. El Director analizará los posts automáticamente.
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={cancelConfirm} className="gap-1.5">
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={confirmImport} className="gap-1.5">
+                {isProfileContentType(phase.detected.contentType)
+                  ? "Importar 40 posts →"
+                  : "Importar →"}
+              </Button>
+            </div>
+          </div>
         )}
+
+        {/* Estado: cargando */}
+        {phase.tag === "loading" && (
+          <div className="rounded-xl border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">
+                  {phase.isProfile ? "Importando y analizando…" : "Leyendo fuente…"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {phase.isProfile
+                    ? "Apify lee los posts · el Director genera el análisis. Hasta 60 s."
+                    : "Extrayendo el contenido de la página."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Estado: error */}
+        {phase.tag === "error" && (
+          <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2">
+            <p className="text-xs text-destructive">{phase.message}</p>
+            <button
+              type="button"
+              onClick={() => setPhase({ tag: "idle" })}
+              className="ml-auto shrink-0 text-destructive/60 hover:text-destructive"
+              aria-label="Cerrar error"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <p className="text-xs text-muted-foreground/70">
-          Funciona con artículos, webs, vídeos de YouTube y páginas públicas.
-          Redes con login (LinkedIn, X…) requieren que el contenido sea público.
+          Detecta automáticamente LinkedIn, Instagram, TikTok, YouTube, X y Facebook.
+          Para el resto de URLs, extrae el texto de la página.
         </p>
       </div>
 
@@ -428,10 +528,7 @@ function FuentesTab({ initialItems }: { initialItems: ContentItem[] }) {
 
       <p className="border-t pt-4 text-xs text-muted-foreground">
         Para PDFs o documentos, usa la{" "}
-        <Link
-          href="/library"
-          className="text-primary underline-offset-2 hover:underline"
-        >
+        <Link href="/library" className="text-primary underline-offset-2 hover:underline">
           Biblioteca
         </Link>
         . Las fuentes también aparecen allí.
