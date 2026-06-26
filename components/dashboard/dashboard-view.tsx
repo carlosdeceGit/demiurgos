@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { MessageSquare } from "lucide-react";
-
+import { Clock } from "lucide-react";
 import type { PlatformKey } from "@/lib/ai/platforms";
+import { FeatureDiscovery } from "@/components/dashboard/feature-discovery";
 
 const PLATFORM_LABELS: Record<PlatformKey, string> = {
   linkedin: "LinkedIn",
@@ -22,12 +22,11 @@ export type DashboardProposal = {
   status: string | null;
 };
 
-export type DashboardSignal = { content: string; source: string | null };
-
-export type DashboardConversation = {
-  id: string;
-  title: string | null;
-  updatedAt: string;
+export type DashboardMetrics = {
+  totalProposals: number;
+  likedProposals: number;
+  executedProposals: number;
+  totalMessages: number;
 };
 
 export type DashboardData = {
@@ -36,8 +35,7 @@ export type DashboardData = {
   completeness: number;
   platforms: PlatformKey[];
   proposals: DashboardProposal[];
-  signals: DashboardSignal[];
-  conversations: DashboardConversation[];
+  metrics: DashboardMetrics;
 };
 
 function ProposalCard({ p }: { p: DashboardProposal }) {
@@ -69,14 +67,39 @@ function ProposalCard({ p }: { p: DashboardProposal }) {
           {p.script}
         </p>
       )}
-      {p.slot && <p className="text-muted-foreground mt-auto text-xs">🕒 {p.slot}</p>}
+      {p.slot && (
+        <p className="text-muted-foreground mt-auto flex items-center gap-1 text-xs">
+          <Clock className="size-3" aria-hidden />
+          {p.slot}
+        </p>
+      )}
     </article>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-card rounded-xl border p-4 text-center">
+      <p className="text-3xl font-bold tabular-nums">{value}</p>
+      <p className="text-muted-foreground mt-1 text-xs">{label}</p>
+    </div>
   );
 }
 
 export function DashboardView({ data }: { data: DashboardData }) {
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8 p-6">
+    <div className="mx-auto w-full max-w-5xl space-y-8 p-6 pb-24 md:pb-6">
+      {/* Feature discovery — dismissible, guardado en localStorage */}
+      <FeatureDiscovery />
+
+      {/* Métricas */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <MetricCard label="Propuestas totales" value={data.metrics.totalProposals} />
+        <MetricCard label="Guardadas" value={data.metrics.likedProposals} />
+        <MetricCard label="Ejecutadas" value={data.metrics.executedProposals} />
+        <MetricCard label="Mensajes al Director" value={data.metrics.totalMessages} />
+      </section>
+
       <section className="bg-card rounded-xl border p-5">
         <div className="flex items-center justify-between">
           <div>
@@ -92,10 +115,18 @@ export function DashboardView({ data }: { data: DashboardData }) {
         </div>
         <div className="bg-secondary mt-3 h-2 overflow-hidden rounded-full">
           <div
-            className="bg-brand-accent h-full rounded-full"
+            className="bg-brand-accent h-full rounded-full transition-[width] duration-700"
             style={{ width: `${data.completeness}%` }}
           />
         </div>
+        {data.completeness < 100 && (
+          <Link
+            href="/profile"
+            className="text-primary mt-2 inline-flex items-center gap-1 text-xs underline-offset-4 hover:underline"
+          >
+            Completar perfil →
+          </Link>
+        )}
         {data.platforms.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
             {data.platforms.map((k) => (
@@ -121,66 +152,11 @@ export function DashboardView({ data }: { data: DashboardData }) {
           </div>
         ) : (
           <div className="bg-card text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
-            Aún no hay propuestas. Pídeselas al Director en el chat
-            («propuestas de la semana») y aparecerán aquí.
-          </div>
-        )}
-      </section>
-
-      {data.conversations.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Conversaciones recientes</h2>
-            <Link
-              href="/chat"
-              className="text-muted-foreground hover:text-foreground text-xs transition-colors"
-            >
-              Nueva →
+            Aún no tienes propuestas.{" "}
+            <Link href="/chat" className="text-primary underline-offset-4 hover:underline">
+              Pídele al Director tu primera semana de contenido →
             </Link>
           </div>
-          <ul className="flex flex-col gap-2">
-            {data.conversations.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href="/chat"
-                  className="bg-card hover:border-border/80 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors"
-                >
-                  <MessageSquare className="text-muted-foreground size-4 shrink-0" />
-                  <span className="flex-1 truncate">
-                    {c.title ?? "Conversación sin título"}
-                  </span>
-                  <span className="text-muted-foreground font-mono text-[10px]">
-                    {new Date(c.updatedAt).toLocaleDateString("es", {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section>
-        <h2 className="mb-3 text-sm font-semibold">Señales recientes</h2>
-        {data.signals.length > 0 ? (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {data.signals.map((s, i) => (
-              <li key={i} className="bg-card rounded-lg border p-3 text-sm">
-                <p>{s.content}</p>
-                {s.source && (
-                  <span className="text-muted-foreground mt-1 inline-block font-mono text-[10px] tracking-wide uppercase">
-                    {s.source}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Aún no hay señales. Comparte algo en el chat y Demiurgos lo recordará.
-          </p>
         )}
       </section>
     </div>

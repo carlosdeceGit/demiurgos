@@ -36,7 +36,7 @@ export default async function LibraryPage() {
         email={user.email ?? ""}
         isAdmin={isAdminEmail(user.email)}
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
         <LibraryView initialItems={(items ?? []).map(mapContentItem)} />
       </main>
     </div>

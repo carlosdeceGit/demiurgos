@@ -497,13 +497,29 @@ export function ProposalsGrid({ proposals: initial }: { proposals: ProposalRow[]
 
       {/* Grid */}
       {visible.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-20 text-center">
+        <div className="flex flex-col items-center gap-4 py-20 text-center">
           <Sparkles className="size-8 text-primary/30" aria-hidden />
-          <p className="font-serif text-lg text-muted-foreground">
-            {filter === "todas"
-              ? "Sin propuestas aún. Ve al Calendario y genera tu semana."
-              : "Sin propuestas en esta categoría."}
-          </p>
+          <div>
+            <p className="font-serif text-lg text-muted-foreground">
+              {filter === "todas"
+                ? "Aún no tienes propuestas"
+                : "Sin propuestas en esta categoría"}
+            </p>
+            {filter === "todas" && (
+              <p className="text-muted-foreground mt-1 text-sm">
+                Pídele al Director tu plan de la semana y aparecerán aquí.
+              </p>
+            )}
+          </div>
+          {filter === "todas" && (
+            <a
+              href="/chat"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+            >
+              <Wand2 className="size-4" aria-hidden />
+              Ir al Director
+            </a>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

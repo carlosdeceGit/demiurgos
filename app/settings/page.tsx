@@ -52,7 +52,7 @@ export default async function SettingsPage() {
         email={user.email ?? ""}
         isAdmin={isAdminEmail(user.email)}
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
         <div className="mx-auto w-full max-w-2xl space-y-6 p-6">
           <div>
             <h1 className="font-serif text-2xl">Ajustes</h1>
